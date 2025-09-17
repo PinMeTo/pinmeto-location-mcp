@@ -7,9 +7,14 @@ import {
   getGoogleLocationInsights,
 } from "./tools/networks/google";
 import {
+  getAllFacebookBrandpageInsights,
   getAllFacebookInsights,
-  getFacebookBrandpageInsights,
+  getFacebookLocationsInsights,
 } from "./tools/networks/facebook";
+import {
+  getAllAppleInsights,
+  getAppleLocationInsights,
+} from "./tools/networks/apple";
 
 dotenv.config({ path: ".env" });
 
@@ -31,8 +36,13 @@ getGoogleLocationInsights(server);
 getAllGoogleInsights(server);
 
 // Facebook
-getFacebookBrandpageInsights(server);
+getAllFacebookBrandpageInsights(server);
+getFacebookLocationsInsights(server);
 getAllFacebookInsights(server);
+
+// Apple
+getAppleLocationInsights(server);
+getAllAppleInsights(server);
 
 async function main() {
   dotenv.config({ path: ".env" });
