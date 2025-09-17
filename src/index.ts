@@ -134,7 +134,7 @@ server.tool(
         content: [
           {
             type: "text",
-            text: "Unable to fetch location data.",
+            text: "Unable to fetch insights data.",
           },
         ],
       };
@@ -178,7 +178,7 @@ server.tool(
         content: [
           {
             type: "text",
-            text: "Unable to fetch location data.",
+            text: "Unable to fetch insights data.",
           },
         ],
       };
