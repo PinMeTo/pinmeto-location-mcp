@@ -8,7 +8,7 @@ import {
     formatListResponse,
 } from "./helpers";
 
-dotenv.config();
+dotenv.config({ path: ".env" });
 
 const server = new McpServer({
     name: "PinMeTo-MCP",
@@ -105,7 +105,7 @@ server.tool(
 );
 
 async function main() {
-    dotenv.config();
+    dotenv.config({ path: ".env" });
     const transport = new StdioServerTransport();
     await server.connect(transport);
     console.error("PinMeTo MCP running on stdio");

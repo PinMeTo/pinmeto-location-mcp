@@ -2,22 +2,15 @@
 
 ## Installation
 
-Requirements: Python 3.13
+Requirements: Node, V22>
 
-You need to have uv installed for Claude to run your MCP:
+It's preferred to use NVM to install your node version, to run your MCP:
 
-- Install uv by running the command:
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-- Install the dependencies
+- Install the dependencies, and build teh project
 
 ```bash
-uv venv
-source .venv/bin/activate
-uv pip install .
+npm install
+npm run build
 ```
 
 - Create an `.env` file in this folder and put the following keys in it:
@@ -36,17 +29,21 @@ PINMETO_APP_ID = "{Your App ID}"
 ```json
 {
     "mcpServers": {
-        "pinmeto": {
-            "command": "{PATH-TO-UV}/uv",
+        "PinMeTo-MCP": {
+            "command": "{{path-to-node}}",
             "args": [
-                "--directory",
-                "{PATH-TO-REPO}/pinmeto-mcp-spike",
-                "run",
-                "main.py"
-            ]
+                "{{path-to-here}}/build/index.js"
+            ],
+            "env": {
+                "PINMETO_API_URL": "",
+                "PINMETO_ACCOUNT_ID": "",
+                "PINMETO_APP_ID": "",
+                "PINMETO_APP_SECRET": ""
+            }
         }
     }
 }
+
 ```
 
 - Restart Claude, make sure Claude desktop has all permissions it needs and you will be able to see the PinMeTo MCP in your MCP selection.
