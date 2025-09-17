@@ -11,9 +11,9 @@ export async function makePmtRequest(
     "Content-Type": "application/json",
     authorization: `Bearer ${token}`,
   };
-  const params = from ? { from: from, to: to } : undefined;
+
   try {
-    const response = await axios.get(url, { params, headers, timeout: 30000 });
+    const response = await axios.get(url, { headers, timeout: 30000 });
     return response.data;
   } catch (e: any) {
     console.error(`Request failed, reason: ${e}`);

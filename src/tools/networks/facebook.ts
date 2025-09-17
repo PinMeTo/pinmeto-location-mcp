@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { makePmtRequest } from "../../helpers";
 
-export const getGoogleLocationInsights = (server: any) => {
+export const getFacebookBrandpageInsights = (server: any) => {
   return server.tool(
-    "get_google_location_insights",
-    "Fetch Google metrics for a single location belonging to a specific account.",
+    "get_facebook_location_insights",
+    "Fetch Facebook metrics for a single location belonging to a specific account.",
     {
       storeId: z.string().describe("The store ID to look up"),
       from: z.string().describe("	The start date format YYYY-MM-DD"),
@@ -32,7 +32,7 @@ export const getGoogleLocationInsights = (server: any) => {
       const apiUrl = process.env.PINMETO_API_URL;
       const accountId = process.env.PINMETO_ACCOUNT_ID;
 
-      const locationUrl = `${apiUrl}/listings/v4/${accountId}/locations/${storeId}/insights/google?from=${from}&to=${to}`;
+      const locationUrl = `${apiUrl}/listings/v4/${accountId}/locations/${storeId}/insights/facebook?from=${from}&to=${to}`;
       const locationData = await makePmtRequest(locationUrl);
 
       if (!locationData) {
@@ -58,12 +58,12 @@ export const getGoogleLocationInsights = (server: any) => {
   );
 };
 
-export const getAllGoogleInsights = (server: any) => {
+export const getAllFacebookInsights = (server: any) => {
   return server.tool(
-    "get_all_google_insights",
-    "Fetch Google metrics for all locations belonging to a specific account.",
+    "get_all_facebook_insights",
+    "Fetch Facebook metrics for all brand pages belonging to a specific account.",
     {
-      from: z.string().describe("	The start date format YYYY-MM-DD"),
+      from: z.string().describe("The start date format YYYY-MM-DD"),
       to: z.string().describe("	The end date format YYYY-MM-DD"),
     },
     async ({ from, to }: { from: string; to: string }) => {
@@ -79,7 +79,7 @@ export const getAllGoogleInsights = (server: any) => {
       }
       const apiUrl = process.env.PINMETO_API_URL;
       const accountId = process.env.PINMETO_ACCOUNT_ID;
-      const url = `${apiUrl}/listings/v4/${accountId}/locations/insights/google?from=${from}&to=${to}`;
+      const url = `${apiUrl}/listings/v4/${accountId}/locations/insights/facebook?from=${from}&to=${to}`;
       const insightsData = await makePmtRequest(url);
       if (!insightsData) {
         return {

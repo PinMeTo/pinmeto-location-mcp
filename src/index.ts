@@ -6,6 +6,10 @@ import {
   getAllGoogleInsights,
   getGoogleLocationInsights,
 } from "./tools/networks/google";
+import {
+  getAllFacebookInsights,
+  getFacebookBrandpageInsights,
+} from "./tools/networks/facebook";
 
 dotenv.config({ path: ".env" });
 
@@ -25,6 +29,10 @@ getLocationsTool(server);
 // Google
 getGoogleLocationInsights(server);
 getAllGoogleInsights(server);
+
+// Facebook
+getFacebookBrandpageInsights(server);
+getAllFacebookInsights(server);
 
 async function main() {
   dotenv.config({ path: ".env" });
