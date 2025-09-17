@@ -1,0 +1,54 @@
+{
+    "dxt_version": "0.1.0",
+    "name": "PinMeTo MCP",
+    "version": "1.0.0",
+    "description": "PinMeTo Locations And Insights MCP",
+    "author": {
+        "name": "Dzenis Madzovic <dzenis.madzovic@pinmeto.com>"
+    },
+    "server": {
+        "type": "node",
+        "entry_point": "build/index.js",
+        "mcp_config": {
+            "command": "node",
+            "args": ["${__dirname}/build/index.js"],
+            "env": {
+                "PINMETO_API_URL": "${user_config.PINMETO_API_URL}",
+                "PINMETO_ACCOUNT_ID": "${user_config.PINMETO_ACCOUNT_ID}",
+                "PINMETO_APP_SECRET": "${user_config.PINMETO_APP_SECRET}",
+                "PINMETO_APP_ID": "${user_config.PINMETO_APP_ID}"
+            }
+        }
+    },
+    "user_config": {
+        "PINMETO_API_URL": {
+            "type": "string",
+            "title": "PinMeTo API URL",
+            "description": "https://api.pinmeto.com",
+            "required": true,
+            "sensitive": false
+        },
+        "PINMETO_ACCOUNT_ID": {
+            "type": "string",
+            "title": "PinMeTo Account ID",
+            "description": "Your Account id, example: pinmeto",
+            "required": true,
+            "sensitive": false
+        },
+        "PINMETO_APP_ID": {
+            "type": "string",
+            "title": "PinMeTo App ID",
+            "description": "Your App ID, found in account settings",
+            "required": true,
+            "sensitive": false
+        },
+        "PINMETO_APP_SECRET": {
+            "type": "string",
+            "title": "Your App Secret, found in account settings",
+            "description": "Your App Secret",
+            "required": true,
+            "sensitive": true
+        }
+    },
+    "license": "ISC"
+}
