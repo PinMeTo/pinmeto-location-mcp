@@ -151,6 +151,49 @@ server.tool(
   }
 );
 
+server.tool(
+  "get_all_google_insights",
+  "Fetch Google metrics for all locations belonging to a specific account.",
+  {
+    from: z.string().describe("	The start date format YYYY-MM-DD"),
+    to: z.string().describe("	The end date format YYYY-MM-DD"),
+  },
+  async ({ from, to }) => {
+    if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
+          },
+        ],
+      };
+    }
+    const apiUrl = process.env.PINMETO_API_URL;
+    const accountId = process.env.PINMETO_ACCOUNT_ID;
+    const url = `${apiUrl}/listings/v4/${accountId}/locations/insights/google`;
+    const insightsData = await makePmtRequest(url, from, to);
+    if (!insightsData) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: "Unable to fetch location data.",
+          },
+        ],
+      };
+    }
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(insightsData),
+        },
+      ],
+    };
+  }
+);
+
 async function main() {
   dotenv.config({ path: ".env" });
   const transport = new StdioServerTransport();
