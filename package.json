@@ -1,11 +1,12 @@
 {
   "name": "mcp",
   "version": "1.0.0",
-  "description": "Requirements: Python 3.13",
+  "description": "PinMeTo MCP server",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && chmod 755 build/index.js",
+    "build": "tsc",
     "start": "tsc && node build/index.js",
+    "start:remote": "tsc && node build/index.js remote",
     "inspector": "npx @modelcontextprotocol/inspector node build/index.js"
   },
   "repository": {
@@ -26,9 +27,11 @@
     "@modelcontextprotocol/sdk": "^1.18.0",
     "axios": "^1.12.2",
     "dotenv": "^16.3.1",
+    "express": "^5.1.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/express": "^5.0.3",
     "@types/node": "^24.5.1",
     "typescript": "^5.9.2"
   }
