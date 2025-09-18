@@ -6,6 +6,9 @@
   "author": {
     "name": "Dzenis Madzovic <dzenis.madzovic@pinmeto.com>"
   },
+  "homepage": "https://www.pinmeto.com/",
+  "documentation": "https://github.com/PinMeTo/mcp",
+  "icon": "src/img/logo_icon.png",
   "server": {
     "type": "node",
     "entry_point": "build/index.js",
@@ -49,6 +52,10 @@
       "required": true,
       "sensitive": true
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PinMeTo/mcp.git"
   },
   "license": "ISC"
 }
