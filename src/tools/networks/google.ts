@@ -1,8 +1,9 @@
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { makePmtRequest } from "../../helpers";
 
-export const getGoogleLocationInsights = (server: any) => {
-  return server.tool(
+export function getGoogleLocationInsights(server: McpServer) {
+  server.tool(
     "get_google_location_insights",
     "Fetch Google metrics for a single location belonging to a specific account.",
     {
@@ -56,10 +57,10 @@ export const getGoogleLocationInsights = (server: any) => {
       };
     }
   );
-};
+}
 
-export const getAllGoogleInsights = (server: any) => {
-  return server.tool(
+export function getAllGoogleInsights(server: McpServer) {
+  server.tool(
     "get_all_google_insights",
     "Fetch Google metrics for all locations belonging to a specific account.",
     {
@@ -101,4 +102,4 @@ export const getAllGoogleInsights = (server: any) => {
       };
     }
   );
-};
+}

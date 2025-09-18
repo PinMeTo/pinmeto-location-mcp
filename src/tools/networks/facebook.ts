@@ -1,8 +1,9 @@
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { makePmtRequest } from "../../helpers";
 
-export const getFacebookLocationsInsights = (server: any) => {
-  return server.tool(
+export function getFacebookLocationsInsights(server: McpServer) {
+  server.tool(
     "get_facebook_location_insights",
     "Fetch Facebook metrics for a single location belonging to a specific account.",
     {
@@ -56,10 +57,10 @@ export const getFacebookLocationsInsights = (server: any) => {
       };
     }
   );
-};
+}
 
-export const getAllFacebookInsights = (server: any) => {
-  return server.tool(
+export function getAllFacebookInsights(server: McpServer) {
+  server.tool(
     "get_all_facebook_insights",
     "Fetch Facebook metrics for all brand pages belonging to a specific account.",
     {
@@ -101,11 +102,11 @@ export const getAllFacebookInsights = (server: any) => {
       };
     }
   );
-};
+}
 
-export const getAllFacebookBrandpageInsights = (server: any) => {
-  return server.tool(
-    "get_all_facebook_insights",
+export function getAllFacebookBrandpageInsights(server: McpServer) {
+  server.tool(
+    "get_all_facebook_brandpage_insights",
     "Fetch Facebook metrics for all brand pages belonging to a specific account.",
     {
       from: z.string().describe("The start date format YYYY-MM-DD"),
@@ -146,4 +147,4 @@ export const getAllFacebookBrandpageInsights = (server: any) => {
       };
     }
   );
-};
+}

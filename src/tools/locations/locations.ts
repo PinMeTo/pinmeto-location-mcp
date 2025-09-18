@@ -1,3 +1,4 @@
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   makePmtRequest,
@@ -5,8 +6,8 @@ import {
   formatListResponse,
 } from "../../helpers";
 
-export const getLocationTool = (server: any) => {
-  return server.tool(
+export function getLocationTool(server: McpServer) {
+  server.tool(
     "get_location",
     "Get location details for a store from PinMeTo API",
     {
@@ -50,9 +51,9 @@ export const getLocationTool = (server: any) => {
       };
     }
   );
-};
+}
 
-export function getLocationsTool(server: any) {
+export function getLocationsTool(server: McpServer) {
   server.tool(
     "get_locations",
     "Get all location details for the site from PinMeTo API. Use this to find store ids for locations.",

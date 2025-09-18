@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { makePmtRequest } from "../../helpers";
 
-export const getAppleLocationInsights = (server: any) => {
-  return server.tool(
+export function getAppleLocationInsights(server: McpServer) {
+  server.tool(
     "get_apple_location_insights",
     "Fetch Apple metrics for a single location belonging to a specific account.",
     {
@@ -56,10 +57,10 @@ export const getAppleLocationInsights = (server: any) => {
       };
     }
   );
-};
+}
 
-export const getAllAppleInsights = (server: any) => {
-  return server.tool(
+export function getAllAppleInsights(server: McpServer) {
+  server.tool(
     "get_all_apple_insights",
     "Fetch Apple metrics for all locations belonging to a specific account.",
     {
@@ -101,4 +102,4 @@ export const getAllAppleInsights = (server: any) => {
       };
     }
   );
-};
+}
