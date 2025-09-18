@@ -3,11 +3,15 @@ import dotenv from "dotenv";
 import { getLocationsTool, getLocationTool } from "./tools/locations/locations";
 import {
   getAllGoogleInsights,
+  getAllGoogleRatings,
   getGoogleLocationInsights,
+  getGoogleLocationRatings,
 } from "./tools/networks/google";
 import {
   getAllFacebookBrandpageInsights,
   getAllFacebookInsights,
+  getAllFacebookRatings,
+  getFacebookLocationRatings,
   getFacebookLocationsInsights,
 } from "./tools/networks/facebook";
 import {
@@ -34,11 +38,15 @@ export function createMcpServer() {
   // Google
   getGoogleLocationInsights(server);
   getAllGoogleInsights(server);
+  getAllGoogleRatings(server);
+  getGoogleLocationRatings(server);
 
   // Facebook
   getAllFacebookBrandpageInsights(server);
   getFacebookLocationsInsights(server);
   getAllFacebookInsights(server);
+  getAllFacebookRatings(server);
+  getFacebookLocationRatings(server);
 
   // Apple
   getAppleLocationInsights(server);
