@@ -1,10 +1,13 @@
 {
   "dxt_version": "0.1.0",
   "name": "PinMeTo",
+  "display_name": "PinMeTo MCP Server",
   "version": "1.0.0",
-  "description": "PinMeTo Locations And Insights MCP",
+  "description": "Connect with your PinMeTo data",
+  "long_description": "The PinMeTo MCP Server enables seamless integration between the PinMeTo platform and AI agents such as Claude LLM, allowing users to interact with their location data and business insights through natural language. This server exposes a suite of tools that let you retrieve, analyze, and summarize data from multiple sources—including Google, Facebook, and Apple—covering metrics such as impressions, clicks, ratings, and more.",
   "author": {
-    "name": "PinMeTo"
+    "name": "PinMeTo",
+    "url": "https://www.pinmeto.com/"
   },
   "homepage": "https://www.pinmeto.com/",
   "documentation": "https://github.com/PinMeTo/mcp",
@@ -23,6 +26,7 @@
       }
     }
   },
+  "keywords": ["api", "automation", "productivity"],
   "user_config": {
     "PINMETO_API_URL": {
       "type": "string",
@@ -55,7 +59,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PinMeTo/mcp.git"
+    "url": "https://github.com/pinmeto/mcp"
   },
-  "license": "ISC"
+  "license": "MIT"
 }
