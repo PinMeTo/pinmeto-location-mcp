@@ -23,11 +23,12 @@ This Model Context Protocol (MCP) server enables Claude LLM to interact with you
 
 2. **Configure Claude Desktop:**
 
-   - Open your `claude_desktop_config.json` file:
+   - Open your `claude_desktop_config.json` file. You can go to Preferences → Developer → Edit Config in the Claude Desktop Client. Or use:
+
      ```bash
      code ~/Library/Application\ Support/Claude/claude_desktop_config.json
      ```
-   - Or go to Preferences → Developer → Edit Config in the Claude Desktop Client.
+
    - Add the following MCP server configuration:
      ```json
      {
@@ -58,7 +59,7 @@ This Model Context Protocol (MCP) server enables Claude LLM to interact with you
 
 ---
 
-## One-Click Installation (MCPB)
+## One-Click Installation (Generating .mcpb-file)
 
 ### Prerequisites
 
@@ -79,7 +80,7 @@ This Model Context Protocol (MCP) server enables Claude LLM to interact with you
 
 ---
 
-## Cursor Integration
+## Using it with Cursor
 
 To add this MCP server to Cursor:
 
@@ -96,14 +97,14 @@ To add this MCP server to Cursor:
 
 ## Available Tools
 
-- Get Location
-- Get Locations
-- All Google Insights
-- Google Location Insights
-- Google Location Ratings
-- All Facebook Insights
-- Facebook Location Insights
-- Facebook Brandpage Insights
-- Facebook Location Ratings
-- All Apple Insights
-- Apple Location Insights
+- `Get Location` - Get pinmeto data on single location.
+- `Get Locations` - Get all location data for site.
+- `All Google Insights` - Get all Google insights for site locations.
+- `Google Location Insights` - Get Google location insights for specific location.
+- `Google Location Ratings` - Get Google location ratings for specific location.
+- `All Facebook Insights` - Get all Facebook location insights for specific location.
+- `Facebook Location Insights` - Get Facebook location insights for specific location.
+- `Facebook Brandpage Insights` - Get Facebook insights for specific brandpage.
+- `Facebook Location Ratings` Get Facebook location ratings for specific location.
+- `All Apple Insights` Get all Apple location insights for site locations.
+- `Apple Location Insights` Get Apple location insights for specific location.

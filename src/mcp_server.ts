@@ -19,6 +19,8 @@ import {
   getAppleLocationInsights,
 } from "./tools/networks/apple";
 
+import { analyzeLocationPrompt, summarizeAllInsightsPrompt } from "./prompts";
+
 export function createMcpServer() {
   dotenv.config({ path: ".env" });
 
@@ -26,6 +28,7 @@ export function createMcpServer() {
     name: "PinMeTo-MCP",
     version: "1.0.0",
     capabilities: {
+      prompts: {},
       resources: {},
       tools: {},
     },
@@ -51,6 +54,10 @@ export function createMcpServer() {
   // Apple
   getAppleLocationInsights(server);
   getAllAppleInsights(server);
+
+  // Prompts
+  analyzeLocationPrompt(server);
+  summarizeAllInsightsPrompt(server);
 
   return server;
 }

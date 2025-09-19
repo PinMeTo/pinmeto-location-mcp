@@ -1,10 +1,10 @@
 {
   "dxt_version": "0.1.0",
-  "name": "PinMeTo MCP",
+  "name": "PinMeTo",
   "version": "1.0.0",
   "description": "PinMeTo Locations And Insights MCP",
   "author": {
-    "name": "Dzenis Madzovic <dzenis.madzovic@pinmeto.com>"
+    "name": "PinMeTo"
   },
   "homepage": "https://www.pinmeto.com/",
   "documentation": "https://github.com/PinMeTo/mcp",
