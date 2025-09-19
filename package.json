@@ -18,7 +18,7 @@
   ],
   "keywords": [],
   "author": "Dzenis Madzovic <dzenis.madzovic@pinmeto.com>",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/PinMeTo/mcp/issues"
   },

@@ -3,7 +3,9 @@ import dotenv from "dotenv";
 import { getLocationsTool, getLocationTool } from "./tools/locations/locations";
 import {
   getAllGoogleInsights,
+  getAllGoogleKeywords,
   getAllGoogleRatings,
+  getGoogleKeywordsForLocation,
   getGoogleLocationInsights,
   getGoogleLocationRatings,
 } from "./tools/networks/google";
@@ -43,6 +45,8 @@ export function createMcpServer() {
   getAllGoogleInsights(server);
   getAllGoogleRatings(server);
   getGoogleLocationRatings(server);
+  getAllGoogleKeywords(server);
+  getGoogleKeywordsForLocation(server);
 
   // Facebook
   getAllFacebookBrandpageInsights(server);

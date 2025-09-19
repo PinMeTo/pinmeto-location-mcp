@@ -205,3 +205,108 @@ export const getGoogleLocationRatings = (server: any) => {
     }
   );
 };
+
+export const getAllGoogleKeywords = (server: any) => {
+  server.tool(
+    "get_google_keywords",
+    "Fetch Google keywords for all locations belonging to a specific account",
+    {
+      from: z.string().describe("	The start date format YYYY-MM-DD"),
+      to: z.string().describe("	The end date format YYYY-MM-DD"),
+    },
+    async ({ from, to }: { from: string; to: string }) => {
+      if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
+            },
+          ],
+        };
+      }
+      const apiUrl = process.env.PINMETO_API_URL;
+      const accountId = process.env.PINMETO_ACCOUNT_ID;
+
+      const locationUrl = `${apiUrl}/listings/v3/${accountId}/insights/google-keywords?from=${from}&to=${to}`;
+      const locationData = await makePmtRequest(locationUrl);
+
+      if (!locationData) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Unable to fetch keywords data.",
+            },
+          ],
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(locationData),
+          },
+        ],
+      };
+    }
+  );
+};
+
+export const getGoogleKeywordsForLocation = (server: any) => {
+  server.tool(
+    "get_google_keywords_",
+    "Fetch Google keywords for a given location belonging to a specific account.",
+    {
+      storeId: z.string().describe("The store ID to look up"),
+      from: z.string().describe("	The start date format YYYY-MM-DD"),
+      to: z.string().describe("	The end date format YYYY-MM-DD"),
+    },
+    async ({
+      storeId,
+      from,
+      to,
+    }: {
+      storeId: string;
+      from: string;
+      to: string;
+    }) => {
+      if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
+            },
+          ],
+        };
+      }
+      const apiUrl = process.env.PINMETO_API_URL;
+      const accountId = process.env.PINMETO_ACCOUNT_ID;
+
+      const locationUrl = `${apiUrl}/listings/v3/${accountId}/insights/google-keywords/${storeId}?from=${from}&to=${to}`;
+      const locationData = await makePmtRequest(locationUrl);
+
+      if (!locationData) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Unable to fetch keywords data.",
+            },
+          ],
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(locationData),
+          },
+        ],
+      };
+    }
+  );
+};
