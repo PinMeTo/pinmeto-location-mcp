@@ -211,8 +211,8 @@ export const getAllGoogleKeywords = (server: any) => {
     "get_google_keywords",
     "Fetch Google keywords for all locations belonging to a specific account",
     {
-      from: z.string().describe("	The start date format YYYY-MM-DD"),
-      to: z.string().describe("	The end date format YYYY-MM-DD"),
+      from: z.string().describe("	The start date format YYYY-MM"),
+      to: z.string().describe("	The end date format YYYY-MM"),
     },
     async ({ from, to }: { from: string; to: string }) => {
       if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
@@ -256,12 +256,12 @@ export const getAllGoogleKeywords = (server: any) => {
 
 export const getGoogleKeywordsForLocation = (server: any) => {
   server.tool(
-    "get_google_keywords_",
+    "get_google_keywords_for_location",
     "Fetch Google keywords for a given location belonging to a specific account.",
     {
       storeId: z.string().describe("The store ID to look up"),
-      from: z.string().describe("	The start date format YYYY-MM-DD"),
-      to: z.string().describe("	The end date format YYYY-MM-DD"),
+      from: z.string().describe("	The start date format YYYY-MM"),
+      to: z.string().describe("	The end date format YYYY-MM"),
     },
     async ({
       storeId,

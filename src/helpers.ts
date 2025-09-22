@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getPmtAccessTokenAsync } from "./token";
+import packageJson from "../package.json";
 
 export async function makePmtRequest(
   url: string,
@@ -10,6 +11,7 @@ export async function makePmtRequest(
   const headers = {
     "Content-Type": "application/json",
     authorization: `Bearer ${token}`,
+    "User-Agent": `pinmeto-location-mcp/${packageJson.version}`,
   };
 
   try {

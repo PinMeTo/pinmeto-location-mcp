@@ -80,7 +80,7 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=PinMeTo&config=eyJlbnYiOnsiU
 1. **Open your project folder** in your text editor.
 2. **Run the MCPB installer:**
    ```bash
-   npx @anthropic-ai/mcpb init
+   npx @anthropic-ai/mcpb pack
    ```
    - This generates a `.mcpb` file in your project directory.
 3. **Install in Claude Desktop:**
