@@ -37,6 +37,7 @@
     "PINMETO_API_URL": {
       "type": "string",
       "title": "PinMeTo API URL",
+      "description": "Base URL for the PinMeTo API requests",
       "required": true,
       "sensitive": false,
       "default": "https://api.pinmeto.com"
