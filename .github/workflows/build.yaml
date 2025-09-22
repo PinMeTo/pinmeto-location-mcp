@@ -18,7 +18,7 @@ jobs:
         run: |
           npm run packapp
           mkdir pinmeto-mcp
-          mv mcp.mcpb README.md pinmeto-mcp/
+          mv *.mcpb README.md pinmeto-mcp/
       - name: Upload tarball
         uses: actions/upload-pages-artifact@v3
         with:
