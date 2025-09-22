@@ -7,7 +7,8 @@
     "build": "tsc",
     "start": "tsc && node build/index.js",
     "start:remote": "tsc && node build/index.js remote",
-    "inspector": "npx @modelcontextprotocol/inspector node build/index.js"
+    "inspector": "npx @modelcontextprotocol/inspector node build/index.js",
+    "pack": "npm run build && mcpb pack"
   },
   "repository": {
     "type": "git",
@@ -32,6 +33,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@anthropic-ai/mcpb": "^1.1.0",
     "@types/express": "^5.0.3",
     "@types/node": "^24.5.1",
     "typescript": "^5.9.2"
