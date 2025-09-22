@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "tsc && node build/index.js",
     "inspector": "npx @modelcontextprotocol/inspector node build/index.js",
-    "pack": "npm run build && mcpb pack"
+    "packapp": "npm run build && mcpb pack"
   },
   "repository": {
     "type": "git",

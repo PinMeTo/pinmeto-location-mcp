@@ -1,0 +1,25 @@
+name: Build MCP Desktop Extension
+
+on:
+  push:
+    branches: ['*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm ci
+      - name: Build MCP Desktop Extension
+        run: |
+          npm run packapp
+          mkdir pinmeto-mcp
+          mv mcp.mcpb README.md pinmeto-mcp/
+      - name: Upload tarball
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pinmeto-mcp
