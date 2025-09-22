@@ -22,4 +22,5 @@ jobs:
       - name: Upload tarball
         uses: actions/upload-pages-artifact@v3
         with:
+          name: pinmeto-mcp
           path: pinmeto-mcp
