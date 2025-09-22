@@ -1,8 +1,18 @@
-# PinMeTo MCP Server
+# PinMeTo Location MCP
 
 This Model Context Protocol (MCP) server enables Claude LLM to interact with your PinMeTo application as an AI agent.
 
 ---
+
+### Direct Installation Links
+
+- Installation link for Cursor
+
+```bash
+cursor://anysphere.cursor-deeplink/mcp/install?name=PinMeTo&config=eyJlbnYiOnsiUElOTUVUT19BUElfVVJMIjoiIiwiUElOTUVUT19BQ0NPVU5UX0lEIjoiIiwiUElOTUVUT19BUFBfSUQiOiIiLCJQSU5NRVRPX0FQUF9TRUNSRVQiOiIifSwiY29tbWFuZCI6Ii9hYnNvbHV0ZS9wYXRoL3RvL25vZGUgL2Fic29sdXRlL3BhdGgvdG8vcHJvamVjdC9idWlsZC9pbmRleC5qcyJ9
+```
+
+- Installation link for VSCode
 
 ## Manual Installation (Claude Desktop)
 
@@ -33,7 +43,7 @@ This Model Context Protocol (MCP) server enables Claude LLM to interact with you
      ```json
      {
        "mcpServers": {
-         "PinMeTo-MCP": {
+         "PinMeTo": {
            "command": "/absolute/path/to/node",
            "args": ["/absolute/path/to/project/build/index.js"],
            "env": {
@@ -81,6 +91,8 @@ This Model Context Protocol (MCP) server enables Claude LLM to interact with you
 ---
 
 ## Using it with Cursor
+
+### Adding it to Cursor manually
 
 To add this MCP server to Cursor:
 

@@ -1,7 +1,7 @@
 {
-  "name": "mcp",
+  "name": "pinmeto-location-mcp",
   "version": "1.0.0",
-  "description": "PinMeTo MCP server",
+  "description": "PinMeTo Location MCP",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
@@ -11,18 +11,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PinMeTo/mcp.git"
+    "url": "git+https://github.com/PinMeTo/pinmeto-location-mcp"
   },
   "files": [
-    "build"
+    "build",
+    "generate-cursor-link.js"
   ],
   "keywords": [],
-  "author": "Dzenis Madzovic <dzenis.madzovic@pinmeto.com>",
+  "author": "pinmeto",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/PinMeTo/mcp/issues"
+    "url": "https://github.com/PinMeTo/pinmeto-location-mcp/issues"
   },
-  "homepage": "https://github.com/PinMeTo/mcp#readme",
+  "homepage": "https://github.com/PinMeTo/pinmeto-location-mcp#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.0",
     "axios": "^1.12.2",

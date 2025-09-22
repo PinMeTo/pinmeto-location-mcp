@@ -27,7 +27,7 @@ export function createMcpServer() {
   dotenv.config({ path: ".env" });
 
   const server = new McpServer({
-    name: "PinMeTo-MCP",
+    name: "PinMeTo Location MCP",
     version: "1.0.0",
     capabilities: {
       prompts: {},
