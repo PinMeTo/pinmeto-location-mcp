@@ -6,8 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "tsc && node build/index.js",
-    "inspector": "npx @modelcontextprotocol/inspector node build/index.js",
-    "packapp": "npm run build && mcpb pack"
+    "inspector": "npx @modelcontextprotocol/inspector node build/index.js"
   },
   "repository": {
     "type": "git",
@@ -31,7 +30,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@anthropic-ai/mcpb": "^1.1.0",
     "@types/node": "^24.5.1",
     "typescript": "^5.9.2"
   },
