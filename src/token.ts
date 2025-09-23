@@ -24,7 +24,7 @@ export async function getPmtAccessTokenAsync(): Promise<string> {
   return token;
 }
 
-async function fetchAndStoreToken(): Promise<string> {
+export async function fetchAndStoreToken(): Promise<string> {
   const tokenUrl = `${process.env.PINMETO_API_URL}/oauth/token`;
   const appId = process.env.PINMETO_APP_ID;
   const appSecret = process.env.PINMETO_APP_SECRET;

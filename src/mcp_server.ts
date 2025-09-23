@@ -1,6 +1,6 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import dotenv from 'dotenv';
-import { getLocationsTool, getLocationTool } from './tools/locations/locations';
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import dotenv from "dotenv";
+import { getLocations, getLocation } from "./tools/locations/locations";
 import {
   getAllGoogleInsights,
   getAllGoogleKeywords,
@@ -34,8 +34,8 @@ export function createMcpServer() {
   });
 
   // Locations
-  getLocationTool(server);
-  getLocationsTool(server);
+  getLocation(server);
+  getLocations(server);
 
   // Google
   getGoogleLocationInsights(server);
