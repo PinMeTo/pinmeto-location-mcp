@@ -1,5 +1,5 @@
 {
-  "dxt_version": "0.1.0",
+  "manifest_version": "0.2",
   "name": "pinmeto-location-mcp",
   "display_name": "PinMeTo Location MCP",
   "version": "1.0.0",
@@ -25,6 +25,11 @@
         "PINMETO_ACCOUNT_ID": "${user_config.PINMETO_ACCOUNT_ID}",
         "PINMETO_APP_SECRET": "${user_config.PINMETO_APP_SECRET}",
         "PINMETO_APP_ID": "${user_config.PINMETO_APP_ID}"
+      },
+      "platform_overrides": {
+        "win32": {
+          "command": "node.exe"
+        }
       }
     }
   },
