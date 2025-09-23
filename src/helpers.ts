@@ -1,6 +1,6 @@
-import axios from "axios";
-import { getPmtAccessTokenAsync } from "./token";
-import packageJson from "../package.json";
+import axios from 'axios';
+import { getPmtAccessTokenAsync } from './token';
+import packageJson from '../package.json';
 
 export async function makePmtRequest(
   url: string,
@@ -9,9 +9,9 @@ export async function makePmtRequest(
 ): Promise<Record<string, any> | null> {
   const token = await getPmtAccessTokenAsync();
   const headers = {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
     authorization: `Bearer ${token}`,
-    "User-Agent": `pinmeto-location-mcp/${packageJson.version}`,
+    'User-Agent': `pinmeto-location-mcp/${packageJson.version}`
   };
 
   try {
@@ -23,9 +23,7 @@ export async function makePmtRequest(
   }
 }
 
-export async function makePaginatedPmtRequest(
-  url: string
-): Promise<[any[], boolean]> {
+export async function makePaginatedPmtRequest(url: string): Promise<[any[], boolean]> {
   const allData: any[] = [];
   let nextUrl: string | undefined = url;
   let areAllPagesFetched = true;
@@ -37,31 +35,26 @@ export async function makePaginatedPmtRequest(
       areAllPagesFetched = false;
       break;
     }
-    const pageData: any[] = resp["data"] || [];
+    const pageData: any[] = resp['data'] || [];
     allData.push(...pageData);
-    const paging = resp["paging"] || {};
-    nextUrl = paging["nextUrl"];
+    const paging = resp['paging'] || {};
+    nextUrl = paging['nextUrl'];
     if (!nextUrl) break;
   }
   return [allData, areAllPagesFetched];
 }
 
-export function formatListResponse(
-  response: any[],
-  areAllPagesFetched: boolean
-): string {
+export function formatListResponse(response: any[], areAllPagesFetched: boolean): string {
   if (response.length === 0) {
-    return "The response was empty...";
+    return 'The response was empty...';
   }
-  let formattedMessage = "-".repeat(20);
+  let formattedMessage = '-'.repeat(20);
   if (!areAllPagesFetched) {
     formattedMessage =
-      "Not All pages were successfully fetched, collected data:\n" +
-      formattedMessage;
+      'Not All pages were successfully fetched, collected data:\n' + formattedMessage;
   }
   for (const result of response) {
-    formattedMessage +=
-      "\n" + JSON.stringify(result, null, 2) + "\n" + "-".repeat(20);
+    formattedMessage += '\n' + JSON.stringify(result, null, 2) + '\n' + '-'.repeat(20);
   }
   return formattedMessage;
 }

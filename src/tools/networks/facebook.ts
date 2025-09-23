@@ -1,33 +1,25 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
-import { makePmtRequest } from "../../helpers";
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+import { makePmtRequest } from '../../helpers';
 
 export function getFacebookLocationsInsights(server: McpServer) {
   server.tool(
-    "get_facebook_location_insights",
-    "Fetch Facebook metrics for a single location belonging to a specific account.",
+    'get_facebook_location_insights',
+    'Fetch Facebook metrics for a single location belonging to a specific account.',
     {
-      storeId: z.string().describe("The store ID to look up"),
-      from: z.string().describe("The start date format YYYY-MM-DD"),
-      to: z.string().describe("	The end date format YYYY-MM-DD"),
+      storeId: z.string().describe('The store ID to look up'),
+      from: z.string().describe('The start date format YYYY-MM-DD'),
+      to: z.string().describe('	The end date format YYYY-MM-DD')
     },
-    async ({
-      storeId,
-      from,
-      to,
-    }: {
-      storeId: string;
-      from: string;
-      to: string;
-    }) => {
+    async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
       if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
         return {
           content: [
             {
-              type: "text",
-              text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
-            },
-          ],
+              type: 'text',
+              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
+            }
+          ]
         };
       }
       const apiUrl = process.env.PINMETO_API_URL;
@@ -40,20 +32,20 @@ export function getFacebookLocationsInsights(server: McpServer) {
         return {
           content: [
             {
-              type: "text",
-              text: "Unable to fetch insights data.",
-            },
-          ],
+              type: 'text',
+              text: 'Unable to fetch insights data.'
+            }
+          ]
         };
       }
 
       return {
         content: [
           {
-            type: "text",
-            text: JSON.stringify(locationData),
-          },
-        ],
+            type: 'text',
+            text: JSON.stringify(locationData)
+          }
+        ]
       };
     }
   );
@@ -61,21 +53,21 @@ export function getFacebookLocationsInsights(server: McpServer) {
 
 export function getAllFacebookInsights(server: McpServer) {
   server.tool(
-    "get_all_facebook_insights",
-    "Fetch Facebook metrics for all brand pages belonging to a specific account.",
+    'get_all_facebook_insights',
+    'Fetch Facebook metrics for all brand pages belonging to a specific account.',
     {
-      from: z.string().describe("The start date format YYYY-MM-DD"),
-      to: z.string().describe("	The end date format YYYY-MM-DD"),
+      from: z.string().describe('The start date format YYYY-MM-DD'),
+      to: z.string().describe('	The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
       if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
         return {
           content: [
             {
-              type: "text",
-              text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
-            },
-          ],
+              type: 'text',
+              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
+            }
+          ]
         };
       }
       const apiUrl = process.env.PINMETO_API_URL;
@@ -86,19 +78,19 @@ export function getAllFacebookInsights(server: McpServer) {
         return {
           content: [
             {
-              type: "text",
-              text: "Unable to fetch insights data.",
-            },
-          ],
+              type: 'text',
+              text: 'Unable to fetch insights data.'
+            }
+          ]
         };
       }
       return {
         content: [
           {
-            type: "text",
-            text: JSON.stringify(insightsData),
-          },
-        ],
+            type: 'text',
+            text: JSON.stringify(insightsData)
+          }
+        ]
       };
     }
   );
@@ -106,21 +98,21 @@ export function getAllFacebookInsights(server: McpServer) {
 
 export const getAllFacebookBrandpageInsights = (server: any) => {
   server.tool(
-    "get_all_facebook_brandpage_insights",
-    "Fetch Facebook metrics for all brand pages belonging to a specific account.",
+    'get_all_facebook_brandpage_insights',
+    'Fetch Facebook metrics for all brand pages belonging to a specific account.',
     {
-      from: z.string().describe("The start date format YYYY-MM-DD"),
-      to: z.string().describe("	The end date format YYYY-MM-DD"),
+      from: z.string().describe('The start date format YYYY-MM-DD'),
+      to: z.string().describe('	The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
       if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
         return {
           content: [
             {
-              type: "text",
-              text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
-            },
-          ],
+              type: 'text',
+              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
+            }
+          ]
         };
       }
       const apiUrl = process.env.PINMETO_API_URL;
@@ -131,19 +123,19 @@ export const getAllFacebookBrandpageInsights = (server: any) => {
         return {
           content: [
             {
-              type: "text",
-              text: "Unable to fetch insights data.",
-            },
-          ],
+              type: 'text',
+              text: 'Unable to fetch insights data.'
+            }
+          ]
         };
       }
       return {
         content: [
           {
-            type: "text",
-            text: JSON.stringify(insightsData),
-          },
-        ],
+            type: 'text',
+            text: JSON.stringify(insightsData)
+          }
+        ]
       };
     }
   );
@@ -151,21 +143,21 @@ export const getAllFacebookBrandpageInsights = (server: any) => {
 
 export const getAllFacebookRatings = (server: any) => {
   server.tool(
-    "get_all_facebook_ratings",
-    "Fetch Facebook ratings for all locations belonging to a specific account.",
+    'get_all_facebook_ratings',
+    'Fetch Facebook ratings for all locations belonging to a specific account.',
     {
-      from: z.string().describe("The start date format YYYY-MM-DD"),
-      to: z.string().describe("	The end date format YYYY-MM-DD"),
+      from: z.string().describe('The start date format YYYY-MM-DD'),
+      to: z.string().describe('	The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
       if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
         return {
           content: [
             {
-              type: "text",
-              text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
-            },
-          ],
+              type: 'text',
+              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
+            }
+          ]
         };
       }
       const apiUrl = process.env.PINMETO_API_URL;
@@ -176,19 +168,19 @@ export const getAllFacebookRatings = (server: any) => {
         return {
           content: [
             {
-              type: "text",
-              text: "Unable to fetch ratings data.",
-            },
-          ],
+              type: 'text',
+              text: 'Unable to fetch ratings data.'
+            }
+          ]
         };
       }
       return {
         content: [
           {
-            type: "text",
-            text: JSON.stringify(insightsData),
-          },
-        ],
+            type: 'text',
+            text: JSON.stringify(insightsData)
+          }
+        ]
       };
     }
   );
@@ -196,30 +188,22 @@ export const getAllFacebookRatings = (server: any) => {
 
 export const getFacebookLocationRatings = (server: any) => {
   server.tool(
-    "get_facebook_location_ratings",
-    "Fetch Facebook ratings for a given location belonging to a specific account.",
+    'get_facebook_location_ratings',
+    'Fetch Facebook ratings for a given location belonging to a specific account.',
     {
-      storeId: z.string().describe("The store ID to look up"),
-      from: z.string().describe("The start date format YYYY-MM-DD"),
-      to: z.string().describe("	The end date format YYYY-MM-DD"),
+      storeId: z.string().describe('The store ID to look up'),
+      from: z.string().describe('The start date format YYYY-MM-DD'),
+      to: z.string().describe('	The end date format YYYY-MM-DD')
     },
-    async ({
-      storeId,
-      from,
-      to,
-    }: {
-      storeId: string;
-      from: string;
-      to: string;
-    }) => {
+    async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
       if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
         return {
           content: [
             {
-              type: "text",
-              text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
-            },
-          ],
+              type: 'text',
+              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
+            }
+          ]
         };
       }
       const apiUrl = process.env.PINMETO_API_URL;
@@ -232,20 +216,20 @@ export const getFacebookLocationRatings = (server: any) => {
         return {
           content: [
             {
-              type: "text",
-              text: "Unable to fetch ratings data.",
-            },
-          ],
+              type: 'text',
+              text: 'Unable to fetch ratings data.'
+            }
+          ]
         };
       }
 
       return {
         content: [
           {
-            type: "text",
-            text: JSON.stringify(locationData),
-          },
-        ],
+            type: 'text',
+            text: JSON.stringify(locationData)
+          }
+        ]
       };
     }
   );

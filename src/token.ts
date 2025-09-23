@@ -1,6 +1,6 @@
-import axios from "axios";
-import dotenv from "dotenv";
-import packageJson from "../package.json";
+import axios from 'axios';
+import dotenv from 'dotenv';
+import packageJson from '../package.json';
 
 dotenv.config();
 
@@ -31,28 +31,28 @@ async function fetchAndStoreToken(): Promise<string> {
 
   if (!tokenUrl || !appId || !appSecret) {
     throw new Error(
-      "PINMETO_API_URL, PINMETO_APP_ID, or PINMETO_APP_SECRET not set in environment."
+      'PINMETO_API_URL, PINMETO_APP_ID, or PINMETO_APP_SECRET not set in environment.'
     );
   }
 
   // Prepare Basic Auth header
   const credentials = `${appId}:${appSecret}`;
-  const b64Credentials = Buffer.from(credentials).toString("base64");
+  const b64Credentials = Buffer.from(credentials).toString('base64');
   const headers = {
     Authorization: `Basic ${b64Credentials}`,
-    "Content-Type": "application/x-www-form-urlencoded",
-    "User-Agent": `pinmeto-location-mcp/${packageJson.version}`,
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'User-Agent': `pinmeto-location-mcp/${packageJson.version}`
   };
-  const data = new URLSearchParams({ grant_type: "client_credentials" });
+  const data = new URLSearchParams({ grant_type: 'client_credentials' });
 
   const response = await axios.post(tokenUrl, data, {
     headers,
-    timeout: 30000,
+    timeout: 30000
   });
   const respData = response.data;
-  const token = respData["access_token"];
+  const token = respData['access_token'];
   if (!token) {
-    throw new Error("No access_token in response.");
+    throw new Error('No access_token in response.');
   }
   process.env.PMT_ACCESS_TOKEN = token;
   return token;

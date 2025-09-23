@@ -1,33 +1,25 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
-import { makePmtRequest } from "../../helpers";
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+import { makePmtRequest } from '../../helpers';
 
 export function getGoogleLocationInsights(server: McpServer) {
   server.tool(
-    "get_google_location_insights",
-    "Fetch Google metrics for a single location belonging to a specific account.",
+    'get_google_location_insights',
+    'Fetch Google metrics for a single location belonging to a specific account.',
     {
-      storeId: z.string().describe("The store ID to look up"),
-      from: z.string().describe("	The start date format YYYY-MM-DD"),
-      to: z.string().describe("	The end date format YYYY-MM-DD"),
+      storeId: z.string().describe('The store ID to look up'),
+      from: z.string().describe('	The start date format YYYY-MM-DD'),
+      to: z.string().describe('	The end date format YYYY-MM-DD')
     },
-    async ({
-      storeId,
-      from,
-      to,
-    }: {
-      storeId: string;
-      from: string;
-      to: string;
-    }) => {
+    async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
       if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
         return {
           content: [
             {
-              type: "text",
-              text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
-            },
-          ],
+              type: 'text',
+              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
+            }
+          ]
         };
       }
       const apiUrl = process.env.PINMETO_API_URL;
@@ -40,20 +32,20 @@ export function getGoogleLocationInsights(server: McpServer) {
         return {
           content: [
             {
-              type: "text",
-              text: "Unable to fetch insights data.",
-            },
-          ],
+              type: 'text',
+              text: 'Unable to fetch insights data.'
+            }
+          ]
         };
       }
 
       return {
         content: [
           {
-            type: "text",
-            text: JSON.stringify(locationData),
-          },
-        ],
+            type: 'text',
+            text: JSON.stringify(locationData)
+          }
+        ]
       };
     }
   );
@@ -61,21 +53,21 @@ export function getGoogleLocationInsights(server: McpServer) {
 
 export function getAllGoogleInsights(server: McpServer) {
   server.tool(
-    "get_all_google_insights",
-    "Fetch Google metrics for all locations belonging to a specific account.",
+    'get_all_google_insights',
+    'Fetch Google metrics for all locations belonging to a specific account.',
     {
-      from: z.string().describe("The start date format YYYY-MM-DD"),
-      to: z.string().describe("	The end date format YYYY-MM-DD"),
+      from: z.string().describe('The start date format YYYY-MM-DD'),
+      to: z.string().describe('	The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
       if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
         return {
           content: [
             {
-              type: "text",
-              text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
-            },
-          ],
+              type: 'text',
+              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
+            }
+          ]
         };
       }
       const apiUrl = process.env.PINMETO_API_URL;
@@ -86,19 +78,19 @@ export function getAllGoogleInsights(server: McpServer) {
         return {
           content: [
             {
-              type: "text",
-              text: "Unable to fetch insights data.",
-            },
-          ],
+              type: 'text',
+              text: 'Unable to fetch insights data.'
+            }
+          ]
         };
       }
       return {
         content: [
           {
-            type: "text",
-            text: JSON.stringify(insightsData),
-          },
-        ],
+            type: 'text',
+            text: JSON.stringify(insightsData)
+          }
+        ]
       };
     }
   );
@@ -106,21 +98,21 @@ export function getAllGoogleInsights(server: McpServer) {
 
 export const getAllGoogleRatings = (server: any) => {
   server.tool(
-    "get_all_google_ratings",
-    "Fetch Google ratings for all locations belonging to a specific account.",
+    'get_all_google_ratings',
+    'Fetch Google ratings for all locations belonging to a specific account.',
     {
-      from: z.string().describe("The start date format YYYY-MM-DD"),
-      to: z.string().describe("	The end date format YYYY-MM-DD"),
+      from: z.string().describe('The start date format YYYY-MM-DD'),
+      to: z.string().describe('	The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
       if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
         return {
           content: [
             {
-              type: "text",
-              text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
-            },
-          ],
+              type: 'text',
+              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
+            }
+          ]
         };
       }
       const apiUrl = process.env.PINMETO_API_URL;
@@ -131,19 +123,19 @@ export const getAllGoogleRatings = (server: any) => {
         return {
           content: [
             {
-              type: "text",
-              text: "Unable to fetch ratings data.",
-            },
-          ],
+              type: 'text',
+              text: 'Unable to fetch ratings data.'
+            }
+          ]
         };
       }
       return {
         content: [
           {
-            type: "text",
-            text: JSON.stringify(insightsData),
-          },
-        ],
+            type: 'text',
+            text: JSON.stringify(insightsData)
+          }
+        ]
       };
     }
   );
@@ -151,30 +143,22 @@ export const getAllGoogleRatings = (server: any) => {
 
 export const getGoogleLocationRatings = (server: any) => {
   server.tool(
-    "get_google_location_ratings",
-    "Fetch Google ratings for a given location belonging to a specific account.",
+    'get_google_location_ratings',
+    'Fetch Google ratings for a given location belonging to a specific account.',
     {
-      storeId: z.string().describe("The store ID to look up"),
-      from: z.string().describe("	The start date format YYYY-MM-DD"),
-      to: z.string().describe("	The end date format YYYY-MM-DD"),
+      storeId: z.string().describe('The store ID to look up'),
+      from: z.string().describe('	The start date format YYYY-MM-DD'),
+      to: z.string().describe('	The end date format YYYY-MM-DD')
     },
-    async ({
-      storeId,
-      from,
-      to,
-    }: {
-      storeId: string;
-      from: string;
-      to: string;
-    }) => {
+    async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
       if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
         return {
           content: [
             {
-              type: "text",
-              text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
-            },
-          ],
+              type: 'text',
+              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
+            }
+          ]
         };
       }
       const apiUrl = process.env.PINMETO_API_URL;
@@ -187,20 +171,20 @@ export const getGoogleLocationRatings = (server: any) => {
         return {
           content: [
             {
-              type: "text",
-              text: "Unable to fetch ratings data.",
-            },
-          ],
+              type: 'text',
+              text: 'Unable to fetch ratings data.'
+            }
+          ]
         };
       }
 
       return {
         content: [
           {
-            type: "text",
-            text: JSON.stringify(locationData),
-          },
-        ],
+            type: 'text',
+            text: JSON.stringify(locationData)
+          }
+        ]
       };
     }
   );
@@ -208,21 +192,21 @@ export const getGoogleLocationRatings = (server: any) => {
 
 export const getAllGoogleKeywords = (server: any) => {
   server.tool(
-    "get_google_keywords",
-    "Fetch Google keywords for all locations belonging to a specific account",
+    'get_google_keywords',
+    'Fetch Google keywords for all locations belonging to a specific account',
     {
-      from: z.string().describe("	The start date format YYYY-MM"),
-      to: z.string().describe("	The end date format YYYY-MM"),
+      from: z.string().describe('	The start date format YYYY-MM'),
+      to: z.string().describe('	The end date format YYYY-MM')
     },
     async ({ from, to }: { from: string; to: string }) => {
       if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
         return {
           content: [
             {
-              type: "text",
-              text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
-            },
-          ],
+              type: 'text',
+              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
+            }
+          ]
         };
       }
       const apiUrl = process.env.PINMETO_API_URL;
@@ -235,20 +219,20 @@ export const getAllGoogleKeywords = (server: any) => {
         return {
           content: [
             {
-              type: "text",
-              text: "Unable to fetch keywords data.",
-            },
-          ],
+              type: 'text',
+              text: 'Unable to fetch keywords data.'
+            }
+          ]
         };
       }
 
       return {
         content: [
           {
-            type: "text",
-            text: JSON.stringify(locationData),
-          },
-        ],
+            type: 'text',
+            text: JSON.stringify(locationData)
+          }
+        ]
       };
     }
   );
@@ -256,30 +240,22 @@ export const getAllGoogleKeywords = (server: any) => {
 
 export const getGoogleKeywordsForLocation = (server: any) => {
   server.tool(
-    "get_google_keywords_for_location",
-    "Fetch Google keywords for a given location belonging to a specific account.",
+    'get_google_keywords_for_location',
+    'Fetch Google keywords for a given location belonging to a specific account.',
     {
-      storeId: z.string().describe("The store ID to look up"),
-      from: z.string().describe("	The start date format YYYY-MM"),
-      to: z.string().describe("	The end date format YYYY-MM"),
+      storeId: z.string().describe('The store ID to look up'),
+      from: z.string().describe('	The start date format YYYY-MM'),
+      to: z.string().describe('	The end date format YYYY-MM')
     },
-    async ({
-      storeId,
-      from,
-      to,
-    }: {
-      storeId: string;
-      from: string;
-      to: string;
-    }) => {
+    async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
       if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
         return {
           content: [
             {
-              type: "text",
-              text: "Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.",
-            },
-          ],
+              type: 'text',
+              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
+            }
+          ]
         };
       }
       const apiUrl = process.env.PINMETO_API_URL;
@@ -292,20 +268,20 @@ export const getGoogleKeywordsForLocation = (server: any) => {
         return {
           content: [
             {
-              type: "text",
-              text: "Unable to fetch keywords data.",
-            },
-          ],
+              type: 'text',
+              text: 'Unable to fetch keywords data.'
+            }
+          ]
         };
       }
 
       return {
         content: [
           {
-            type: "text",
-            text: JSON.stringify(locationData),
-          },
-        ],
+            type: 'text',
+            text: JSON.stringify(locationData)
+          }
+        ]
       };
     }
   );
