@@ -9,7 +9,7 @@
     "format": "prettier --write \"**/*.{js,ts}\"",
     "inspector": "npx @modelcontextprotocol/inspector node build/index.js",
     "start:remote": "tsc && node build/index.js remote",
-    "test": "vitest"
+    "test": "vitest --run"
   },
   "repository": {
     "type": "git",

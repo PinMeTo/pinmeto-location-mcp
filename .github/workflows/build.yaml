@@ -13,9 +13,11 @@ jobs:
         with:
           node-version: 22
       - name: Install dependencies
-        run: | 
+        run: |
           npm ci
           npm i @anthropic-ai/mcpb -g
+      - name: Test
+        run: npm run test
       - name: Build MCP Desktop Extension
         run: |
           npm run build
