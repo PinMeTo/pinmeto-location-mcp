@@ -35,7 +35,6 @@ export async function fetchAndStoreToken(): Promise<string> {
     );
   }
 
-  // Prepare Basic Auth header
   const credentials = `${appId}:${appSecret}`;
   const b64Credentials = Buffer.from(credentials).toString('base64');
   const headers = {
