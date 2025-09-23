@@ -11,15 +11,13 @@
   },
   "homepage": "https://www.pinmeto.com/",
   "documentation": "https://github.com/PinMeTo/pinmeto-location-mcp",
-  "icon": "src/img/logo_icon.png",
+  "icon": "./img/logo_icon.png",
   "server": {
     "type": "node",
     "entry_point": "build/index.js",
     "mcp_config": {
       "command": "node",
-      "args": [
-        "${__dirname}/build/index.js"
-      ],
+      "args": ["${__dirname}/build/index.js"],
       "env": {
         "PINMETO_API_URL": "${user_config.PINMETO_API_URL}",
         "PINMETO_ACCOUNT_ID": "${user_config.PINMETO_ACCOUNT_ID}",
@@ -33,11 +31,7 @@
       }
     }
   },
-  "keywords": [
-    "api",
-    "automation",
-    "productivity"
-  ],
+  "keywords": ["api", "automation", "productivity"],
   "user_config": {
     "PINMETO_API_URL": {
       "type": "string",

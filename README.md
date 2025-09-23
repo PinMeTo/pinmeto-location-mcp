@@ -1,18 +1,20 @@
 # PinMeTo Location MCP
 
-This Model Context Protocol (MCP) server enables Claude LLM to interact with your PinMeTo application as an AI agent.
+The PinMeTo MCP Server enables seamless integration between the PinMeTo platform and AI agents such as Claude LLM, allowing users to interact with their location data and business insights through natural language. This server exposes a suite of tools that let you retrieve, analyze, and summarize data from multiple sources—including Google, Facebook, and Apple—covering metrics such as impressions, clicks, ratings, and more.
 
 ---
 
-### Direct Installation Links
+### Direct Installation for Cursor
 
-- Installation link for Cursor
+- Copy the link and paste it in your browser.
 
 ```bash
 cursor://anysphere.cursor-deeplink/mcp/install?name=PinMeTo&config=eyJlbnYiOnsiUElOTUVUT19BUElfVVJMIjoiIiwiUElOTUVUT19BQ0NPVU5UX0lEIjoiIiwiUElOTUVUT19BUFBfSUQiOiIiLCJQSU5NRVRPX0FQUF9TRUNSRVQiOiIifSwiY29tbWFuZCI6Ii9hYnNvbHV0ZS9wYXRoL3RvL25vZGUgL2Fic29sdXRlL3BhdGgvdG8vcHJvamVjdC9idWlsZC9pbmRleC5qcyJ9
 ```
 
-- Installation link for VSCode
+Enter your credentials and use the absolute path to the project in the setup.
+
+![Cursor Configuration](img/cursor_config.png)
 
 ## Manual Installation (Claude Desktop)
 
@@ -32,7 +34,6 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=PinMeTo&config=eyJlbnYiOnsiU
    ```
 
 2. **Configure Claude Desktop:**
-
    - Open your `claude_desktop_config.json` file. You can go to Preferences → Developer → Edit Config in the Claude Desktop Client. Or use:
 
      ```bash
@@ -61,7 +62,6 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=PinMeTo&config=eyJlbnYiOnsiU
      - Project path: `pwd`
 
 3. **Get your PinMeTo API credentials:**
-
    - Visit [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3) and fill in the environment variables above.
 
 4. **Restart Claude Desktop:**
@@ -79,18 +79,23 @@ cursor://anysphere.cursor-deeplink/mcp/install?name=PinMeTo&config=eyJlbnYiOnsiU
 
 1. **Open your project folder** in your text editor.
 2. **Run the MCPB installer:**
+
    ```bash
    npx @anthropic-ai/mcpb pack
    ```
+
    - This generates a `.mcpb` file in your project directory.
+
 3. **Install in Claude Desktop:**
    - With Claude Desktop open, double-click the `.mcpb` file in Finder.
    - Enter your PinMeTo API credentials when prompted ([PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3)).
-   - Enable the connector in Claude. You can now use the PinMeTo MCP integration.
+     ![Claude Credentials](img/claude_credentials.png)
+
+- Enable the connector in Claude. You can now use the PinMeTo MCP integration.
 
 ---
 
-## Using it with Cursor
+## Adding MCP to Cursor
 
 ### Adding it to Cursor manually
 
