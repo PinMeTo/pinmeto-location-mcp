@@ -25,6 +25,11 @@
         "PINMETO_ACCOUNT_ID": "${user_config.PINMETO_ACCOUNT_ID}",
         "PINMETO_APP_SECRET": "${user_config.PINMETO_APP_SECRET}",
         "PINMETO_APP_ID": "${user_config.PINMETO_APP_ID}"
+      },
+      "platforms": {
+        "win32": {
+          "command": "node.exe"
+        }
       }
     }
   },
