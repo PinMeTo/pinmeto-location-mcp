@@ -27,4 +27,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pinmeto-mcp
-          path: *.mcpb
+          path: pinmeto-location-mcp.mcpb
