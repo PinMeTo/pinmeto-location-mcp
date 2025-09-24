@@ -1,4 +1,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import {
+  InitializeRequestSchema,
+  SUPPORTED_PROTOCOL_VERSIONS,
+  LATEST_PROTOCOL_VERSION
+} from '@modelcontextprotocol/sdk/types.js';
+import axios from 'axios';
+import os from 'os';
 import { getLocations, getLocation } from './tools/locations/locations';
 import {
   getAllGoogleInsights,
@@ -16,13 +23,7 @@ import {
   getFacebookLocationsInsights
 } from './tools/networks/facebook';
 import { getAllAppleInsights, getAppleLocationInsights } from './tools/networks/apple';
-import {
-  InitializeRequestSchema,
-  SUPPORTED_PROTOCOL_VERSIONS,
-  LATEST_PROTOCOL_VERSION
-} from '@modelcontextprotocol/sdk/types.js';
 import { analyzeLocationPrompt, summarizeAllInsightsPrompt } from './prompts';
-import axios from 'axios';
 import packageJson from '../package.json';
 
 export function createMcpServer() {
@@ -40,7 +41,7 @@ export function createMcpServer() {
   mcpServer.server.setRequestHandler(InitializeRequestSchema, async request => {
     // Set a custom User-Agent for all axios requests
     axios.defaults.headers.common['User-Agent'] =
-      `${packageJson.name}/${packageJson.version} ${request.params.clientInfo.name}/${request.params.clientInfo.version}`;
+      `${request.params.clientInfo.name}/${request.params.clientInfo.version} ${packageJson.name}-${packageJson.version} (${os.type()}; ${os.arch()}; ${os.release()})`;
 
     const requestedVersion = request.params.protocolVersion;
     const protocolVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
