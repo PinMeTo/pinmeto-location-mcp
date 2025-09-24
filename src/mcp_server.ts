@@ -48,7 +48,7 @@ export class PinMeToMcpServer extends McpServer {
       const token = await this._getPinMeToAccessToken();
       const headers = {
         'Content-Type': 'application/json',
-        authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`
       };
 
       const response = await axios.get(url, { headers, timeout: 30000 });
