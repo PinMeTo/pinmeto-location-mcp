@@ -1,16 +1,16 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createMcpServer } from './mcp_server.js';
 
-let isRemote = false;
-// Get args from command line
-const args = process.argv;
-if (args.length > 2 && args[2] === 'remote') {
-  isRemote = true;
+class McpServerTransport extends StdioServerTransport {
+  onerror = (error: Error) => {
+    console.error('MCP error', error);
+  };
 }
 
 const server = createMcpServer();
 
-const transport = new StdioServerTransport();
+const transport = new McpServerTransport();
+
 server
   .connect(transport)
   .then(() => {

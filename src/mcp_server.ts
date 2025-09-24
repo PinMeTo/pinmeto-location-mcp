@@ -1,6 +1,6 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import dotenv from "dotenv";
-import { getLocations, getLocation } from "./tools/locations/locations";
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import dotenv from 'dotenv';
+import { getLocations, getLocation } from './tools/locations/locations';
 import {
   getAllGoogleInsights,
   getAllGoogleKeywords,
@@ -17,48 +17,72 @@ import {
   getFacebookLocationsInsights
 } from './tools/networks/facebook';
 import { getAllAppleInsights, getAppleLocationInsights } from './tools/networks/apple';
-
+import {
+  InitializeRequestSchema,
+  SUPPORTED_PROTOCOL_VERSIONS,
+  LATEST_PROTOCOL_VERSION
+} from '@modelcontextprotocol/sdk/types.js';
 import { analyzeLocationPrompt, summarizeAllInsightsPrompt } from './prompts';
+import axios from 'axios';
+import packageJson from '../package.json';
 
 export function createMcpServer() {
   dotenv.config({ path: '.env' });
 
-  const server = new McpServer({
+  const serverInfo = {
     name: 'PinMeTo Location MCP',
-    version: '1.0.0',
+    version: packageJson.version,
     capabilities: {
       prompts: {},
       resources: {},
       tools: {}
     }
+  };
+  const mcpServer = new McpServer(serverInfo);
+
+  mcpServer.server.setRequestHandler(InitializeRequestSchema, async request => {
+    // Set a custom User-Agent for all axios requests
+    axios.defaults.headers.common['User-Agent'] =
+      `${packageJson.name}/${packageJson.version} ${request.params.clientInfo.name}/${request.params.clientInfo.version}`;
+
+    const requestedVersion = request.params.protocolVersion;
+    const protocolVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
+      ? requestedVersion
+      : LATEST_PROTOCOL_VERSION;
+
+    return {
+      protocolVersion,
+      capabilities: request.params.capabilities,
+      serverInfo
+    };
   });
 
   // Locations
-  getLocation(server);
-  getLocations(server);
+  getLocation(mcpServer);
+  getLocations(mcpServer);
 
   // Google
-  getGoogleLocationInsights(server);
-  getAllGoogleInsights(server);
-  getAllGoogleRatings(server);
-  getGoogleLocationRatings(server);
-  getAllGoogleKeywords(server);
-  getGoogleKeywordsForLocation(server);
+  getGoogleLocationInsights(mcpServer);
+  getAllGoogleInsights(mcpServer);
+  getAllGoogleRatings(mcpServer);
+  getGoogleLocationRatings(mcpServer);
+  getAllGoogleKeywords(mcpServer);
+  getGoogleKeywordsForLocation(mcpServer);
 
   // Facebook
-  getAllFacebookBrandpageInsights(server);
-  getFacebookLocationsInsights(server);
-  getAllFacebookInsights(server);
-  getAllFacebookRatings(server);
-  getFacebookLocationRatings(server);
+  getAllFacebookBrandpageInsights(mcpServer);
+  getFacebookLocationsInsights(mcpServer);
+  getAllFacebookInsights(mcpServer);
+  getAllFacebookRatings(mcpServer);
+  getFacebookLocationRatings(mcpServer);
 
   // Apple
-  getAppleLocationInsights(server);
-  getAllAppleInsights(server);
+  getAppleLocationInsights(mcpServer);
+  getAllAppleInsights(mcpServer);
 
   // Prompts
-  analyzeLocationPrompt(server);
-  summarizeAllInsightsPrompt(server);
+  analyzeLocationPrompt(mcpServer);
+  summarizeAllInsightsPrompt(mcpServer);
 
-  return server;
+  return mcpServer;
 }

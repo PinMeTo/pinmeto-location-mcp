@@ -40,8 +40,7 @@ export async function fetchAndStoreToken(): Promise<string> {
   const b64Credentials = Buffer.from(credentials).toString('base64');
   const headers = {
     Authorization: `Basic ${b64Credentials}`,
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'User-Agent': `pinmeto-location-mcp/${packageJson.version}`
+    'Content-Type': 'application/x-www-form-urlencoded'
   };
   const data = new URLSearchParams({ grant_type: 'client_credentials' });
 

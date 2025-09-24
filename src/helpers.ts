@@ -10,8 +10,7 @@ export async function makePmtRequest(
   const token = await getPmtAccessTokenAsync();
   const headers = {
     'Content-Type': 'application/json',
-    authorization: `Bearer ${token}`,
-    'User-Agent': `pinmeto-location-mcp/${packageJson.version}`
+    authorization: `Bearer ${token}`
   };
 
   try {
