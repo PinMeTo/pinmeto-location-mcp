@@ -1,5 +1,4 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import dotenv from 'dotenv';
 import { getLocations, getLocation } from './tools/locations/locations';
 import {
   getAllGoogleInsights,
@@ -27,8 +26,6 @@ import axios from 'axios';
 import packageJson from '../package.json';
 
 export function createMcpServer() {
-  dotenv.config({ path: '.env' });
-
   const serverInfo = {
     name: 'PinMeTo Location MCP',
     version: packageJson.version,

@@ -1,8 +1,4 @@
 import axios from 'axios';
-import dotenv from 'dotenv';
-import packageJson from '../package.json';
-
-dotenv.config();
 
 let cachedToken: string | null = null;
 let cachedTokenTime = 0;
