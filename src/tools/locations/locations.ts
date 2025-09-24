@@ -47,7 +47,7 @@ export function getLocations(server: PinMeToMcpServer) {
       const { apiBaseUrl, accountId } = server.configs;
 
       const url = `${apiBaseUrl}/listings/v3/${accountId}/locations?pagesize=100`;
-      const [data, areAllPagesFetched] = await server.makePaginatedPmtRequest(url);
+      const [data, areAllPagesFetched] = await server.makePaginatedPinMeToRequest(url);
       if (!data || data.length === 0) {
         return {
           content: [

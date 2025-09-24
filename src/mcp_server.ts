@@ -59,7 +59,7 @@ export class PinMeToMcpServer extends McpServer {
     }
   }
 
-  public async makePaginatedPmtRequest(url: string): Promise<[any[], boolean]> {
+  public async makePaginatedPinMeToRequest(url: string): Promise<[any[], boolean]> {
     const allData: any[] = [];
     let nextUrl: string | undefined = url;
     let areAllPagesFetched = true;
