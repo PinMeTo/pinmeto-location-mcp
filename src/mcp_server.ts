@@ -96,7 +96,6 @@ export class PinMeToMcpServer extends McpServer {
     const appId = this._configs.appId;
     const appSecret = this._configs.appSecret;
 
-    // Prepare Basic Auth header
     const credentials = `${appId}:${appSecret}`;
     const b64Credentials = Buffer.from(credentials).toString('base64');
     const headers = {
@@ -114,7 +113,6 @@ export class PinMeToMcpServer extends McpServer {
     if (!token) {
       throw new Error('No access_token in response.');
     }
-    process.env.PMT_ACCESS_TOKEN = token; // TODO
     return token;
   }
 }
