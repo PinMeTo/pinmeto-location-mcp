@@ -23,10 +23,8 @@ jobs:
           npm run build
           npm ci --production
           mcpb pack
-          mkdir pinmeto-mcp
-          mv *.mcpb README.md pinmeto-mcp/
-      - name: Upload tarball
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload mcpb file
+        uses: actions/upload-artifact@v4
         with:
           name: pinmeto-mcp
-          path: pinmeto-mcp
+          path: *.mcpb
