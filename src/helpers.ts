@@ -14,7 +14,7 @@ export async function makePmtRequest(
   };
 
   try {
-    const response = await axios.get(url, { headers, timeout: 30000 });
+    const response = await axios.get(url, { headers });
     return response.data;
   } catch (e: any) {
     console.error(`Request failed, reason: ${e}`);
@@ -38,7 +38,7 @@ export async function makePaginatedPmtRequest(url: string): Promise<[any[], bool
     allData.push(...pageData);
     const paging = resp['paging'] || {};
     nextUrl = paging['nextUrl'];
-    if (!nextUrl) break;
+    if (!nextUrl || pageData.length < 1) break;
   }
   return [allData, areAllPagesFetched];
 }
