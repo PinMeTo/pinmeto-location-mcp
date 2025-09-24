@@ -1,8 +1,7 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { makePmtRequest } from '../../helpers';
+import { PinMeToMcpServer } from '../../mcp_server';
 
-export function getFacebookLocationsInsights(server: McpServer) {
+export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
   server.tool(
     'get_facebook_location_insights',
     'Fetch Facebook metrics for a single location belonging to a specific account.',
@@ -12,21 +11,10 @@ export function getFacebookLocationsInsights(server: McpServer) {
       to: z.string().describe('	The end date format YYYY-MM-DD')
     },
     async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
-      if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
-            }
-          ]
-        };
-      }
-      const apiUrl = process.env.PINMETO_API_URL;
-      const accountId = process.env.PINMETO_ACCOUNT_ID;
+      const { apiBaseUrl, accountId } = server.configs;
 
-      const locationUrl = `${apiUrl}/listings/v4/${accountId}/locations/${storeId}/insights/facebook?from=${from}&to=${to}`;
-      const locationData = await makePmtRequest(locationUrl);
+      const locationUrl = `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/facebook?from=${from}&to=${to}`;
+      const locationData = await server.makePinMeToRequest(locationUrl);
 
       if (!locationData) {
         return {
@@ -51,7 +39,7 @@ export function getFacebookLocationsInsights(server: McpServer) {
   );
 }
 
-export function getAllFacebookInsights(server: McpServer) {
+export function getAllFacebookInsights(server: PinMeToMcpServer) {
   server.tool(
     'get_all_facebook_insights',
     'Fetch Facebook metrics for all brand pages belonging to a specific account.',
@@ -60,20 +48,10 @@ export function getAllFacebookInsights(server: McpServer) {
       to: z.string().describe('	The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
-      if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
-            }
-          ]
-        };
-      }
-      const apiUrl = process.env.PINMETO_API_URL;
-      const accountId = process.env.PINMETO_ACCOUNT_ID;
-      const url = `${apiUrl}/listings/v4/${accountId}/locations/insights/facebook?from=${from}&to=${to}`;
-      const insightsData = await makePmtRequest(url);
+      const { apiBaseUrl, accountId } = server.configs;
+
+      const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/facebook?from=${from}&to=${to}`;
+      const insightsData = await server.makePinMeToRequest(url);
       if (!insightsData) {
         return {
           content: [
@@ -96,7 +74,7 @@ export function getAllFacebookInsights(server: McpServer) {
   );
 }
 
-export const getAllFacebookBrandpageInsights = (server: any) => {
+export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
   server.tool(
     'get_all_facebook_brandpage_insights',
     'Fetch Facebook metrics for all brand pages belonging to a specific account.',
@@ -105,20 +83,10 @@ export const getAllFacebookBrandpageInsights = (server: any) => {
       to: z.string().describe('	The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
-      if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
-            }
-          ]
-        };
-      }
-      const apiUrl = process.env.PINMETO_API_URL;
-      const accountId = process.env.PINMETO_ACCOUNT_ID;
-      const url = `${apiUrl}/listings/v4/${accountId}/brand-page/insights/facebook?from=${from}&to=${to}`;
-      const insightsData = await makePmtRequest(url);
+      const { apiBaseUrl, accountId } = server.configs;
+
+      const url = `${apiBaseUrl}/listings/v4/${accountId}/brand-page/insights/facebook?from=${from}&to=${to}`;
+      const insightsData = await server.makePinMeToRequest(url);
       if (!insightsData) {
         return {
           content: [
@@ -141,7 +109,7 @@ export const getAllFacebookBrandpageInsights = (server: any) => {
   );
 };
 
-export const getAllFacebookRatings = (server: any) => {
+export const getAllFacebookRatings = (server: PinMeToMcpServer) => {
   server.tool(
     'get_all_facebook_ratings',
     'Fetch Facebook ratings for all locations belonging to a specific account.',
@@ -150,20 +118,9 @@ export const getAllFacebookRatings = (server: any) => {
       to: z.string().describe('	The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
-      if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
-            }
-          ]
-        };
-      }
-      const apiUrl = process.env.PINMETO_API_URL;
-      const accountId = process.env.PINMETO_ACCOUNT_ID;
-      const url = `${apiUrl}/listings/v3/${accountId}/ratings/facebook?from=${from}&to=${to}`;
-      const insightsData = await makePmtRequest(url);
+      const { apiBaseUrl, accountId } = server.configs;
+      const url = `${apiBaseUrl}/listings/v3/${accountId}/ratings/facebook?from=${from}&to=${to}`;
+      const insightsData = await server.makePinMeToRequest(url);
       if (!insightsData) {
         return {
           content: [
@@ -186,7 +143,7 @@ export const getAllFacebookRatings = (server: any) => {
   );
 };
 
-export const getFacebookLocationRatings = (server: any) => {
+export const getFacebookLocationRatings = (server: PinMeToMcpServer) => {
   server.tool(
     'get_facebook_location_ratings',
     'Fetch Facebook ratings for a given location belonging to a specific account.',
@@ -196,21 +153,10 @@ export const getFacebookLocationRatings = (server: any) => {
       to: z.string().describe('	The end date format YYYY-MM-DD')
     },
     async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
-      if (!process.env.PINMETO_API_URL || !process.env.PINMETO_ACCOUNT_ID) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Missing PINMETO_API_URL or PINMETO_ACCOUNT_ID environment variable.'
-            }
-          ]
-        };
-      }
-      const apiUrl = process.env.PINMETO_API_URL;
-      const accountId = process.env.PINMETO_ACCOUNT_ID;
+      const { apiBaseUrl, accountId } = server.configs;
 
-      const locationUrl = `${apiUrl}/listings/v3/${accountId}/ratings/facebook/${storeId}?from=${from}&to=${to}`;
-      const locationData = await makePmtRequest(locationUrl);
+      const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/ratings/facebook/${storeId}?from=${from}&to=${to}`;
+      const locationData = await server.makePinMeToRequest(locationUrl);
 
       if (!locationData) {
         return {
