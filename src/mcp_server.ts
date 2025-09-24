@@ -75,7 +75,7 @@ export class PinMeToMcpServer extends McpServer {
       allData.push(...pageData);
       const paging = resp['paging'] || {};
       nextUrl = paging['nextUrl'];
-      if (!nextUrl) break;
+      if (!nextUrl || pageData.length == 0) break;
     }
     return [allData, areAllPagesFetched];
   }

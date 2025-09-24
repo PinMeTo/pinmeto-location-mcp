@@ -10,7 +10,6 @@ export interface Configs {
 export function getConfigs(): Configs {
   let apiBaseUrl = 'https://api.pinmeto.com';
   if (process.env.NODE_ENV === 'development' && process.env.PINMETO_API_URL) {
-    // Remove trailing slash
     apiBaseUrl = process.env.PINMETO_API_URL.trim().replace(/\/$/, '');
   }
 
