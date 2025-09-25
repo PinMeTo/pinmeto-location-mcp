@@ -82,9 +82,17 @@ export function getLocations(server: PinMeToMcpServer) {
         .describe('Fields to include in the response (optional, defaults to all)')
     },
     async ({ fields }) => {
+      let fieldsParam: string;
+
+      if (!fields) {
+        fieldsParam = '';
+      } else {
+        fieldsParam = `&fields=${fields.join(',')}`;
+      }
+
       const { locationsApiBaseUrl, accountId } = server.configs;
 
-      const url = `${locationsApiBaseUrl}/v4/${accountId}/locations?pagesize=1000&fields=${fields?.join(',')}`;
+      const url = `${locationsApiBaseUrl}/v4/${accountId}/locations?pagesize=1000${fieldsParam}`;
       const [data, areAllPagesFetched] = await server.makePaginatedPinMeToRequest(url);
       if (!data || data.length === 0) {
         return {
