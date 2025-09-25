@@ -7,6 +7,7 @@ const testAccountId = 'test_account';
 const testAppId = 'test_id';
 const testAppSecret = 'test_secret';
 const testApiBaseUrl = 'https://api.example.com';
+const testLocationApiBaseUrl = 'https://locations.api.example.com';
 const testAccessToken = 'test_token';
 
 vi.mock('axios', () => ({
@@ -61,6 +62,7 @@ vi.mock('axios', () => ({
 beforeAll(() => {
   process.env.NODE_ENV = 'development';
   process.env.PINMETO_API_URL = testApiBaseUrl;
+  process.env.PINMETO_LOCATION_API_URL = testLocationApiBaseUrl;
   process.env.PINMETO_ACCOUNT_ID = testAccountId;
   process.env.PINMETO_APP_ID = testAppId;
   process.env.PINMETO_APP_SECRET = testAppSecret;
@@ -115,7 +117,12 @@ describe('Locations', () => {
 
     testTransport.onmessage?.({
       method: 'tools/call',
-      params: { name: 'get_locations', arguments: {} },
+      params: {
+        name: 'get_locations',
+        arguments: {
+          fields: ['_id']
+        }
+      },
       jsonrpc: '2.0',
       id: 3
     });
@@ -123,7 +130,7 @@ describe('Locations', () => {
     await new Promise(resolve => setTimeout(resolve, 1000));
     await testTransport.close();
     expect(spy).toHaveBeenCalledWith(
-      `${testApiBaseUrl}/listings/v3/test_account/locations?pagesize=100`
+      `${testLocationApiBaseUrl}/v4/test_account/locations?pagesize=1000&fields=_id`
     );
   });
 });

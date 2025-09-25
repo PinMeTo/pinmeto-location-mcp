@@ -10,9 +10,14 @@ export interface Configs {
 
 export function getConfigs(): Configs {
   let apiBaseUrl = 'https://api.pinmeto.com';
-  const locationsApiBaseUrl = 'https://locations.api.pinmeto.com';
+  let locationsApiBaseUrl = 'https://locations.api.pinmeto.com';
+
   if (process.env.NODE_ENV === 'development' && process.env.PINMETO_API_URL) {
     apiBaseUrl = process.env.PINMETO_API_URL.trim().replace(/\/$/, '');
+  }
+
+  if (process.env.NODE_ENV === 'development' && process.env.PINMETO_LOCATION_API_URL) {
+    locationsApiBaseUrl = process.env.PINMETO_LOCATION_API_URL.trim().replace(/\/$/, '');
   }
 
   let accountId = process.env.PINMETO_ACCOUNT_ID?.trim();
