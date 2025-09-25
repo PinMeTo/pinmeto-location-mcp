@@ -129,7 +129,7 @@ export function createMcpServer() {
   };
   const mcpServer = new PinMeToMcpServer(serverInfo);
 
-  if (!(process.env.INSPECTOR === 'true')) {
+  if (!(process.env.NODE_ENV === 'development')) {
     mcpServer.server.setRequestHandler(InitializeRequestSchema, async request => {
       // Set a custom User-Agent for all axios requests
       axios.defaults.headers.common['User-Agent'] =
