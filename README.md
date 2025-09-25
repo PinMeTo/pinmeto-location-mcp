@@ -124,7 +124,7 @@ Below are instructions on how to manually integrate the PinMeTo MCP with Claude 
 6. **Restart Claude Desktop:**
    - Ensure all permissions are granted. You should now see "PinMeTo MCP" in your MCP selection.
 
----
+<!-- ---
 
 ## Cursor: Direct Link Installation
 
@@ -230,7 +230,7 @@ Below are instructions on how to manually integrate the PinMeTo MCP with Cursor 
 - `~/.cursor/mcp.json` is your global MCP settings.
 - `.cursor/mcp.json` is project-specific. For most cases, add the server to your project-specific file.
 
----
+--- -->
 
 ## Available Tools
 
