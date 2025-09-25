@@ -1,15 +1,17 @@
+import dotenv from 'dotenv';
+
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createMcpServer } from './mcp_server.js';
 
-class McpServerTransport extends StdioServerTransport {
-  onerror = (error: Error) => {
-    console.error('MCP error', error);
-  };
+if (process.env.NODE_ENV === 'development') {
+  dotenv.config({
+    quiet: true
+  });
 }
 
 const server = createMcpServer();
 
-const transport = new McpServerTransport();
+const transport = new StdioServerTransport();
 
 server
   .connect(transport)

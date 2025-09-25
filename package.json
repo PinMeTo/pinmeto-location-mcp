@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "start": "tsc && node build/index.js",
+    "start": "NODE_ENV=development node build/index.js",
     "format": "prettier --write \"**/*.{js,ts}\"",
-    "inspector": "npx @modelcontextprotocol/inspector node build/index.js",
+    "inspector": "NODE_ENV=development npx @modelcontextprotocol/inspector",
     "start:remote": "tsc && node build/index.js remote",
     "test": "vitest --run"
   },
@@ -27,7 +27,8 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.0",
     "axios": "^1.12.2",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "dotenv": "^17.2.2"
   },
   "devDependencies": {
     "@types/node": "^24.5.1",
