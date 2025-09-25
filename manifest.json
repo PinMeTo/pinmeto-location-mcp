@@ -60,9 +60,19 @@
       "sensitive": true
     }
   },
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ]
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/PinMeTo/pinmeto-location-mcp"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "privacy_policies": [
+    "https://places.pinmeto.com/listings/public/legal/privacypolicy"
+  ]
 }
