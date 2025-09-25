@@ -142,4 +142,3 @@ vite.config.ts.timestamp-*
 *.mcpb
 
 .DS_Store
-manifest.json
