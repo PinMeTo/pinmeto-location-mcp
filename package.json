@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "tsc && node build/index.js",
     "format": "prettier --write \"**/*.{js,ts}\"",
-    "inspector": "npx @modelcontextprotocol/inspector node build/index.js",
+    "inspector": "INSPECTOR=true npx @modelcontextprotocol/inspector node build/index.js",
     "start:remote": "tsc && node build/index.js remote",
     "test": "vitest --run"
   },
@@ -27,8 +27,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.0",
     "axios": "^1.12.2",
-    "zod": "^3.25.76",
-    "dotenv": "17.2.2"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^24.5.1",

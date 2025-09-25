@@ -129,22 +129,24 @@ export function createMcpServer() {
   };
   const mcpServer = new PinMeToMcpServer(serverInfo);
 
-  mcpServer.server.setRequestHandler(InitializeRequestSchema, async request => {
-    // Set a custom User-Agent for all axios requests
-    axios.defaults.headers.common['User-Agent'] =
-      `${request.params.clientInfo.name}/${request.params.clientInfo.version} ${packageJson.name}-${packageJson.version} (${os.type()}; ${os.arch()}; ${os.release()})`;
+  if (!(process.env.INSPECTOR === 'true')) {
+    mcpServer.server.setRequestHandler(InitializeRequestSchema, async request => {
+      // Set a custom User-Agent for all axios requests
+      axios.defaults.headers.common['User-Agent'] =
+        `${request.params.clientInfo.name}/${request.params.clientInfo.version} ${packageJson.name}-${packageJson.version} (${os.type()}; ${os.arch()}; ${os.release()})`;
 
-    const requestedVersion = request.params.protocolVersion;
-    const protocolVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
-      ? requestedVersion
-      : LATEST_PROTOCOL_VERSION;
+      const requestedVersion = request.params.protocolVersion;
+      const protocolVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
+        ? requestedVersion
+        : LATEST_PROTOCOL_VERSION;
 
-    return {
-      protocolVersion,
-      capabilities: request.params.capabilities,
-      serverInfo
-    };
-  });
+      return {
+        protocolVersion,
+        capabilities: request.params.capabilities,
+        serverInfo
+      };
+    });
+  }
 
   // Locations
   getLocation(mcpServer);
