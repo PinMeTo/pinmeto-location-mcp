@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
-import { PinMeToMcpServer, createMcpServer } from '../src/mcp_server';
+import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { createMcpServer } from '../src/mcp_server';
 
 const testAccountId = 'test_account';
 const testAppId = 'test_id';
@@ -17,7 +17,7 @@ vi.mock('axios', () => ({
       }
 
       if (url === `${testApiBaseUrl}/locations`) {
-        return Promise.resolve({ data: { data: [] } });
+        return Promise.resolve({ data: { data: [{ id: 1 }] } });
       }
 
       if (url === `${testApiBaseUrl}/page1`) {
@@ -67,15 +67,23 @@ beforeAll(() => {
 });
 
 describe('PinMeToMcpServer', () => {
-  it('should make PMT request with correct headers and return data', async () => {
+  it('should cache access token', async () => {
+    const server = createMcpServer();
+    await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
+    await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
+    expect(vi.mocked(axios.post)).toHaveBeenCalledTimes(1);
+    expect(server.configs.accessToken).toBe(testAccessToken);
+  });
+
+  it('PinMeToRequest should return correct data', async () => {
     const server = createMcpServer();
     await expect(server.makePinMeToRequest(`${testApiBaseUrl}/locations`)).resolves.toEqual({
-      data: []
+      data: [{ id: 1 }]
     });
     expect(server.configs.accessToken).toBe(testAccessToken);
   });
 
-  it('should handle paginated requests and format responses', async () => {
+  it('PaginatedPinMeToRequest should handle paginated requests and format responses', async () => {
     const server = createMcpServer();
     await expect(server.makePaginatedPinMeToRequest(`${testApiBaseUrl}/page1`)).resolves.toEqual([
       [{ id: 1 }, { id: 2 }, { id: 3 }],
