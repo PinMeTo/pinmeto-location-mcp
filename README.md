@@ -49,7 +49,8 @@ cd pinmeto-location-mcp
 4. **Install in Claude Desktop:**
    - With Claude Desktop open, double-click the `.mcpb` file.
    - Enter your PinMeTo API credentials when prompted ([PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3)).
-     ![Claude Credentials](img/claude_credentials.png)
+     <img width="655" height="596" alt="Screenshot 2025-09-25 at 14 51 20" src="https://github.com/user-attachments/assets/30af64b3-81c3-4bb1-9b05-656831004757" />
+
 
 - Enable the connector in Claude. You can now use the PinMeTo MCP integration.
 
