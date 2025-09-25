@@ -12,7 +12,9 @@ The MCP Server can be built from this repository, or a single-click installer is
 
 ## Claude Desktop: One-Click Installation
 
-The single-click installer binary for Claude Desktop is available in the "Releases" tab.
+The single-click installer binary for Claude Desktop is available in the "Releases" tab: 
+
+https://github.com/PinMeTo/pinmeto-location-mcp/releases
 
 Below are instructions on how to generate the binary with `npx`:
 
