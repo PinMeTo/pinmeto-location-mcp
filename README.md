@@ -4,6 +4,55 @@ The PinMeTo MCP Server enables seamless integration between the PinMeTo platform
 
 ---
 
+## Installation
+
+The MCP Server can be built from this repository, or a single-click installer is available for Claude Desktop.
+
+---
+
+## Claude Desktop: One-Click Installation
+
+The single-click installer binary for Claude Desktop is available in the "Releases" tab.
+
+Below are instructions on how to generate the binary with `npx`:
+
+### Prerequisites (Claude Desktop: One-Click Installation)
+
+- **npm**
+- **npx** (included with npm)
+- **Claude Desktop**
+
+### Steps (Claude Desktop: One-Click Installation)
+
+1. **Clone the repository:**
+
+```zsh
+git clone https://github.com/PinMeTo/pinmeto-location-mcp.git
+```
+
+2. **Open your project folder** in your text editor.
+
+```zsh
+cd pinmeto-location-mcp
+```
+
+3. **Build** and **Run the MCPB installer:**
+
+   ```bash
+   npm install
+   npm run build
+   npx @anthropic-ai/mcpb pack
+   ```
+
+   - This generates a `.mcpb` file in your project directory.
+
+4. **Install in Claude Desktop:**
+   - With Claude Desktop open, double-click the `.mcpb` file.
+   - Enter your PinMeTo API credentials when prompted ([PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3)).
+     ![Claude Credentials](img/claude_credentials.png)
+
+- Enable the connector in Claude. You can now use the PinMeTo MCP integration.
+
 ### Direct Installation for Cursor
 
 - Copy the link and paste it in your browser.
@@ -41,6 +90,7 @@ Enter your credentials and use the absolute path to the project in the setup.
      ```
 
    - Add the following MCP server configuration:
+
      ```json
      {
        "mcpServers": {
@@ -57,6 +107,7 @@ Enter your credentials and use the absolute path to the project in the setup.
        }
      }
      ```
+
    - Use absolute paths for both Node and your project:
      - Node path: `which node`
      - Project path: `pwd`
@@ -66,32 +117,6 @@ Enter your credentials and use the absolute path to the project in the setup.
 
 4. **Restart Claude Desktop:**
    - Ensure all permissions are granted. You should now see "PinMeTo MCP" in your MCP selection.
-
----
-
-## One-Click Installation (Generating .mcpb-file)
-
-### Prerequisites
-
-- **npx** (included with npm)
-
-### Steps
-
-1. **Open your project folder** in your text editor.
-2. **Run the MCPB installer:**
-
-   ```bash
-   npx @anthropic-ai/mcpb pack
-   ```
-
-   - This generates a `.mcpb` file in your project directory.
-
-3. **Install in Claude Desktop:**
-   - With Claude Desktop open, double-click the `.mcpb` file in Finder.
-   - Enter your PinMeTo API credentials when prompted ([PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3)).
-     ![Claude Credentials](img/claude_credentials.png)
-
-- Enable the connector in Claude. You can now use the PinMeTo MCP integration.
 
 ---
 
