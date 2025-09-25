@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { createMcpServer } from '../src/mcp_server';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 const testAccountId = 'test_account';
 const testAppId = 'test_id';
@@ -11,7 +12,7 @@ const testAccessToken = 'test_token';
 vi.mock('axios', () => ({
   default: {
     get: vi.fn((url: string, { headers }) => {
-      console.log('Mocked axios GET request', url, headers);
+      console.error('Mocked axios GET request', url, headers);
       if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
         return Promise.reject(new Error('Unauthorized'));
       }
@@ -41,7 +42,7 @@ vi.mock('axios', () => ({
       return Promise.reject(new Error('Not found'));
     }),
     post: vi.fn((url: string, data, { headers }) => {
-      console.log('Mocked axios POST request', url, data);
+      console.error('Mocked axios POST request', url, data);
 
       if (url === `${testApiBaseUrl}/oauth/token`) {
         if (
@@ -89,5 +90,40 @@ describe('PinMeToMcpServer', () => {
       [{ id: 1 }, { id: 2 }, { id: 3 }],
       true
     ]);
+  });
+});
+
+describe('Locations', () => {
+  it('should call Location APIs', async () => {
+    const server = createMcpServer();
+    const spy = vi.spyOn(server, 'makePinMeToRequest');
+
+    const testTransport = new StdioServerTransport();
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    testTransport.onmessage?.({
+      method: 'tools/call',
+      params: { name: 'get_locations', arguments: {} },
+      jsonrpc: '2.0',
+      id: 3
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await testTransport.close();
+    expect(spy).toHaveBeenCalledWith(
+      `${testApiBaseUrl}/listings/v3/test_account/locations?pagesize=100`
+    );
   });
 });
