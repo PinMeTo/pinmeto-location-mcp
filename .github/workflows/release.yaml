@@ -22,6 +22,7 @@ jobs:
         run: |
           npm run build
           npm ci --production
+          rm manifest.js
           mcpb pack
       - name: Release
         uses: softprops/action-gh-release@v2
