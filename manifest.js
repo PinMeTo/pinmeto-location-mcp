@@ -39,21 +39,21 @@ const manifest = {
     PINMETO_ACCOUNT_ID: {
       type: 'string',
       title: 'PinMeTo Account ID',
-      description: 'Your Account id, example: pinmeto',
+      description: 'Your Account ID, found in Account Settings -> API (example: pinmeto)',
       required: true,
       sensitive: false
     },
     PINMETO_APP_ID: {
       type: 'string',
       title: 'PinMeTo App ID',
-      description: 'Your App ID, found in account settings',
+      description: 'Your App ID, found in Account Settings -> API',
       required: true,
       sensitive: false
     },
     PINMETO_APP_SECRET: {
       type: 'string',
-      title: 'Your App Secret, found in account settings',
-      description: 'Your App Secret',
+      title: 'PinMeTo App Secret',
+      description: 'Your App Secret, found in Account Settings -> API',
       required: true,
       sensitive: true
     }

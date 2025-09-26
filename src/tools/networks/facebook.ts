@@ -8,7 +8,7 @@ export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
     {
       storeId: z.string().describe('The store ID to look up'),
       from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('	The end date format YYYY-MM-DD')
+      to: z.string().describe('The end date format YYYY-MM-DD')
     },
     async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -45,7 +45,7 @@ export function getAllFacebookInsights(server: PinMeToMcpServer) {
     'Fetch Facebook metrics for all brand pages belonging to a specific account.',
     {
       from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('	The end date format YYYY-MM-DD')
+      to: z.string().describe('The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -80,7 +80,7 @@ export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
     'Fetch Facebook metrics for all brand pages belonging to a specific account.',
     {
       from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('	The end date format YYYY-MM-DD')
+      to: z.string().describe('The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -115,7 +115,7 @@ export const getAllFacebookRatings = (server: PinMeToMcpServer) => {
     'Fetch Facebook ratings for all locations belonging to a specific account.',
     {
       from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('	The end date format YYYY-MM-DD')
+      to: z.string().describe('The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -150,7 +150,7 @@ export const getFacebookLocationRatings = (server: PinMeToMcpServer) => {
     {
       storeId: z.string().describe('The store ID to look up'),
       from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('	The end date format YYYY-MM-DD')
+      to: z.string().describe('The end date format YYYY-MM-DD')
     },
     async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;

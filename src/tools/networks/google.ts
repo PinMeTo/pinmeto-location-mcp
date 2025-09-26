@@ -7,8 +7,8 @@ export function getGoogleLocationInsights(server: PinMeToMcpServer) {
     'Fetch Google metrics for a single location belonging to a specific account.',
     {
       storeId: z.string().describe('The store ID to look up'),
-      from: z.string().describe('	The start date format YYYY-MM-DD'),
-      to: z.string().describe('	The end date format YYYY-MM-DD')
+      from: z.string().describe('The start date format YYYY-MM-DD'),
+      to: z.string().describe('The end date format YYYY-MM-DD')
     },
     async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -45,7 +45,7 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
     'Fetch Google metrics for all locations belonging to a specific account.',
     {
       from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('	The end date format YYYY-MM-DD')
+      to: z.string().describe('The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -80,7 +80,7 @@ export const getAllGoogleRatings = (server: PinMeToMcpServer) => {
     'Fetch Google ratings for all locations belonging to a specific account.',
     {
       from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('	The end date format YYYY-MM-DD')
+      to: z.string().describe('The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -115,8 +115,8 @@ export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
     'Fetch Google ratings for a given location belonging to a specific account.',
     {
       storeId: z.string().describe('The store ID to look up'),
-      from: z.string().describe('	The start date format YYYY-MM-DD'),
-      to: z.string().describe('	The end date format YYYY-MM-DD')
+      from: z.string().describe('The start date format YYYY-MM-DD'),
+      to: z.string().describe('The end date format YYYY-MM-DD')
     },
     async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -152,8 +152,8 @@ export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
     'get_google_keywords',
     'Fetch Google keywords for all locations belonging to a specific account',
     {
-      from: z.string().describe('	The start date format YYYY-MM'),
-      to: z.string().describe('	The end date format YYYY-MM')
+      from: z.string().describe('The start date format YYYY-MM'),
+      to: z.string().describe('The end date format YYYY-MM')
     },
     async ({ from, to }: { from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -190,8 +190,8 @@ export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
     'Fetch Google keywords for a given location belonging to a specific account.',
     {
       storeId: z.string().describe('The store ID to look up'),
-      from: z.string().describe('	The start date format YYYY-MM'),
-      to: z.string().describe('	The end date format YYYY-MM')
+      from: z.string().describe('The start date format YYYY-MM'),
+      to: z.string().describe('The end date format YYYY-MM')
     },
     async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;

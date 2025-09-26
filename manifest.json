@@ -17,9 +17,7 @@
     "entry_point": "build/index.js",
     "mcp_config": {
       "command": "node",
-      "args": [
-        "${__dirname}/build/index.js"
-      ],
+      "args": ["${__dirname}/build/index.js"],
       "env": {
         "PINMETO_ACCOUNT_ID": "${user_config.PINMETO_ACCOUNT_ID}",
         "PINMETO_APP_SECRET": "${user_config.PINMETO_APP_SECRET}",
@@ -32,47 +30,37 @@
       }
     }
   },
-  "keywords": [
-    "api",
-    "automation",
-    "productivity"
-  ],
+  "keywords": ["api", "automation", "productivity"],
   "user_config": {
     "PINMETO_ACCOUNT_ID": {
       "type": "string",
       "title": "PinMeTo Account ID",
-      "description": "Your Account id, example: pinmeto",
+      "description": "Your Account ID, found in Account Settings -> API (example: pinmeto)",
       "required": true,
       "sensitive": false
     },
     "PINMETO_APP_ID": {
       "type": "string",
       "title": "PinMeTo App ID",
-      "description": "Your App ID, found in account settings",
+      "description": "Your App ID, found in Account Settings -> API",
       "required": true,
       "sensitive": false
     },
     "PINMETO_APP_SECRET": {
       "type": "string",
-      "title": "Your App Secret, found in account settings",
-      "description": "Your App Secret",
+      "title": "PinMeTo App Secret",
+      "description": "Your App Secret, found in Account Settings -> API",
       "required": true,
       "sensitive": true
     }
   },
   "compatibility": {
-    "platforms": [
-      "darwin",
-      "win32",
-      "linux"
-    ]
+    "platforms": ["darwin", "win32", "linux"]
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/PinMeTo/pinmeto-location-mcp"
   },
   "license": "MIT",
-  "privacy_policies": [
-    "https://places.pinmeto.com/listings/public/legal/privacypolicy"
-  ]
+  "privacy_policies": ["https://places.pinmeto.com/listings/public/legal/privacypolicy"]
 }
