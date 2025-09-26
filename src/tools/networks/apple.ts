@@ -7,8 +7,8 @@ export function getAppleLocationInsights(server: PinMeToMcpServer) {
     'Fetch Apple metrics for a single location belonging to a specific account.',
     {
       storeId: z.string().describe('The store ID to look up'),
-      from: z.string().describe('	The start date format YYYY-MM-DD'),
-      to: z.string().describe('	The end date format YYYY-MM-DD')
+      from: z.string().describe('The start date format YYYY-MM-DD'),
+      to: z.string().describe('The end date format YYYY-MM-DD')
     },
     async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -45,7 +45,7 @@ export function getAllAppleInsights(server: PinMeToMcpServer) {
     'Fetch Apple metrics for all locations belonging to a specific account.',
     {
       from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('	The end date format YYYY-MM-DD')
+      to: z.string().describe('The end date format YYYY-MM-DD')
     },
     async ({ from, to }: { from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
