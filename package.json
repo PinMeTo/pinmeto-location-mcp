@@ -1,9 +1,11 @@
 {
-  "name": "pinmeto-location-mcp",
-  "version": "1.0.1",
+  "name": "@pinmeto/pinmeto-location-mcp",
+  "version": "1.0.2",
   "description": "PinMeTo Location MCP",
   "main": "index.js",
   "scripts": {
+    "prepare": "npm run build",
+    "release": "npm publish ./build",
     "build": "node manifest.js && tsc",
     "start": "NODE_ENV=development node build/index.js",
     "format": "prettier --write \"**/*.{js,ts}\"",
@@ -17,6 +19,9 @@
   "keywords": [
     "mcp"
   ],
+  "bin": {
+    "pinmeto-location-mcp": "./build/index.js"
+  },
   "author": "pinmeto",
   "license": "MIT",
   "bugs": {
