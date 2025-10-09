@@ -17,6 +17,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm ci
+          npm i --save-dev @types/node
           npm i @anthropic-ai/mcpb -g
       - name: Test
         run: npm run test
