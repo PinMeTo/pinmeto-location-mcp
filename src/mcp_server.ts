@@ -26,9 +26,11 @@ import {
 import { getAllAppleInsights, getAppleLocationInsights } from './tools/networks/apple';
 import { analyzeLocationPrompt, summarizeAllInsightsPrompt } from './prompts';
 import { Configs, getConfigs } from './configs';
-import packageJson from '../package.json';
+
 import { ServerOptions } from '@modelcontextprotocol/sdk/server';
 
+const PACKAGE_NAME = '@pinmeto/pinmeto-location-mcp';
+const PACKAGE_VERSION = '1.0.2';
 const TOKEN_CACHE_SECONDS = 59 * 60;
 
 export class PinMeToMcpServer extends McpServer {
@@ -120,7 +122,7 @@ export class PinMeToMcpServer extends McpServer {
 export function createMcpServer() {
   const serverInfo = {
     name: 'PinMeTo Location MCP',
-    version: packageJson.version,
+    version: PACKAGE_VERSION,
     capabilities: {
       prompts: {},
       resources: {},
@@ -133,7 +135,7 @@ export function createMcpServer() {
     mcpServer.server.setRequestHandler(InitializeRequestSchema, async request => {
       // Set a custom User-Agent for all axios requests
       axios.defaults.headers.common['User-Agent'] =
-        `${request.params.clientInfo.name}/${request.params.clientInfo.version} ${packageJson.name}-${packageJson.version} (${os.type()}; ${os.arch()}; ${os.release()})`;
+        `${request.params.clientInfo.name}/${request.params.clientInfo.version} ${PACKAGE_NAME}-${PACKAGE_VERSION} (${os.type()}; ${os.arch()}; ${os.release()})`;
 
       const requestedVersion = request.params.protocolVersion;
       const protocolVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)

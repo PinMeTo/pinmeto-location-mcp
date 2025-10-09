@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import dotenv from 'dotenv';
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
