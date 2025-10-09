@@ -16,14 +16,15 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: |
+          npm install
+          npm run build
           npm ci
-          npm i --save-dev @types/node
           npm i @anthropic-ai/mcpb -g
       - name: Test
         run: npm run test
       - name: Build MCP Desktop Extension
         run: |
-          npm i --save-dev @types/node
+          npm install
           npm run build
           npm ci --production
           rm manifest.js

@@ -17,7 +17,9 @@
     "entry_point": "build/index.js",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/build/index.js"],
+      "args": [
+        "${__dirname}/build/index.js"
+      ],
       "env": {
         "PINMETO_ACCOUNT_ID": "${user_config.PINMETO_ACCOUNT_ID}",
         "PINMETO_APP_SECRET": "${user_config.PINMETO_APP_SECRET}",
@@ -30,7 +32,11 @@
       }
     }
   },
-  "keywords": ["api", "automation", "productivity"],
+  "keywords": [
+    "api",
+    "automation",
+    "productivity"
+  ],
   "user_config": {
     "PINMETO_ACCOUNT_ID": {
       "type": "string",
@@ -55,12 +61,18 @@
     }
   },
   "compatibility": {
-    "platforms": ["darwin", "win32", "linux"]
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ]
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/PinMeTo/pinmeto-location-mcp"
   },
   "license": "MIT",
-  "privacy_policies": ["https://places.pinmeto.com/listings/public/legal/privacypolicy"]
+  "privacy_policies": [
+    "https://places.pinmeto.com/listings/public/legal/privacypolicy"
+  ]
 }
