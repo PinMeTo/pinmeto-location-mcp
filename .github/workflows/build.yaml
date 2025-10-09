@@ -23,6 +23,7 @@ jobs:
         run: npm run test
       - name: Build MCP Desktop Extension
         run: |
+          npm i --save-dev @types/node
           npm run build
           npm ci --production
           rm manifest.js
