@@ -89,30 +89,10 @@ Below are instructions on how to manually integrate the PinMeTo MCP with Claude 
    ```
 
 4. **Configure Claude Desktop:**
-   - Open your `claude_desktop_config.json` file. You can go to Preferences → Developer → Edit Config in the Claude Desktop Client. Or use on Mac:
+    - Open your `claude_desktop_config.json` file. You can go to Preferences → Developer → Edit Config in the Claude Desktop Client. Or use on Mac:
 
     ```bash
     code ~/Library/Application\ Support/Claude/claude_desktop_config.json
-    ```
-
-   - Add the following MCP server configuration (with npx)
-
-    ```json
-    {
-    "mcpServers": {
-        "PinMeTo": {
-            "command": "npx",
-            "args": ["-y", "pinmeto-location-mcp"],
-            "env": {
-                "PINMETO_ACCOUNT_ID": "",
-                "PINMETO_APP_ID": "",
-                "PINMETO_APP_SECRET": ""
-            }
-        }
-    }
-
-    }
-
     ```
 
     - Add the following MCP server configuration (with node)
@@ -134,9 +114,29 @@ Below are instructions on how to manually integrate the PinMeTo MCP with Claude 
         }
         ```
 
-- Use absolute paths for both Node and your project:
-  - Node path: `which node`
-  - Project path: `pwd`
+    - Add the following MCP server configuration (with npx)
+
+        ```json
+        {
+        "mcpServers": {
+            "PinMeTo": {
+                "command": "npx",
+                "args": ["-y", "PinMeTo/pinmeto-location-mcp"],
+                "env": {
+                    "PINMETO_ACCOUNT_ID": "",
+                    "PINMETO_APP_ID": "",
+                    "PINMETO_APP_SECRET": ""
+                }
+            }
+        }
+
+        }
+
+        ```
+
+    - Use absolute paths for both Node and your project:
+    - Node path: `which node`
+    - Project path: `pwd`
 
 5. **Get your PinMeTo API credentials:**
    - Visit [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3) and fill in the environment variables above.
