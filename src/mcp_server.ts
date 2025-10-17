@@ -61,10 +61,14 @@ export class PinMeToMcpServer extends McpServer {
     }
   }
 
-  public async makePaginatedPinMeToRequest(url: string): Promise<[any[], boolean]> {
+  public async makePaginatedPinMeToRequest(
+    url: string,
+    maxPages?: number
+  ): Promise<[any[], boolean]> {
     const allData: any[] = [];
     let nextUrl: string | undefined = url;
     let areAllPagesFetched = true;
+    let pageCount = 0;
 
     while (nextUrl) {
       const resp = await this.makePinMeToRequest(nextUrl);
@@ -77,6 +81,17 @@ export class PinMeToMcpServer extends McpServer {
       allData.push(...pageData);
       const paging = resp['paging'] || {};
       nextUrl = paging['nextUrl'];
+      pageCount++;
+
+      // Check if we've reached the max pages limit
+      if (maxPages && pageCount >= maxPages) {
+        // If there's still a nextUrl, we didn't fetch everything
+        if (nextUrl && pageData.length > 0) {
+          areAllPagesFetched = false;
+        }
+        break;
+      }
+
       if (!nextUrl || pageData.length == 0) break;
     }
     return [allData, areAllPagesFetched];
