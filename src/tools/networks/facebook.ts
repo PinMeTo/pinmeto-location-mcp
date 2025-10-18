@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
-import { truncateResponse, formatInsightsMarkdown, formatRatingsMarkdown } from '../../helpers';
+import {
+  truncateResponse,
+  formatInsightsMarkdown,
+  formatRatingsMarkdown,
+  handleToolResponse
+} from '../../helpers';
 
 export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
   server.tool(
@@ -71,16 +76,13 @@ Returns comprehensive Facebook insights including:
       format?: 'json' | 'markdown';
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
-
       const locationUrl = `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/facebook?from=${from}&to=${to}`;
-      const locationData = await server.makePinMeToRequest(locationUrl);
 
-      if (!locationData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch Facebook insights for storeId "${storeId}" (${from} to ${to}).
+      return handleToolResponse(
+        () => server.makePinMeToRequest(locationUrl),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch Facebook insights for storeId "${storeId}" (${from} to ${to}).
 
 **Troubleshooting steps:**
 1. Verify the storeId exists using get_locations tool
@@ -96,32 +98,10 @@ Returns comprehensive Facebook insights including:
 - Location's Facebook integration is disconnected or pending
 - Dates in wrong format (must be YYYY-MM-DD)
 
-Try using get_location first to verify the location exists and has the 'fb' field populated, which indicates Facebook Pages is connected.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatInsightsMarkdown('Facebook', locationData, storeId)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(locationData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Try using get_location first to verify the location exists and has the 'fb' field populated, which indicates Facebook Pages is connected.`,
+          markdownFormatter: (data) => formatInsightsMarkdown('Facebook', data, storeId)
+        }
+      );
     }
   );
 }
@@ -185,15 +165,13 @@ Returns aggregated Facebook insights across all location pages including:
     },
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;
-
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/facebook?from=${from}&to=${to}`;
-      const insightsData = await server.makePinMeToRequest(url);
-      if (!insightsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch Facebook insights for all locations (${from} to ${to}).
+
+      return handleToolResponse(
+        () => server.makePinMeToRequest(url),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch Facebook insights for all locations (${from} to ${to}).
 
 **Troubleshooting steps:**
 1. Verify your PINMETO_ACCOUNT_ID is correct
@@ -209,32 +187,10 @@ Returns aggregated Facebook insights across all location pages including:
 - All locations have disconnected Facebook integrations
 - Dates in wrong format (must be YYYY-MM-DD)
 
-Try using get_locations first to verify you have locations with the 'fb' field populated.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatInsightsMarkdown('Facebook (All Locations)', insightsData)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(insightsData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Try using get_locations first to verify you have locations with the 'fb' field populated.`,
+          markdownFormatter: (data) => formatInsightsMarkdown('Facebook (All Locations)', data)
+        }
+      );
     }
   );
 }
@@ -297,15 +253,13 @@ Returns Facebook insights for brand/corporate pages including:
     },
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;
-
       const url = `${apiBaseUrl}/listings/v4/${accountId}/brand-page/insights/facebook?from=${from}&to=${to}`;
-      const insightsData = await server.makePinMeToRequest(url);
-      if (!insightsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch Facebook brand page insights (${from} to ${to}).
+
+      return handleToolResponse(
+        () => server.makePinMeToRequest(url),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch Facebook brand page insights (${from} to ${to}).
 
 **Troubleshooting steps:**
 1. Verify your PINMETO_ACCOUNT_ID is correct
@@ -321,32 +275,10 @@ Returns Facebook insights for brand/corporate pages including:
 - Date range too far in the past (>2 years)
 - Dates in wrong format (must be YYYY-MM-DD)
 
-Note: Brand pages are company-level Facebook Pages, separate from individual location pages. If you only have location pages, use get_all_facebook_insights instead.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatInsightsMarkdown('Facebook Brand Page', insightsData)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(insightsData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Note: Brand pages are company-level Facebook Pages, separate from individual location pages. If you only have location pages, use get_all_facebook_insights instead.`,
+          markdownFormatter: (data) => formatInsightsMarkdown('Facebook Brand Page', data)
+        }
+      );
     }
   );
 };
@@ -411,13 +343,12 @@ Returns aggregated Facebook ratings data across all locations including:
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const url = `${apiBaseUrl}/listings/v3/${accountId}/ratings/facebook?from=${from}&to=${to}`;
-      const ratingsData = await server.makePinMeToRequest(url);
-      if (!ratingsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch Facebook ratings for all locations (${from} to ${to}).
+
+      return handleToolResponse(
+        () => server.makePinMeToRequest(url),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch Facebook ratings for all locations (${from} to ${to}).
 
 **Troubleshooting steps:**
 1. Verify your PINMETO_ACCOUNT_ID is correct
@@ -432,32 +363,10 @@ Returns aggregated Facebook ratings data across all locations including:
 - All locations have disconnected Facebook integrations
 - Dates in wrong format (must be YYYY-MM-DD)
 
-Note: This endpoint returns data only for locations that have reviews. If you have no reviews in the date range, an empty result is expected.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatRatingsMarkdown('Facebook (All Locations)', ratingsData)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(ratingsData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Note: This endpoint returns data only for locations that have reviews. If you have no reviews in the date range, an empty result is expected.`,
+          markdownFormatter: (data) => formatRatingsMarkdown('Facebook (All Locations)', data)
+        }
+      );
     }
   );
 };
@@ -535,16 +444,13 @@ Returns detailed Facebook ratings data for one location including:
       format?: 'json' | 'markdown';
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
-
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/ratings/facebook/${storeId}?from=${from}&to=${to}`;
-      const ratingsData = await server.makePinMeToRequest(locationUrl);
 
-      if (!ratingsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch Facebook ratings for storeId "${storeId}" (${from} to ${to}).
+      return handleToolResponse(
+        () => server.makePinMeToRequest(locationUrl),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch Facebook ratings for storeId "${storeId}" (${from} to ${to}).
 
 **Troubleshooting steps:**
 1. Verify the storeId exists using get_locations tool
@@ -559,32 +465,10 @@ Returns detailed Facebook ratings data for one location including:
 - Location's Facebook integration is disconnected
 - Dates in wrong format (must be YYYY-MM-DD)
 
-Note: This endpoint returns data only if reviews exist. An empty result means no reviews in the date range, which is normal for new or low-traffic locations.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatRatingsMarkdown('Facebook', ratingsData, storeId)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(ratingsData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Note: This endpoint returns data only if reviews exist. An empty result means no reviews in the date range, which is normal for new or low-traffic locations.`,
+          markdownFormatter: (data) => formatRatingsMarkdown('Facebook', data, storeId)
+        }
+      );
     }
   );
 };

@@ -4,7 +4,8 @@ import {
   truncateResponse,
   formatInsightsMarkdown,
   formatRatingsMarkdown,
-  formatKeywordsMarkdown
+  formatKeywordsMarkdown,
+  handleToolResponse
 } from '../../helpers';
 
 export function getGoogleLocationInsights(server: PinMeToMcpServer) {
@@ -76,19 +77,16 @@ Returns comprehensive Google insights including:
       format?: 'json' | 'markdown';
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
-
       const locationUrl = `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/google?from=${from}&to=${to}`;
-      const locationData = await server.makePinMeToRequest(locationUrl);
 
-      if (!locationData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch Google insights for storeId "${storeId}" (${from} to ${to}).
+      return handleToolResponse(
+        () => server.makePinMeToRequest(locationUrl),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch Google insights for storeId "${storeId}" (${from} to ${to}).
 
 **Troubleshooting steps:**
-1. Verify the storeId exists using get_locations tool
+1. Verify the storeId exists using pinmeto_get_locations tool
 2. Confirm the location has an active Google Business Profile integration
 3. Check if the date range is after September 2021 or within the last 18 months
 4. Ensure dates are valid and 'from' date is before 'to' date
@@ -101,32 +99,10 @@ Returns comprehensive Google insights including:
 - Location's Google integration is disconnected or pending
 - Dates in wrong format (must be YYYY-MM-DD)
 
-Try using get_location first to verify the location exists and has the 'google' field populated, which indicates Google Business Profile is connected.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatInsightsMarkdown('Google', locationData, storeId)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(locationData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Try using pinmeto_get_location first to verify the location exists and has the 'google' field populated.`,
+          markdownFormatter: (data) => formatInsightsMarkdown('Google', data, storeId)
+        }
+      );
     }
   );
 }
@@ -190,15 +166,13 @@ Returns aggregated Google insights across all locations including:
     },
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;
-
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/google?from=${from}&to=${to}`;
-      const insightsData = await server.makePinMeToRequest(url);
-      if (!insightsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch Google insights for all locations (${from} to ${to}).
+
+      return handleToolResponse(
+        () => server.makePinMeToRequest(url),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch Google insights for all locations (${from} to ${to}).
 
 **Troubleshooting steps:**
 1. Verify your PINMETO_ACCOUNT_ID is correct
@@ -214,32 +188,10 @@ Returns aggregated Google insights across all locations including:
 - All locations have disconnected Google integrations
 - Dates in wrong format (must be YYYY-MM-DD)
 
-Try using get_locations first to verify you have locations with the 'google' field populated.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatInsightsMarkdown('Google (All Locations)', insightsData)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(insightsData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Try using pinmeto_get_locations first to verify you have locations with the 'google' field populated.`,
+          markdownFormatter: (data) => formatInsightsMarkdown('Google (All Locations)', data)
+        }
+      );
     }
   );
 }
@@ -303,15 +255,13 @@ Returns aggregated Google ratings data across all locations including:
     },
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;
-
       const url = `${apiBaseUrl}/listings/v3/${accountId}/ratings/google?from=${from}&to=${to}`;
-      const ratingsData = await server.makePinMeToRequest(url);
-      if (!ratingsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch Google ratings for all locations (${from} to ${to}).
+
+      return handleToolResponse(
+        () => server.makePinMeToRequest(url),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch Google ratings for all locations (${from} to ${to}).
 
 **Troubleshooting steps:**
 1. Verify your PINMETO_ACCOUNT_ID is correct
@@ -326,32 +276,10 @@ Returns aggregated Google ratings data across all locations including:
 - All locations have disconnected Google integrations
 - Dates in wrong format (must be YYYY-MM-DD)
 
-Note: This endpoint returns data only for locations that have reviews. If you have no reviews in the date range, an empty result is expected.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatRatingsMarkdown('Google (All Locations)', ratingsData)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(ratingsData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Note: This endpoint returns data only for locations that have reviews. If you have no reviews in the date range, an empty result is expected.`,
+          markdownFormatter: (data) => formatRatingsMarkdown('Google (All Locations)', data)
+        }
+      );
     }
   );
 };
@@ -429,16 +357,13 @@ Returns detailed Google ratings data for one location including:
       format?: 'json' | 'markdown';
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
-
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/ratings/google/${storeId}?from=${from}&to=${to}`;
-      const ratingsData = await server.makePinMeToRequest(locationUrl);
 
-      if (!ratingsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch Google ratings for storeId "${storeId}" (${from} to ${to}).
+      return handleToolResponse(
+        () => server.makePinMeToRequest(locationUrl),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch Google ratings for storeId "${storeId}" (${from} to ${to}).
 
 **Troubleshooting steps:**
 1. Verify the storeId exists using get_locations tool
@@ -453,32 +378,10 @@ Returns detailed Google ratings data for one location including:
 - Location's Google integration is disconnected
 - Dates in wrong format (must be YYYY-MM-DD)
 
-Note: This endpoint returns data only if reviews exist. An empty result means no reviews in the date range, which is normal for new or low-traffic locations.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatRatingsMarkdown('Google', ratingsData, storeId)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(ratingsData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Note: This endpoint returns data only if reviews exist. An empty result means no reviews in the date range, which is normal for new or low-traffic locations.`,
+          markdownFormatter: (data) => formatRatingsMarkdown('Google', data, storeId)
+        }
+      );
     }
   );
 };
@@ -543,16 +446,13 @@ Returns keyword data aggregated across all locations including:
     },
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;
-
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords?from=${from}&to=${to}`;
-      const keywordsData = await server.makePinMeToRequest(locationUrl);
 
-      if (!keywordsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch Google keywords for all locations (${from} to ${to}).
+      return handleToolResponse(
+        () => server.makePinMeToRequest(locationUrl),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch Google keywords for all locations (${from} to ${to}).
 
 **Troubleshooting steps:**
 1. Verify your PINMETO_ACCOUNT_ID is correct
@@ -568,32 +468,10 @@ Returns keyword data aggregated across all locations including:
 - Account ID is incorrect
 - Keyword data takes longer to sync (48-72 hours delay)
 
-Note: Keyword data is aggregated monthly and may not be available for very recent months or very new locations.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatKeywordsMarkdown(keywordsData)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(keywordsData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Note: Keyword data is aggregated monthly and may not be available for very recent months or very new locations.`,
+          markdownFormatter: (data) => formatKeywordsMarkdown(data)
+        }
+      );
     }
   );
 };
@@ -672,16 +550,13 @@ Returns keyword data for one location including:
       format?: 'json' | 'markdown';
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
-
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords/${storeId}?from=${from}&to=${to}`;
-      const keywordsData = await server.makePinMeToRequest(locationUrl);
 
-      if (!keywordsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch Google keywords for storeId "${storeId}" (${from} to ${to}).
+      return handleToolResponse(
+        () => server.makePinMeToRequest(locationUrl),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch Google keywords for storeId "${storeId}" (${from} to ${to}).
 
 **Troubleshooting steps:**
 1. Verify the storeId exists using get_locations tool
@@ -698,32 +573,10 @@ Returns keyword data for one location including:
 - Location is new and has no keyword data yet
 - Keyword data takes 48-72 hours to sync
 
-Note: Keyword data is aggregated monthly and requires sufficient search volume. New or low-traffic locations may not have keyword data.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatKeywordsMarkdown(keywordsData, storeId)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(keywordsData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Note: Keyword data is aggregated monthly and requires sufficient search volume. New or low-traffic locations may not have keyword data.`,
+          markdownFormatter: (data) => formatKeywordsMarkdown(data, storeId)
+        }
+      );
     }
   );
 };

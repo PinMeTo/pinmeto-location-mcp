@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
-import { truncateResponse, formatInsightsMarkdown } from '../../helpers';
+import { truncateResponse, formatInsightsMarkdown, handleToolResponse } from '../../helpers';
 
 export function getAppleLocationInsights(server: PinMeToMcpServer) {
   server.tool(
@@ -71,16 +71,13 @@ Returns comprehensive Apple Maps insights including:
       format?: 'json' | 'markdown';
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
-
       const locationUrl = `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/apple?from=${from}&to=${to}`;
-      const locationData = await server.makePinMeToRequest(locationUrl);
 
-      if (!locationData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch Apple Maps insights for storeId "${storeId}" (${from} to ${to}).
+      return handleToolResponse(
+        () => server.makePinMeToRequest(locationUrl),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch Apple Maps insights for storeId "${storeId}" (${from} to ${to}).
 
 **Troubleshooting steps:**
 1. Verify the storeId exists using get_locations tool
@@ -97,32 +94,10 @@ Returns comprehensive Apple Maps insights including:
 - Dates in wrong format (must be YYYY-MM-DD)
 - Apple Maps data not yet available for this location
 
-Try using get_location first to verify the location exists. Note: Apple Maps integration may not be available for all locations depending on your PinMeTo plan.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatInsightsMarkdown('Apple Maps', locationData, storeId)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(locationData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Try using get_location first to verify the location exists. Note: Apple Maps integration may not be available for all locations depending on your PinMeTo plan.`,
+          markdownFormatter: (data) => formatInsightsMarkdown('Apple Maps', data, storeId)
+        }
+      );
     }
   );
 }
@@ -186,15 +161,13 @@ Returns aggregated Apple Maps insights across all locations including:
     },
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;
-
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/apple?from=${from}&to=${to}`;
-      const insightsData = await server.makePinMeToRequest(url);
-      if (!insightsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch Apple Maps insights for all locations (${from} to ${to}).
+
+      return handleToolResponse(
+        () => server.makePinMeToRequest(url),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch Apple Maps insights for all locations (${from} to ${to}).
 
 **Troubleshooting steps:**
 1. Verify your PINMETO_ACCOUNT_ID is correct
@@ -211,32 +184,10 @@ Returns aggregated Apple Maps insights across all locations including:
 - Dates in wrong format (must be YYYY-MM-DD)
 - Apple Maps feature not included in your PinMeTo plan
 
-Try using get_locations first to verify you have locations. Note: Apple Maps integration may not be available for all PinMeTo accounts or plans.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatInsightsMarkdown('Apple Maps (All Locations)', insightsData)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(insightsData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Try using get_locations first to verify you have locations. Note: Apple Maps integration may not be available for all PinMeTo accounts or plans.`,
+          markdownFormatter: (data) => formatInsightsMarkdown('Apple Maps (All Locations)', data)
+        }
+      );
     }
   );
 }

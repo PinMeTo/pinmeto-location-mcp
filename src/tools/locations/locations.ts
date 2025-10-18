@@ -2,7 +2,8 @@ import { z } from 'zod';
 import {
   formatListResponse,
   truncateResponse,
-  formatLocationMarkdown
+  formatLocationMarkdown,
+  handleToolResponse
 } from '../../helpers';
 import { PinMeToMcpServer } from '../../mcp_server';
 
@@ -50,19 +51,16 @@ Returns complete location data including:
     },
     async ({ storeId, format }: { storeId: string; format?: 'json' | 'markdown' }) => {
       const { locationsApiBaseUrl, accountId } = server.configs;
-
       const locationUrl = `${locationsApiBaseUrl}/v4/${accountId}/locations/${storeId}`;
-      const locationData = await server.makePinMeToRequest(locationUrl);
 
-      if (!locationData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Unable to fetch location data for storeId "${storeId}".
+      return handleToolResponse(
+        () => server.makePinMeToRequest(locationUrl),
+        format || 'markdown',
+        {
+          errorMessage: `Unable to fetch location data for storeId "${storeId}".
 
 **Troubleshooting steps:**
-1. Verify the storeId exists using get_locations tool
+1. Verify the storeId exists using pinmeto_get_locations tool
 2. Confirm you're using the correct PINMETO_ACCOUNT_ID
 3. Check if the location is active in your PinMeTo account
 4. Ensure the storeId format is correct (no extra spaces or characters)
@@ -71,34 +69,11 @@ Returns complete location data including:
 - StoreId does not exist in this account
 - Location has been deleted or deactivated
 - Incorrect account configuration
-- Network connectivity issue with PinMeTo API
 
-Try using get_locations first to see all available locations and their storeIds.`
-            }
-          ]
-        };
-      }
-
-      if (format === 'markdown') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: formatLocationMarkdown(locationData)
-            }
-          ]
-        };
-      }
-
-      const [responseText] = truncateResponse(locationData);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: responseText
-          }
-        ]
-      };
+Try using pinmeto_get_locations first to see all available locations and their storeIds.`,
+          markdownFormatter: (data) => formatLocationMarkdown(data)
+        }
+      );
     }
   );
 }
