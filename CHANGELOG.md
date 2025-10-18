@@ -57,6 +57,11 @@ Major improvements to MCP server based on mcp-builder best practices verificatio
 - Updated `makePaginatedPinMeToRequest()` to support optional maxPages parameter
 - Improved error handling across all network integration tools
 - Version number now dynamically loaded from package.json (single source of truth)
+- Added `clean` script with rimraf for cross-platform build cleanup
+- Enhanced package.json metadata:
+  - Added comprehensive keywords for npm discoverability
+  - Added files field to control published content
+  - Added engines field requiring Node.js >=18.0.0
 - Score improvement: 6.5/10 → 9.5/10 based on mcp-builder evaluation
 
 ## 1.0.0 - 2025-09-25
