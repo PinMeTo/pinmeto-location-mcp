@@ -147,6 +147,15 @@ Returns aggregated Apple Maps insights across all locations including:
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD format')
         .describe('End date in YYYY-MM-DD format (e.g., "2024-01-31")'),
+      maxPages: z
+        .number()
+        .int()
+        .min(1)
+        .max(10)
+        .optional()
+        .describe(
+          'Maximum number of pages to fetch (1-10). Omit to fetch all pages. Use to limit response size for large accounts.'
+        ),
       format: z
         .enum(['json', 'markdown'])
         .optional()
@@ -159,12 +168,28 @@ Returns aggregated Apple Maps insights across all locations including:
       idempotentHint: true,
       openWorldHint: true
     },
-    async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
+    async ({
+      from,
+      to,
+      maxPages,
+      format
+    }: {
+      from: string;
+      to: string;
+      maxPages?: number;
+      format?: 'json' | 'markdown';
+    }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/apple?from=${from}&to=${to}`;
 
       return handleToolResponse(
-        () => server.makePinMeToRequest(url),
+        async () => {
+          const [data, areAllPagesFetched] = await server.makePaginatedPinMeToRequest(
+            url,
+            maxPages
+          );
+          return data;
+        },
         format || 'markdown',
         {
           errorMessage: `Unable to fetch Apple Maps insights for all locations (${from} to ${to}).

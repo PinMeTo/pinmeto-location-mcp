@@ -1,0 +1,2499 @@
+{
+    "paging": {},
+    "data": [
+      {
+        "description": {
+          "short": "The location marketing platform for chain businesses and franchises",
+          "long": "The location marketing platform for chain businesses and franchises"
+        },
+        "pendingChanges": {},
+        "location": {
+          "lat": 55.58692722,
+          "lon": 12.9181948
+        },
+        "name": "PinMeTo",
+        "address": {
+          "state": "",
+          "street": "Båtbyggaregatan 189",
+          "zip": "216 42",
+          "city": "Malmö",
+          "country": "Sweden",
+          "countryAlpha2Code": "SE"
+        },
+        "contact": {
+          "email": "hello@pinmeto.com",
+          "phone": "",
+          "homepage": "https://www.pinmeto.com/?utm_source={{network}}_location&utm_medium=organic&utm_campaign={{storeid}}"
+        },
+        "isAlwaysOpen": false,
+        "locationDescriptor": "Ö-kontoret.",
+        "openHours": {
+          "mon": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "tue": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "wed": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              },
+              {
+                "open": "1800",
+                "close": "2000"
+              }
+            ]
+          },
+          "thu": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1600"
+              }
+            ]
+          },
+          "fri": {
+            "state": "Closed",
+            "span": []
+          },
+          "sat": {
+            "state": "Closed",
+            "span": []
+          },
+          "sun": {
+            "state": "Closed",
+            "span": []
+          }
+        },
+        "specialOpenHours": [
+          {
+            "start": "2024-03-29",
+            "end": "2024-03-29",
+            "label": "Påskstängt",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-03-30",
+            "end": "2024-03-30",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-03-31",
+            "end": "2024-03-31",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-04-01",
+            "end": "2024-04-01",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-02-28",
+            "end": "2024-02-28",
+            "label": "Sportlov",
+            "isClosed": false,
+            "openTime": "1100",
+            "closeTime": "1430"
+          },
+          {
+            "start": "2024-02-29",
+            "end": "2024-02-29",
+            "isClosed": false,
+            "openTime": "1100",
+            "closeTime": "1430"
+          },
+          {
+            "start": "2024-03-01",
+            "end": "2024-03-01",
+            "isClosed": false,
+            "openTime": "1100",
+            "closeTime": "1430"
+          },
+          {
+            "start": "2024-02-21",
+            "end": "2024-02-21",
+            "label": "test",
+            "isClosed": false,
+            "openTime": "1100",
+            "closeTime": "1400"
+          },
+          {
+            "start": "2024-02-22",
+            "end": "2024-02-22",
+            "isClosed": false,
+            "openTime": "1100",
+            "closeTime": "1400"
+          },
+          {
+            "start": "2024-02-23",
+            "end": "2024-02-23",
+            "isClosed": false,
+            "openTime": "1100",
+            "closeTime": "1400"
+          },
+          {
+            "label": "",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000",
+            "start": "2018-12-26",
+            "end": "2018-12-26"
+          },
+          {
+            "label": "",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000",
+            "start": "2018-12-25",
+            "end": "2018-12-25"
+          },
+          {
+            "label": "",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000",
+            "start": "2018-12-24",
+            "end": "2018-12-24"
+          },
+          {
+            "label": "Påskig dag",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000",
+            "start": "2018-04-01",
+            "end": "2018-04-01"
+          },
+          {
+            "label": "",
+            "isClosed": false,
+            "openTime": "1000",
+            "closeTime": "1400",
+            "start": "2017-12-31",
+            "end": "2017-12-31"
+          },
+          {
+            "label": "",
+            "isClosed": false,
+            "openTime": "0900",
+            "closeTime": "1400",
+            "start": "2017-12-26",
+            "end": "2017-12-26"
+          },
+          {
+            "label": "",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000",
+            "start": "2017-12-24",
+            "end": "2017-12-24"
+          },
+          {
+            "label": "jul",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000",
+            "start": "2016-12-24",
+            "end": "2016-12-24"
+          }
+        ],
+        "permanentlyClosed": true,
+        "temporarilyClosedUntil": "",
+        "storeId": "1338",
+        "text": "The location marketing platform for chain businesses and franchises",
+        "shortDescription": "The location marketing platform for chain businesses and franchises",
+        "longDescription": "The location marketing platform for chain businesses and franchises",
+        "wifiSsid": "",
+        "network": {
+          "foursquare": {
+            "categories": [
+              {
+                "id": "11001",
+                "name": "Advertising Agency"
+              }
+            ]
+          },
+          "overture": {
+            "categories": {
+              "primaryCategory": {
+                "id": "advertising_agency",
+                "name": "advertising agency"
+              },
+              "additionalCategories": [
+                {
+                  "id": "marketing_agency",
+                  "name": "marketing agency"
+                },
+                {
+                  "id": "internet_marketing_service",
+                  "name": "internet marketing service"
+                },
+                {
+                  "id": "software_development",
+                  "name": "software development"
+                }
+              ]
+            }
+          },
+          "here": {
+            "categories": {
+              "primaryCategory": {
+                "id": "700-7200-0252",
+                "name": "Advertising-Marketing, PR and Market Research"
+              },
+              "additionalCategories": [
+                {
+                  "id": "600-6500-0075",
+                  "name": "Computer and Software"
+                }
+              ]
+            }
+          },
+          "tomtom": {
+            "category": {
+              "featureTypeId": "9352",
+              "serviceSubCategoryId": "9352003"
+            }
+          }
+        }
+      },
+      {
+        "description": {
+          "short": " Built for multi-location brands, PinMeTo is a location marketing tool for online presence management.",
+          "long": "PinMeTo is a leading Swedish SaaS company specialized in location management for multi-location businesses. The advanced software solution streamlines accurate information across popular platforms such as Google, Apple, Bing, and Facebook. With seamless integration with major search engines, maps, and social media platforms, businesses can effortlessly maintain up-to-date information, manage reviews, and enhance their online presence\nTrusted by brands like H&M, 7-Eleven, and Hertz, PinMeTo is becoming a global leader in location marketing and local SEO technologies."
+        },
+        "pendingChanges": {},
+        "location": {
+          "lat": 55.60738341830076,
+          "lon": 13.000980588840322
+        },
+        "name": "PinMeTo",
+        "address": {
+          "street": "Adelgatan 9",
+          "zip": "211 22",
+          "city": "Malmö",
+          "state": "Skåne County",
+          "country": "Sweden",
+          "countryAlpha2Code": "SE"
+        },
+        "contact": {
+          "email": "hello@pinmeto.com",
+          "homepage": "https://www.pinmeto.com/?utm_source={{network}}_location&utm_medium=organic&utm_campaign={{storeid}}",
+          "phone": "+46 73-142 59 13"
+        },
+        "isAlwaysOpen": false,
+        "locationDescriptor": "Malmö",
+        "openHours": {
+          "mon": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0800",
+                "close": "1700"
+              }
+            ]
+          },
+          "tue": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0800",
+                "close": "1700"
+              }
+            ]
+          },
+          "wed": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0800",
+                "close": "1700"
+              }
+            ]
+          },
+          "thu": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0800",
+                "close": "1700"
+              }
+            ]
+          },
+          "fri": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0800",
+                "close": "1700"
+              }
+            ]
+          },
+          "sat": {
+            "state": "Closed",
+            "span": []
+          },
+          "sun": {
+            "state": "Closed",
+            "span": []
+          }
+        },
+        "specialOpenHours": [
+          {
+            "start": "2025-12-24",
+            "end": "2025-12-24",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2025-12-25",
+            "end": "2025-12-25",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2025-12-26",
+            "end": "2025-12-26",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          }
+        ],
+        "permanentlyClosed": false,
+        "temporarilyClosedUntil": "",
+        "storeId": "1337",
+        "text": " Built for multi-location brands, PinMeTo is a location marketing tool for online presence management.",
+        "shortDescription": " Built for multi-location brands, PinMeTo is a location marketing tool for online presence management.",
+        "longDescription": "PinMeTo is a leading Swedish SaaS company specialized in location management for multi-location businesses. The advanced software solution streamlines accurate information across popular platforms such as Google, Apple, Bing, and Facebook. With seamless integration with major search engines, maps, and social media platforms, businesses can effortlessly maintain up-to-date information, manage reviews, and enhance their online presence\nTrusted by brands like H&M, 7-Eleven, and Hertz, PinMeTo is becoming a global leader in location marketing and local SEO technologies.",
+        "customData": {
+          "reception": {
+            "fri": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            },
+            "mon": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            },
+            "sat": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            },
+            "sun": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            },
+            "thu": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            },
+            "tue": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            },
+            "wed": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            }
+          },
+          "services_list": [
+            "Listings",
+            "Conversations",
+            "Posts",
+            "Managed Service"
+          ],
+          "coffee_machine": true
+        },
+        "openingDate": "2017-09-01",
+        "wifiSsid": "PinMeTo",
+        "network": {
+          "facebook": {
+            "pageId": "1605390276379843",
+            "link": "https://www.facebook.com/1605390276379843",
+            "coverImage": "https://scontent-lhr8-2.xx.fbcdn.net/v/t39.30808-6/500530325_1232225045575348_4681068754430054915_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=dc4938&_nc_ohc=T9fck3ye7F0Q7kNvwEn7nYe&_nc_oc=Adnb9zqQJMw6X_a__zAqHXO4J2QOMvgeDbBUR-u-EO0H86fA4v3zQsHjQitaXPa9uUo&_nc_zt=23&_nc_ht=scontent-lhr8-2.xx&edm=AJdBtusEAAAA&_nc_gid=pYt9U8yhBQvIOp5IVWOvwA&oh=00_AferolcaNasaf0WXKapj1dBZHPmrpOFRekTBm-WjH_Q-ew&oe=68F8C1D2",
+            "profileImage": "https://scontent-lhr6-1.xx.fbcdn.net/v/t39.30808-1/497874871_1232931842171335_3146352311763840772_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=79bf43&_nc_ohc=MyyBp7pRWxEQ7kNvwH5rcLH&_nc_oc=AdnaIlpSsrkIQtj1rD96RcQf_JVvq9vJt9OFJ2EPkmbpmDxpY782YOD55lewt0ZHKpM&_nc_zt=24&_nc_ht=scontent-lhr6-1.xx&edm=AJdBtusEAAAA&_nc_gid=pYt9U8yhBQvIOp5IVWOvwA&oh=00_AfdncdBaBFt0_7_86cGx2lyu22mn2LFQOH7g3fEH7_X9xg&oe=68F89CA6",
+            "categories": {
+              "primaryCategory": {
+                "id": "1706730532910578",
+                "name": "Internet Marketing Service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "1065597503495311",
+                  "name": "Software Company"
+                }
+              ]
+            }
+          },
+          "google": {
+            "placeId": "ChIJpbpzuV6hU0YRG49xL3Bp8m8",
+            "link": "https://maps.google.com/maps?cid=8066625813127204635",
+            "newReviewUrl": "https://search.google.com/local/writereview?placeid=ChIJpbpzuV6hU0YRG49xL3Bp8m8",
+            "coverImage": "https://lh3.googleusercontent.com/Ou0yd_QQ7cI6xyptS-rYE1-y7wFA-S-oO4wtlgK96cjgwPRlP39wI48ZrgOLFtYnSggf70t5U91sTp6AeA=s0",
+            "profileImage": "https://lh3.googleusercontent.com/a-/ALV-UjXlow0HnI8heXBg3JHFRzRHpXdj3EpmMhR9-1eDq149VEQjkubh",
+            "categories": {
+              "primaryCategory": {
+                "name": "Internet marketing service",
+                "id": "gcid:internet_marketing_service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "gcid:software_company",
+                  "name": "Software company"
+                }
+              ]
+            }
+          },
+          "bing": {
+            "link": "http://www.bing.com/maps?ss=ypid.YN7995x15663258988743220955&amp;amp;mkt=sv-SE",
+            "categories": {
+              "primaryCategory": {
+                "id": "711949",
+                "name": "Software Company"
+              },
+              "additionalCategories": []
+            }
+          },
+          "apple": {
+            "link": "https://maps.apple.com/place?auid=4865445373130602632",
+            "categories": {
+              "primaryCategory": {
+                "id": "commercial_sector.technology_company.information_technology.software_company.software_development_service",
+                "name": "Software Development Service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "commercial_sector.media_company.marketing_agency",
+                  "name": "Marketing Agency"
+                }
+              ]
+            }
+          },
+          "foursquare": {
+            "categories": [
+              {
+                "id": "11168",
+                "name": "Software Company"
+              }
+            ]
+          },
+          "overture": {
+            "categories": {
+              "primaryCategory": {
+                "id": "advertising_agency",
+                "name": "advertising agency"
+              },
+              "additionalCategories": [
+                {
+                  "id": "marketing_agency",
+                  "name": "marketing agency"
+                },
+                {
+                  "id": "internet_marketing_service",
+                  "name": "internet marketing service"
+                },
+                {
+                  "id": "software_development",
+                  "name": "software development"
+                }
+              ]
+            }
+          },
+          "here": {
+            "categories": {
+              "primaryCategory": {
+                "id": "700-7200-0252",
+                "name": "Advertising-Marketing, PR and Market Research"
+              },
+              "additionalCategories": [
+                {
+                  "id": "600-6500-0075",
+                  "name": "Computer and Software"
+                }
+              ]
+            }
+          },
+          "tomtom": {
+            "category": {
+              "featureTypeId": "9352",
+              "serviceSubCategoryId": "9352003"
+            }
+          }
+        }
+      },
+      {
+        "description": {
+          "short": "Built for multi-location brands PinMeTo is a location marketing tool for online presence management.",
+          "long": "PinMeTo is a leading Swedish SaaS company specialized in location management for multi-location businesses. The advanced software solution streamlines accurate information across popular platforms such as Google, Apple, Bing, and Facebook. With seamless integration with major search engines, maps, and social media platforms, businesses can effortlessly maintain up-to-date information, manage reviews, and enhance their online presence. \n\nTrusted by brands like H&M, 7-Eleven, and Hertz, PinMeTo is becoming a global leader in location marketing and local SEO technologies."
+        },
+        "pendingChanges": {},
+        "location": {
+          "lat": 59.333742,
+          "lon": 18.045284
+        },
+        "name": "PinMeTo",
+        "address": {
+          "street": "Fleminggatan 18",
+          "zip": "11226",
+          "city": "Stockholm",
+          "state": "Stockholm County",
+          "country": "Sweden",
+          "countryAlpha2Code": "SE",
+          "province": ""
+        },
+        "contact": {
+          "email": "sthlm@pinmeto.com",
+          "homepage": "https://www.pinmeto.com/?utm_source={{network}}_location&utm_medium=organic&utm_campaign={{storeid}}",
+          "phone": "+46 73 5087826"
+        },
+        "isAlwaysOpen": false,
+        "locationDescriptor": "Stockholm",
+        "openHours": {
+          "mon": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1800"
+              }
+            ]
+          },
+          "tue": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "wed": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "thu": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1800"
+              }
+            ]
+          },
+          "fri": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1800"
+              }
+            ]
+          },
+          "sat": {
+            "state": "Closed",
+            "span": []
+          },
+          "sun": {
+            "state": "Closed",
+            "span": []
+          }
+        },
+        "specialOpenHours": [],
+        "permanentlyClosed": false,
+        "temporarilyClosedUntil": "",
+        "storeId": "666",
+        "text": "Built for multi-location brands PinMeTo is a location marketing tool for online presence management.",
+        "shortDescription": "Built for multi-location brands PinMeTo is a location marketing tool for online presence management.",
+        "longDescription": "PinMeTo is a leading Swedish SaaS company specialized in location management for multi-location businesses. The advanced software solution streamlines accurate information across popular platforms such as Google, Apple, Bing, and Facebook. With seamless integration with major search engines, maps, and social media platforms, businesses can effortlessly maintain up-to-date information, manage reviews, and enhance their online presence. \n\nTrusted by brands like H&M, 7-Eleven, and Hertz, PinMeTo is becoming a global leader in location marketing and local SEO technologies.",
+        "customData": {
+          "reception": {
+            "fri": {
+              "span": [
+                {
+                  "isClosed": false,
+                  "open": "0800",
+                  "close": "1700"
+                }
+              ],
+              "state": "Open"
+            },
+            "mon": {
+              "span": [
+                {
+                  "isClosed": false,
+                  "open": "0800",
+                  "close": "1700"
+                }
+              ],
+              "state": "Open"
+            },
+            "sat": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            },
+            "sun": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            },
+            "thu": {
+              "span": [
+                {
+                  "isClosed": false,
+                  "open": "0800",
+                  "close": "1700"
+                }
+              ],
+              "state": "Open"
+            },
+            "tue": {
+              "span": [
+                {
+                  "isClosed": false,
+                  "open": "0800",
+                  "close": "1700"
+                }
+              ],
+              "state": "Open"
+            },
+            "wed": {
+              "span": [
+                {
+                  "isClosed": false,
+                  "open": "0800",
+                  "close": "1700"
+                }
+              ],
+              "state": "Open"
+            }
+          }
+        },
+        "openingDate": "2020-04-06",
+        "wifiSsid": "",
+        "network": {
+          "facebook": {
+            "pageId": "421533154708783",
+            "link": "https://www.facebook.com/421533154708783",
+            "coverImage": "https://scontent-lhr6-2.xx.fbcdn.net/v/t39.30808-6/324146129_500638958867690_3851429012841604471_n.png?_nc_cat=104&ccb=1-7&_nc_sid=dc4938&_nc_ohc=S02_vSYtTQAQ7kNvwGE6fs6&_nc_oc=AdkxS9wIlItcMXOmJggfdGHj0roVuxc6I7S7xg_ik1LLVcmxWN52T3sJMfy7rIyW5ok&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AJdBtusEAAAA&_nc_gid=iv4XhateqWwBxzteq2TDAg&oh=00_AffhBUNSOXXm5aL-C61EDsiQQM62ccgtvIGQySyI7_c-Iw&oe=68F865DB",
+            "profileImage": "https://scontent-lhr6-1.xx.fbcdn.net/v/t39.30808-1/351167456_663184608973220_327183344597614189_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=79bf43&_nc_ohc=40iwYM-0e5kQ7kNvwGaulfC&_nc_oc=AdkVEJjn9de8ozCNcchgos9_8F5BezFCNyDJONzOdxiQfUPuUmViGBk5oOR5PsPve7o&_nc_zt=24&_nc_ht=scontent-lhr6-1.xx&edm=AJdBtusEAAAA&_nc_gid=iv4XhateqWwBxzteq2TDAg&oh=00_AfdJ5s3Q1l9fORyW5VixyVEaByLwx4q2WMpzZHtileaGdA&oe=68F861C9",
+            "categories": {
+              "primaryCategory": {
+                "id": "1706730532910578",
+                "name": "Internet Marketing Service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "1065597503495311",
+                  "name": "Software Company"
+                }
+              ]
+            }
+          },
+          "google": {
+            "placeId": "ChIJF9eIJ12dX0YRogcSnTh1G6s",
+            "link": "https://maps.google.com/maps?cid=12329577290870687650",
+            "newReviewUrl": "https://search.google.com/local/writereview?placeid=ChIJF9eIJ12dX0YRogcSnTh1G6s",
+            "coverImage": "https://lh3.googleusercontent.com/7r1Vfdhdd4deCATs1CbWpd48M9rAHCv2tF-gz3fcEmebQOm6ccVS-JsuE9pvFsv94YN4-uD_yE1Q8cHkqg=s0",
+            "profileImage": "https://lh3.googleusercontent.com/a-/ALV-UjVGaoZ2f1t-8KY2NE1xdWbtKN_bJ62uTm0db88S-vVVj4rDk6Q-",
+            "categories": {
+              "primaryCategory": {
+                "name": "Internet marketing service",
+                "id": "gcid:internet_marketing_service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "gcid:software_company",
+                  "name": "Software company"
+                }
+              ]
+            }
+          },
+          "bing": {
+            "link": "http://www.bing.com/maps?ss=ypid.YN7995x11127340673246536676&amp;amp;mkt=sv-SE",
+            "categories": {
+              "primaryCategory": {
+                "id": "711949",
+                "name": "Software Company"
+              },
+              "additionalCategories": []
+            }
+          },
+          "foursquare": {
+            "categories": [
+              {
+                "id": "11001",
+                "name": "Advertising Agency"
+              }
+            ]
+          },
+          "overture": {
+            "categories": {
+              "primaryCategory": {
+                "id": "advertising_agency",
+                "name": "advertising agency"
+              },
+              "additionalCategories": [
+                {
+                  "id": "marketing_agency",
+                  "name": "marketing agency"
+                },
+                {
+                  "id": "internet_marketing_service",
+                  "name": "internet marketing service"
+                },
+                {
+                  "id": "software_development",
+                  "name": "software development"
+                }
+              ]
+            }
+          },
+          "here": {
+            "categories": {
+              "primaryCategory": {
+                "id": "700-7200-0252",
+                "name": "Advertising-Marketing, PR and Market Research"
+              },
+              "additionalCategories": [
+                {
+                  "id": "600-6500-0075",
+                  "name": "Computer and Software"
+                }
+              ]
+            }
+          },
+          "tomtom": {
+            "category": {
+              "featureTypeId": "9352",
+              "serviceSubCategoryId": "9352003"
+            }
+          }
+        }
+      },
+      {
+        "description": {
+          "short": "Built for multi-location brands, PinMeTo is a location marketing tool for online presence management.",
+          "long": "PinMeTo is a SaaS platform that connects multi-location brands with the biggest search, map, and social media platforms, letting them keep their business information up-to-date everywhere, manage their reviews, and maximize their social reach – all from one place.\n\nTrusted by enterprise companies like H&M, 7-Eleven, and Hertz, PinMeTo is quickly becoming a global leader among location marketing and local SEO technologies."
+        },
+        "pendingChanges": {},
+        "location": {
+          "lat": 59.913406,
+          "lon": 10.730735
+        },
+        "name": "PinMeTo",
+        "address": {
+          "street": "Haakon VII's gate 6",
+          "zip": "0161",
+          "city": "Oslo",
+          "state": "Oslo County",
+          "country": "Norway",
+          "countryAlpha2Code": "NO"
+        },
+        "contact": {
+          "email": "hello@pinmeto.com",
+          "phone": "+47 91888116",
+          "homepage": "https://www.pinmeto.com/?utm_source={{network}}_location&utm_medium=organic&utm_campaign={{storeid}}"
+        },
+        "isAlwaysOpen": false,
+        "locationDescriptor": "Oslo",
+        "openHours": {
+          "mon": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0800",
+                "close": "1700"
+              }
+            ]
+          },
+          "tue": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0800",
+                "close": "1700"
+              }
+            ]
+          },
+          "wed": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0800",
+                "close": "1700"
+              }
+            ]
+          },
+          "thu": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0800",
+                "close": "1700"
+              }
+            ]
+          },
+          "fri": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0800",
+                "close": "1600"
+              }
+            ]
+          },
+          "sat": {
+            "state": "Closed",
+            "span": []
+          },
+          "sun": {
+            "state": "Closed",
+            "span": []
+          }
+        },
+        "specialOpenHours": [
+          {
+            "start": "2025-12-24",
+            "end": "2025-12-24",
+            "label": "Julafton",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          }
+        ],
+        "permanentlyClosed": false,
+        "temporarilyClosedUntil": "",
+        "storeId": "7",
+        "text": "Built for multi-location brands, PinMeTo is a location marketing tool for online presence management.",
+        "shortDescription": "Built for multi-location brands, PinMeTo is a location marketing tool for online presence management.",
+        "longDescription": "PinMeTo is a SaaS platform that connects multi-location brands with the biggest search, map, and social media platforms, letting them keep their business information up-to-date everywhere, manage their reviews, and maximize their social reach – all from one place.\n\nTrusted by enterprise companies like H&M, 7-Eleven, and Hertz, PinMeTo is quickly becoming a global leader among location marketing and local SEO technologies.",
+        "customData": {
+          "services_list": [
+            "Item1",
+            "Item2"
+          ]
+        },
+        "openingDate": "2018-11-01",
+        "wifiSsid": "",
+        "network": {
+          "facebook": {
+            "pageId": "418200972027740",
+            "link": "https://www.facebook.com/418200972027740",
+            "coverImage": "https://scontent-lhr8-1.xx.fbcdn.net/v/t39.30808-6/489947466_1091112869700465_613751492534207540_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=dc4938&_nc_ohc=5hM7Ac47uTgQ7kNvwEsB6iq&_nc_oc=Adn9po_q-11QU8yLBiigt9294lNn-d7z4oWs53PUM9AVHRs6OgXJxAwQhOhZnYwlrfU&_nc_zt=23&_nc_ht=scontent-lhr8-1.xx&edm=AJdBtusEAAAA&_nc_gid=oF9aA-GVBDhRfcKjENDlgg&oh=00_AfelMQdyE-rQ1wwBpQiDr8S6rzdOA47DxcH4N2oEsAoF0g&oe=68F8C4E8",
+            "profileImage": "https://scontent-lhr6-1.xx.fbcdn.net/v/t39.30808-1/351328826_986247759047327_2414243562508919664_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=79bf43&_nc_ohc=grwQ7lr06UQQ7kNvwHcQTwS&_nc_oc=AdlIeu2ZgQdownGtV5uePSTGmymBIjtRBbu0x4L_uxHom_jf5EybmX5xRdvMUex3Q8g&_nc_zt=24&_nc_ht=scontent-lhr6-1.xx&edm=AJdBtusEAAAA&_nc_gid=oF9aA-GVBDhRfcKjENDlgg&oh=00_AfdJQJOZgpW6pz5dxsfFdPF5m6adrRDSiFPzobe9AowBUg&oe=68F895C3",
+            "categories": {
+              "primaryCategory": {
+                "id": "1706730532910578",
+                "name": "Internet Marketing Service"
+              },
+              "additionalCategories": []
+            }
+          },
+          "google": {
+            "placeId": "ChIJA0tC0rFtQUYRTQBU5QMg6u8",
+            "link": "https://maps.google.com/maps?cid=17287665320719548493",
+            "newReviewUrl": "https://search.google.com/local/writereview?placeid=ChIJA0tC0rFtQUYRTQBU5QMg6u8",
+            "coverImage": "https://lh3.googleusercontent.com/GKgQafGqKxEKZsGNxEs0nMwoscFHpNXPn2NYaUcASOd-OaLJO63iVtsIZa05m8KNtPa8trq4F7qF9ohLiw=s0",
+            "profileImage": "https://lh3.googleusercontent.com/a-/ALV-UjXvIaqM0c1uMLMNi2NPjPna0XLedo9_wmtJv1_CIdgDou-jhoiJ",
+            "categories": {
+              "primaryCategory": {
+                "name": "Internet marketing service",
+                "id": "gcid:internet_marketing_service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "gcid:software_company",
+                  "name": "Software company"
+                }
+              ]
+            }
+          },
+          "bing": {
+            "link": "http://www.bing.com/maps?ss=ypid.YN7996x819573871930061950&amp;amp;mkt=nb-NO",
+            "categories": {
+              "primaryCategory": {
+                "id": "711949",
+                "name": "Software Company"
+              },
+              "additionalCategories": []
+            }
+          },
+          "foursquare": {
+            "categories": [
+              {
+                "id": "11001",
+                "name": "Advertising Agency"
+              },
+              {
+                "id": "11168",
+                "name": "Software Company"
+              }
+            ]
+          },
+          "overture": {
+            "categories": {
+              "primaryCategory": {
+                "id": "advertising_agency",
+                "name": "advertising agency"
+              },
+              "additionalCategories": [
+                {
+                  "id": "marketing_agency",
+                  "name": "marketing agency"
+                },
+                {
+                  "id": "internet_marketing_service",
+                  "name": "internet marketing service"
+                },
+                {
+                  "id": "software_development",
+                  "name": "software development"
+                }
+              ]
+            }
+          },
+          "here": {
+            "categories": {
+              "primaryCategory": {
+                "id": "700-7200-0252",
+                "name": "Advertising-Marketing, PR and Market Research"
+              },
+              "additionalCategories": [
+                {
+                  "id": "600-6500-0075",
+                  "name": "Computer and Software"
+                }
+              ]
+            }
+          },
+          "tomtom": {
+            "category": {
+              "featureTypeId": "9352",
+              "serviceSubCategoryId": "9352003"
+            }
+          }
+        }
+      },
+      {
+        "description": {
+          "short": "Built for multi-location brands PinMeTo is a location marketing tool for online presence management",
+          "long": "PinMeTo is a SaaS platform that connects multi-location brands with the biggest search, map, and social media platforms, letting them keep their business information up-to-date everywhere, manage their reviews, and maximize their social reach – all from one place.\nTrusted by enterprise companies like H&M, 7-Eleven, and Hertz, PinMeTo is quickly becoming a global leader among location marketing and local SEO technologies"
+        },
+        "pendingChanges": {},
+        "location": {
+          "lat": 13.742727,
+          "lon": 100.557591
+        },
+        "name": "PinMeTo",
+        "address": {
+          "street": "19/133, Sukhumvit Suite, 13th Floor, Soi Sukhumvit 13, Sukhumvit Road",
+          "zip": "10110",
+          "city": "Watthana",
+          "state": "Bangkok",
+          "country": "Thailand",
+          "countryAlpha2Code": "TH"
+        },
+        "contact": {
+          "email": "info@pinmeto.com",
+          "phone": "66 949 43 90 09",
+          "homepage": "https://www.pinmeto.com/?utm_source={{network}}_location&utm_medium=organic&utm_campaign={{storeid}}"
+        },
+        "isAlwaysOpen": false,
+        "locationDescriptor": "Bangkok",
+        "openHours": {
+          "mon": {
+            "state": "Closed",
+            "span": []
+          },
+          "tue": {
+            "state": "Closed",
+            "span": []
+          },
+          "wed": {
+            "state": "Closed",
+            "span": []
+          },
+          "thu": {
+            "state": "Closed",
+            "span": []
+          },
+          "fri": {
+            "state": "Closed",
+            "span": []
+          },
+          "sat": {
+            "state": "Closed",
+            "span": []
+          },
+          "sun": {
+            "state": "Closed",
+            "span": []
+          }
+        },
+        "specialOpenHours": [
+          {
+            "start": "2019-10-16",
+            "end": "2019-10-16",
+            "label": "",
+            "isClosed": false,
+            "openTime": "1000",
+            "closeTime": "1200"
+          },
+          {
+            "start": "2019-12-23",
+            "end": "2019-12-23",
+            "label": "",
+            "isClosed": false,
+            "openTime": "0900",
+            "closeTime": "1500"
+          },
+          {
+            "start": "2019-12-24",
+            "end": "2019-12-24",
+            "label": "",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2019-12-31",
+            "end": "2019-12-31",
+            "label": "test",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2020-01-01",
+            "end": "2020-01-01",
+            "label": "test",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2020-01-10",
+            "end": "2020-01-10",
+            "label": "Test bank holiday",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2021-06-12",
+            "end": "2021-06-12",
+            "label": "Lørdag fodbold - alt lukket",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2023-07-28",
+            "end": "2023-07-28",
+            "label": "Tired",
+            "isClosed": false,
+            "openTime": "1100",
+            "closeTime": "1300"
+          }
+        ],
+        "permanentlyClosed": true,
+        "temporarilyClosedUntil": "",
+        "storeId": "66",
+        "text": "Built for multi-location brands PinMeTo is a location marketing tool for online presence management",
+        "shortDescription": "Built for multi-location brands PinMeTo is a location marketing tool for online presence management",
+        "longDescription": "PinMeTo is a SaaS platform that connects multi-location brands with the biggest search, map, and social media platforms, letting them keep their business information up-to-date everywhere, manage their reviews, and maximize their social reach – all from one place.\nTrusted by enterprise companies like H&M, 7-Eleven, and Hertz, PinMeTo is quickly becoming a global leader among location marketing and local SEO technologies",
+        "customData": {
+          "reception": {
+            "fri": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            },
+            "mon": {
+              "span": [
+                {
+                  "isClosed": false,
+                  "open": "0900",
+                  "close": "1600"
+                }
+              ],
+              "state": "Open"
+            },
+            "sat": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            },
+            "sun": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            },
+            "thu": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            },
+            "tue": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            },
+            "wed": {
+              "span": [
+                {
+                  "isClosed": true,
+                  "open": "",
+                  "close": ""
+                }
+              ],
+              "state": "Closed"
+            }
+          },
+          "services_list": [
+            "Internet Marketing"
+          ],
+          "receptionist": false,
+          "coffee_machine": false
+        },
+        "wifiSsid": "pinmeto-bangkok12",
+        "network": {
+          "facebook": {
+            "pageId": "350466562186135",
+            "link": "https://www.facebook.com/350466562186135",
+            "coverImage": "https://scontent-lhr6-2.xx.fbcdn.net/v/t39.30808-6/325419577_2789552374509528_6813623819795485294_n.png?_nc_cat=105&ccb=1-7&_nc_sid=dc4938&_nc_ohc=rNUKoobF5A0Q7kNvwHYEbVP&_nc_oc=AdnQln5bbSgptjxcYH8QjyOXKwyLlNbJGWhhqW7EkTHp9pcgoPxRf4M4rnOUzrrOUAo&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AJdBtusEAAAA&_nc_gid=kWY0macJ2keuZJ_z9zRh1g&oh=00_AfenmiGVR0mEXZ5L5PzTp8janziheiCCrasDsWgY8DeFEw&oe=68F852BE",
+            "profileImage": "https://scontent-lhr8-1.xx.fbcdn.net/v/t39.30808-1/347555148_700315235441766_6855127354936987149_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=79bf43&_nc_ohc=tE7nstw0SJ0Q7kNvwEgLjik&_nc_oc=AdmWEgCDxAKxk_TFrepoMlh0vk257f9TZShfnay2vuLbQpZiz-sBTs-UmThB4aPLq4M&_nc_zt=24&_nc_ht=scontent-lhr8-1.xx&edm=AJdBtusEAAAA&_nc_gid=kWY0macJ2keuZJ_z9zRh1g&oh=00_AffwCPyD8N9fRa8fwqbxQ7qvzgl5tvnSxRYbOiYxMDYjrA&oe=68F85363",
+            "categories": {
+              "primaryCategory": {
+                "id": "1706730532910578",
+                "name": "Internet Marketing Service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "1065597503495311",
+                  "name": "Software Company"
+                }
+              ]
+            }
+          },
+          "google": {
+            "placeId": "ChIJ1xvnnNef4jARf-mLt835k4A",
+            "link": "https://maps.google.com/maps?cid=9265023520374253951",
+            "newReviewUrl": "https://search.google.com/local/writereview?placeid=ChIJ1xvnnNef4jARf-mLt835k4A",
+            "coverImage": "https://lh3.googleusercontent.com/Whi1m6aXaWXD3wNQcQ6xqke2PJcqbc6gi-Q3tMadKvINnJx4IJgJWLBB4pZ-hJXDBnXm6mFH0aOps2zv5g",
+            "profileImage": "https://lh3.googleusercontent.com/a/ACg8ocLlxWiEs_KpxNr409c1Ykt1ZxRP82l54DaYNJ_O9tNih3aFzN2v",
+            "categories": {
+              "primaryCategory": {
+                "name": "Software company",
+                "id": "gcid:software_company"
+              },
+              "additionalCategories": [
+                {
+                  "id": "gcid:internet_marketing_service",
+                  "name": "Internet marketing service"
+                }
+              ]
+            }
+          },
+          "bing": {
+            "link": "http://www.bing.com/maps?ss=ypid.YN8178x2853961255323748224&amp;amp;mkt=th-TH",
+            "categories": {
+              "primaryCategory": {
+                "id": "711949",
+                "name": "Software Company"
+              },
+              "additionalCategories": []
+            }
+          },
+          "foursquare": {
+            "categories": [
+              {
+                "id": "11001",
+                "name": "Advertising Agency"
+              }
+            ]
+          },
+          "overture": {
+            "categories": {
+              "primaryCategory": {
+                "id": "advertising_agency",
+                "name": "advertising agency"
+              },
+              "additionalCategories": [
+                {
+                  "id": "marketing_agency",
+                  "name": "marketing agency"
+                },
+                {
+                  "id": "internet_marketing_service",
+                  "name": "internet marketing service"
+                },
+                {
+                  "id": "software_development",
+                  "name": "software development"
+                }
+              ]
+            }
+          },
+          "here": {
+            "categories": {
+              "primaryCategory": {
+                "id": "700-7200-0252",
+                "name": "Advertising-Marketing, PR and Market Research"
+              },
+              "additionalCategories": [
+                {
+                  "id": "600-6500-0075",
+                  "name": "Computer and Software"
+                }
+              ]
+            }
+          },
+          "tomtom": {
+            "category": {
+              "featureTypeId": "9352",
+              "serviceSubCategoryId": "9352003"
+            }
+          }
+        }
+      },
+      {
+        "description": {
+          "short": "PinMeTo to wiodąca platforma SaaS do zarządzania profilami firmowymi na Google, Apple, Bing, Waze, Facebook czy Trustpilot. Specjalizujemy się w optymalizacji wizytówek sklepów na mapach, pomagając w zwiększaniu widoczności i zasięgu biznesu online.",
+          "long": "PinMeTo to platforma SaaS, która specjalizuje się w zarządzaniu wizytówkami dla marek z wieloma lokalizacjami w różnych wyszukiwarkach i mapach, takich jak Google Business Profile, Apple Maps, Bing Places i Facebook Pages. Nasze narzędzie pozwala na szybkie i łatwe aktualizowanie informacji oraz zarządzanie recenzjami w czasie rzeczywistym. Zajmujemy się również optymalizacją lokalnego SEO, co ma kluczowe znaczenie dla zwiększenia zasięgu społecznościowego i angażowania klientów. Jesteśmy zaufanym partnerem dużych marek, w tym H&M, Planet Cash i Hertz, oferując kompleksowe rozwiązania do efektywnego zarządzania obecnością online w wielu lokalizacjach. Wybierz PinMeTo i skoncentruj się na rozwijaniu Twojego biznesu."
+        },
+        "pendingChanges": {},
+        "location": {
+          "lat": 54.384455,
+          "lon": 18.596586
+        },
+        "name": "PinMeTo",
+        "address": {
+          "street": "Aleja Grunwaldzka 163",
+          "zip": "80-258",
+          "city": "Gdańsk",
+          "state": "Pomeranian Voivodeship",
+          "country": "Poland",
+          "countryAlpha2Code": "PL"
+        },
+        "contact": {
+          "email": "hello@pinmeto.com",
+          "phone": "+48 888 924 564",
+          "homepage": "https://www.pinmeto.com/pl/?utm_source={{network}}_location&utm_medium=organic&utm_campaign={{storeid}}"
+        },
+        "isAlwaysOpen": false,
+        "locationDescriptor": "Gdańsk",
+        "openHours": {
+          "mon": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "tue": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "wed": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "thu": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "fri": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "sat": {
+            "state": "Closed",
+            "span": []
+          },
+          "sun": {
+            "state": "Closed",
+            "span": []
+          }
+        },
+        "specialOpenHours": [
+          {
+            "start": "2023-11-01",
+            "end": "2023-11-01",
+            "label": "Wszystkich Świętych",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2023-12-24",
+            "end": "2023-12-24",
+            "label": "Wigilia",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2023-12-25",
+            "end": "2023-12-25",
+            "label": "Boże Narodzenie (pierwszy dzień)",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2023-12-26",
+            "end": "2023-12-26",
+            "label": "Boże Narodzenie (drugi dzień)",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-01-01",
+            "end": "2024-01-01",
+            "label": "Nowy Rok",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-03-31",
+            "end": "2024-03-31",
+            "label": "Wielkanoc",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-04-01",
+            "end": "2024-04-01",
+            "label": "Poniedziałek Wielkanocny",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-05-01",
+            "end": "2024-05-01",
+            "label": "Święto Pracy",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-05-03",
+            "end": "2024-05-03",
+            "label": "Święto Konstytucji 3 Maja",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-05-30",
+            "end": "2024-05-30",
+            "label": "Boże Ciało",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-08-15",
+            "end": "2024-08-15",
+            "label": "Święto Wojska Polskiego",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-11-01",
+            "end": "2024-11-01",
+            "label": "Wszystkich Świętych",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-11-11",
+            "end": "2024-11-11",
+            "label": "Święto Niepodległości",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-12-25",
+            "end": "2024-12-25",
+            "label": "Boże Narodzenie (pierwszy dzień)",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2024-12-26",
+            "end": "2024-12-26",
+            "label": "Boże Narodzenie (drugi dzień)",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "start": "2025-08-15",
+            "end": "2025-08-15",
+            "label": "Bank holidays",
+            "isClosed": true,
+            "openTime": "0000",
+            "closeTime": "0000"
+          }
+        ],
+        "permanentlyClosed": false,
+        "storeId": "GDANSK",
+        "text": "PinMeTo to wiodąca platforma SaaS do zarządzania profilami firmowymi na Google, Apple, Bing, Waze, Facebook czy Trustpilot. Specjalizujemy się w optymalizacji wizytówek sklepów na mapach, pomagając w zwiększaniu widoczności i zasięgu biznesu online.",
+        "shortDescription": "PinMeTo to wiodąca platforma SaaS do zarządzania profilami firmowymi na Google, Apple, Bing, Waze, Facebook czy Trustpilot. Specjalizujemy się w optymalizacji wizytówek sklepów na mapach, pomagając w zwiększaniu widoczności i zasięgu biznesu online.",
+        "longDescription": "PinMeTo to platforma SaaS, która specjalizuje się w zarządzaniu wizytówkami dla marek z wieloma lokalizacjami w różnych wyszukiwarkach i mapach, takich jak Google Business Profile, Apple Maps, Bing Places i Facebook Pages. Nasze narzędzie pozwala na szybkie i łatwe aktualizowanie informacji oraz zarządzanie recenzjami w czasie rzeczywistym. Zajmujemy się również optymalizacją lokalnego SEO, co ma kluczowe znaczenie dla zwiększenia zasięgu społecznościowego i angażowania klientów. Jesteśmy zaufanym partnerem dużych marek, w tym H&M, Planet Cash i Hertz, oferując kompleksowe rozwiązania do efektywnego zarządzania obecnością online w wielu lokalizacjach. Wybierz PinMeTo i skoncentruj się na rozwijaniu Twojego biznesu.",
+        "customData": {
+          "services_list": [
+            "Kontrola wizytówek na Google, Apple, Bing",
+            "Zarządzanie wizytówką Google",
+            "Pozycjonowanie wizytówki Google"
+          ]
+        },
+        "openingDate": "2019-10-25",
+        "wifiSsid": "",
+        "network": {
+          "facebook": {
+            "pageId": "607544439770874",
+            "link": "https://www.facebook.com/607544439770874",
+            "coverImage": "https://scontent-lhr8-1.xx.fbcdn.net/v/t39.30808-6/488259066_1087085213439678_2931519832973983052_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=dc4938&_nc_ohc=75mtQZd6VakQ7kNvwFaWTvp&_nc_oc=Adnm9fLmnH-hbjn5Nb6BsRn_XjpfejTJ3rRVliuz96S5PZ-h74Xq-GKIWt7Nvb2GLb4&_nc_zt=23&_nc_ht=scontent-lhr8-1.xx&edm=AJdBtusEAAAA&_nc_gid=MG9lsgIBToV2Hz9HLbYslg&oh=00_AffOBajz399nS1pptax3UzYxDXNi2j_7zbBpjuJjOYM4zw&oe=68F89E61",
+            "profileImage": "https://scontent-lhr8-1.xx.fbcdn.net/v/t39.30808-1/351530038_2557265434430893_395458759207433660_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=79bf43&_nc_ohc=nysyOHo2lJ8Q7kNvwE5wJQM&_nc_oc=AdnzCCurvFbByx-FA0hIJdZIA0G23DuGT-PeOI2ZcSZO2cJTls1TO7wdTP-Yt1F9m9s&_nc_zt=24&_nc_ht=scontent-lhr8-1.xx&edm=AJdBtusEAAAA&_nc_gid=MG9lsgIBToV2Hz9HLbYslg&oh=00_AffL30X3I6UOsRBUumJFopOIyVrq_29Bl8UYg5PY_9WgGA&oe=68F8B4D6",
+            "categories": {
+              "primaryCategory": {
+                "id": "1706730532910578",
+                "name": "Internet Marketing Service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "1065597503495311",
+                  "name": "Software Company"
+                }
+              ]
+            }
+          },
+          "google": {
+            "placeId": "ChIJSXOk8wIL_UYRYGjI0HSn3nU",
+            "link": "https://maps.google.com/maps?cid=8493410067428173920",
+            "newReviewUrl": "https://search.google.com/local/writereview?placeid=ChIJSXOk8wIL_UYRYGjI0HSn3nU",
+            "coverImage": "https://lh3.googleusercontent.com/AM8ZQTXjj-SIGO91cwPqkPuwfm3cu6jpfsSOqFcCw-meVV3h0B9FrPI_6nSO6ZmJ3oMdyRNX7ovXZddX2w=s0",
+            "profileImage": "https://lh3.googleusercontent.com/a-/ALV-UjW-TjbgsHe5LsTNpgIfC82DJqA5u4SBS-fqOSgHRE7oaSuJZazr",
+            "categories": {
+              "primaryCategory": {
+                "name": "Internet marketing service",
+                "id": "gcid:internet_marketing_service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "gcid:software_company",
+                  "name": "Software company"
+                }
+              ]
+            }
+          },
+          "bing": {
+            "link": "http://www.bing.com/maps?ss=ypid.YN7998x2235542430729574682&amp;amp;mkt=pl-PL",
+            "categories": {
+              "primaryCategory": {
+                "id": "711949",
+                "name": "Software Company"
+              },
+              "additionalCategories": []
+            }
+          },
+          "foursquare": {
+            "categories": [
+              {
+                "id": "11168",
+                "name": "Software Company"
+              }
+            ]
+          },
+          "overture": {
+            "categories": {
+              "primaryCategory": {
+                "id": "advertising_agency",
+                "name": "advertising agency"
+              },
+              "additionalCategories": [
+                {
+                  "id": "marketing_agency",
+                  "name": "marketing agency"
+                },
+                {
+                  "id": "internet_marketing_service",
+                  "name": "internet marketing service"
+                },
+                {
+                  "id": "software_development",
+                  "name": "software development"
+                }
+              ]
+            }
+          },
+          "here": {
+            "categories": {
+              "primaryCategory": {
+                "id": "700-7200-0252",
+                "name": "Advertising-Marketing, PR and Market Research"
+              },
+              "additionalCategories": [
+                {
+                  "id": "600-6500-0075",
+                  "name": "Computer and Software"
+                }
+              ]
+            }
+          },
+          "tomtom": {
+            "category": {
+              "featureTypeId": "9352",
+              "serviceSubCategoryId": "9352003"
+            }
+          }
+        }
+      },
+      {
+        "description": {
+          "short": "Built for multi-location brands PinMeTo is a location marketing tool for online presence management.",
+          "long": "PinMeTo is a SaaS platform that connects multi-location brands with the biggest search, map, and social media platforms, letting them keep their business information up-to-date everywhere, manage their reviews, and maximize their social reach – all from one place.\nTrusted by enterprise companies like H&M, 7-Eleven, and Hertz, PinMeTo is quickly becoming a global leader among location marketing and local SEO technologies."
+        },
+        "pendingChanges": {},
+        "location": {
+          "lat": 60.198881,
+          "lon": 24.930242
+        },
+        "name": "PinMeTo",
+        "address": {
+          "street": "Karhumäentie 3",
+          "zip": "01530",
+          "city": "Vantaa",
+          "state": "Uusimaa",
+          "country": "Finland",
+          "countryAlpha2Code": "FI"
+        },
+        "contact": {
+          "phone": "+358 44 241 8244",
+          "email": "info@pinmeto.com",
+          "homepage": "https://www.pinmeto.com/?utm_source={{network}}_location&utm_medium=organic&utm_campaign={{storeid}}"
+        },
+        "isAlwaysOpen": false,
+        "locationDescriptor": "Helsinki",
+        "openHours": {
+          "mon": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "tue": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "wed": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "thu": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "fri": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1700"
+              }
+            ]
+          },
+          "sat": {
+            "state": "Closed",
+            "span": []
+          },
+          "sun": {
+            "state": "Closed",
+            "span": []
+          }
+        },
+        "specialOpenHours": [],
+        "permanentlyClosed": false,
+        "temporarilyClosedUntil": "",
+        "storeId": "171206",
+        "text": "Built for multi-location brands PinMeTo is a location marketing tool for online presence management.",
+        "shortDescription": "Built for multi-location brands PinMeTo is a location marketing tool for online presence management.",
+        "longDescription": "PinMeTo is a SaaS platform that connects multi-location brands with the biggest search, map, and social media platforms, letting them keep their business information up-to-date everywhere, manage their reviews, and maximize their social reach – all from one place.\nTrusted by enterprise companies like H&M, 7-Eleven, and Hertz, PinMeTo is quickly becoming a global leader among location marketing and local SEO technologies.",
+        "customData": {
+          "reception": {
+            "fri": {
+              "span": [
+                {
+                  "open": "0800",
+                  "close": "1700"
+                }
+              ],
+              "state": "Open"
+            },
+            "mon": {
+              "span": [
+                {
+                  "open": "0800",
+                  "close": "1700"
+                }
+              ],
+              "state": "Open"
+            },
+            "sat": {
+              "span": [],
+              "state": "Closed"
+            },
+            "sun": {
+              "span": [],
+              "state": "Closed"
+            },
+            "thu": {
+              "span": [
+                {
+                  "open": "0800",
+                  "close": "1700"
+                }
+              ],
+              "state": "Open"
+            },
+            "tue": {
+              "span": [
+                {
+                  "open": "0800",
+                  "close": "1700"
+                }
+              ],
+              "state": "Open"
+            },
+            "wed": {
+              "span": [
+                {
+                  "open": "0800",
+                  "close": "1700"
+                }
+              ],
+              "state": "Open"
+            }
+          },
+          "receptionist": false,
+          "coffee_machine": false
+        },
+        "openingDate": "2020-01-01",
+        "wifiSsid": "",
+        "network": {
+          "facebook": {
+            "pageId": "113663666841524",
+            "link": "https://www.facebook.com/113663666841524",
+            "coverImage": "https://scontent-lhr6-1.xx.fbcdn.net/v/t39.30808-6/486409008_1104356641712764_3205001521218901701_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=dc4938&_nc_ohc=QHw0x0bOhv8Q7kNvwGS-oNz&_nc_oc=Adk3WBgFA0KMt4YO69OVeX36G3Xprrg3EGGHatM_J5zY2tyG2DHzFd3WiO5M73OE2pc&_nc_zt=23&_nc_ht=scontent-lhr6-1.xx&edm=AJdBtusEAAAA&_nc_gid=gSyi-NqceqG2SufpWKRsGA&oh=00_AfcHIg7MbC3sgEW7cjJDe9nTZNXlpopmi9JojW5etB_4Vw&oe=68F8BC3A",
+            "profileImage": "https://scontent-lhr6-1.xx.fbcdn.net/v/t39.30808-1/351329624_816683660018992_8594387710716728668_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=79bf43&_nc_ohc=K7f2iKMaHXQQ7kNvwHDhiG9&_nc_oc=AdlIj6EEr_BXVt3G9wAR1fDkFrrwQ2upze2pmS-m46kvyv82nuJ88gdetL1qrTkw0Ps&_nc_zt=24&_nc_ht=scontent-lhr6-1.xx&edm=AJdBtusEAAAA&_nc_gid=gSyi-NqceqG2SufpWKRsGA&oh=00_Afeo8U00z5RJiuaKh-j6c8NxezCOAyMFUBkBCn-lWYistQ&oe=68F8C0CF",
+            "categories": {
+              "primaryCategory": {
+                "id": "1706730532910578",
+                "name": "Internet Marketing Service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "1065597503495311",
+                  "name": "Software Company"
+                }
+              ]
+            }
+          },
+          "google": {
+            "placeId": "ChIJbyI5UrV3jEYRsPRwj3sibXQ",
+            "link": "https://maps.google.com/maps?cid=8389399594943968432",
+            "newReviewUrl": "https://search.google.com/local/writereview?placeid=ChIJbyI5UrV3jEYRsPRwj3sibXQ",
+            "coverImage": "https://lh3.googleusercontent.com/zGNe-eyPVu6ICXMi1rZ6TWivQvs4L1esQpCQRzYQn-tu9btNqi2kPIghnHEmi2MD7jSTAgJL6INUF9-Bkg=s0",
+            "profileImage": "https://lh3.googleusercontent.com/a-/ALV-UjVMaCl-Tgs-ciYidB_JTsGX-moMQ3BbWn9NtU3lE4-_CyeS1kiP",
+            "categories": {
+              "primaryCategory": {
+                "name": "Internet marketing service",
+                "id": "gcid:internet_marketing_service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "gcid:software_company",
+                  "name": "Software company"
+                }
+              ]
+            }
+          },
+          "bing": {
+            "link": "http://www.bing.com/maps?ss=ypid.YN8056x14800522956671178394&amp;amp;mkt=fi-FI",
+            "categories": {
+              "primaryCategory": {
+                "id": "711588",
+                "name": "Marketing Agency"
+              },
+              "additionalCategories": []
+            }
+          },
+          "foursquare": {
+            "categories": [
+              {
+                "id": "11001",
+                "name": "Advertising Agency"
+              }
+            ]
+          },
+          "overture": {
+            "categories": {
+              "primaryCategory": {
+                "id": "advertising_agency",
+                "name": "advertising agency"
+              },
+              "additionalCategories": [
+                {
+                  "id": "marketing_agency",
+                  "name": "marketing agency"
+                },
+                {
+                  "id": "internet_marketing_service",
+                  "name": "internet marketing service"
+                },
+                {
+                  "id": "software_development",
+                  "name": "software development"
+                }
+              ]
+            }
+          },
+          "here": {
+            "categories": {
+              "primaryCategory": {
+                "id": "700-7200-0252",
+                "name": "Advertising-Marketing, PR and Market Research"
+              },
+              "additionalCategories": [
+                {
+                  "id": "600-6500-0075",
+                  "name": "Computer and Software"
+                }
+              ]
+            }
+          },
+          "tomtom": {
+            "category": {
+              "featureTypeId": "9352",
+              "serviceSubCategoryId": "9352003"
+            }
+          }
+        }
+      },
+      {
+        "description": {
+          "short": "PinMeTo offers a SaaS platform for managing business information and online conversations of large multi-location organisations. ",
+          "long": "PinMeTo is a SaaS platform that connects multi-location brands with the biggest search, map, and social media platforms, letting them keep their business information up-to-date everywhere, manage their reviews, and maximize their social reach – all from one place.\n\nTrusted by enterprise companies like H&M, 7-Eleven, and Hertz, PinMeTo is quickly becoming a global leader among location marketing and local SEO technologies."
+        },
+        "pendingChanges": {},
+        "location": {
+          "lat": 44.417520872332,
+          "lon": 26.0387134552
+        },
+        "name": "PinMeTo",
+        "address": {
+          "street": "Str. Cobadin 5",
+          "zip": "051775",
+          "city": "Bucharest",
+          "state": "",
+          "country": "Romania",
+          "countryAlpha2Code": "RO"
+        },
+        "contact": {
+          "email": "hello@pinmeto.com",
+          "phone": "+40726185290",
+          "homepage": "https://www.pinmeto.com/?utm_source={{network}}_location&utm_medium=organic&utm_campaign={{storeid}}"
+        },
+        "isAlwaysOpen": false,
+        "locationDescriptor": "Bucharest",
+        "openHours": {
+          "mon": {
+            "state": "Closed",
+            "span": []
+          },
+          "tue": {
+            "state": "Closed",
+            "span": []
+          },
+          "wed": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1800"
+              }
+            ]
+          },
+          "thu": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1800"
+              }
+            ]
+          },
+          "fri": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1800"
+              }
+            ]
+          },
+          "sat": {
+            "state": "Closed",
+            "span": []
+          },
+          "sun": {
+            "state": "Closed",
+            "span": []
+          }
+        },
+        "specialOpenHours": [],
+        "permanentlyClosed": true,
+        "temporarilyClosedUntil": "",
+        "storeId": "33466",
+        "text": "PinMeTo offers a SaaS platform for managing business information and online conversations of large multi-location organisations. ",
+        "shortDescription": "PinMeTo offers a SaaS platform for managing business information and online conversations of large multi-location organisations. ",
+        "longDescription": "PinMeTo is a SaaS platform that connects multi-location brands with the biggest search, map, and social media platforms, letting them keep their business information up-to-date everywhere, manage their reviews, and maximize their social reach – all from one place.\n\nTrusted by enterprise companies like H&M, 7-Eleven, and Hertz, PinMeTo is quickly becoming a global leader among location marketing and local SEO technologies.",
+        "wifiSsid": "",
+        "network": {
+          "facebook": {
+            "pageId": "103717684553949",
+            "link": "https://www.facebook.com/103717684553949",
+            "coverImage": "https://scontent-lhr6-1.xx.fbcdn.net/v/t39.30808-6/323290448_589129115944969_6211769674076416464_n.png?_nc_cat=102&ccb=1-7&_nc_sid=dc4938&_nc_ohc=Lrj53IiZJC4Q7kNvwEwN-q1&_nc_oc=AdlU_KFBILuIiO1qBnoMUfT0Jfr3jkHsm7AvZIllhnxVMjL5b8AzCCWkMHqEc01XyXI&_nc_zt=23&_nc_ht=scontent-lhr6-1.xx&edm=AJdBtusEAAAA&_nc_gid=8pRLjJiBBTkKHuoIiWVUfA&oh=00_AfevdqkqQcheFgJ7ZCNpX6dwH02UC91MOJ7ObnUPCaOgSQ&oe=68F8C319",
+            "profileImage": "https://scontent-lhr6-2.xx.fbcdn.net/v/t39.30808-1/350941172_519859360238187_8835301287782666499_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=79bf43&_nc_ohc=aKDqdTzrEqYQ7kNvwHiuLCm&_nc_oc=Admnd8NIK36DuS9WWjwb-Wk1fYOyCnaudbXL8B3QsbhFe4yNOgX-MXIy0IlFdSUSrTw&_nc_zt=24&_nc_ht=scontent-lhr6-2.xx&edm=AJdBtusEAAAA&_nc_gid=8pRLjJiBBTkKHuoIiWVUfA&oh=00_Afcs8qfHYefeJsZyZsI97ut8WRWRMaDk6o8ZiU6tUtjw9w&oe=68F8AEFD",
+            "categories": {
+              "primaryCategory": {
+                "id": "1706730532910578",
+                "name": "Internet Marketing Service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "1065597503495311",
+                  "name": "Software Company"
+                }
+              ]
+            }
+          },
+          "google": {
+            "placeId": "ChIJ92SIRRD_sUAR9rY4IFLm9_A",
+            "link": "https://maps.google.com/maps?cid=17363600128752531190",
+            "newReviewUrl": "https://search.google.com/local/writereview?placeid=ChIJ92SIRRD_sUAR9rY4IFLm9_A",
+            "coverImage": "https://lh3.googleusercontent.com/8a7Vnel9T73MRMtqZD_W2skLL60p9PupfCwgRGujkSap8EYRgqb6uzBV51KZNPIye4GfeSdvfb2Cojvd6g",
+            "profileImage": "https://lh3.googleusercontent.com/a/ACg8ocIy2sHMzeCNwnpjcjCQHPSm32KwEPMDefReFFGVkfEgSwxLiDt_",
+            "categories": {
+              "primaryCategory": {
+                "name": "Internet marketing service",
+                "id": "gcid:internet_marketing_service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "gcid:software_company",
+                  "name": "Software company"
+                }
+              ]
+            }
+          },
+          "bing": {
+            "link": "http://www.bing.com/maps?ss=ypid.YN8154x8277456301189750289&amp;amp;mkt=ro-RO",
+            "categories": {
+              "primaryCategory": {
+                "id": "711949",
+                "name": "Software Company"
+              },
+              "additionalCategories": []
+            }
+          },
+          "foursquare": {
+            "categories": [
+              {
+                "id": "11001",
+                "name": "Advertising Agency"
+              }
+            ]
+          },
+          "overture": {
+            "categories": {
+              "primaryCategory": {
+                "id": "advertising_agency",
+                "name": "advertising agency"
+              },
+              "additionalCategories": [
+                {
+                  "id": "marketing_agency",
+                  "name": "marketing agency"
+                },
+                {
+                  "id": "internet_marketing_service",
+                  "name": "internet marketing service"
+                },
+                {
+                  "id": "software_development",
+                  "name": "software development"
+                }
+              ]
+            }
+          },
+          "here": {
+            "categories": {
+              "primaryCategory": {
+                "id": "700-7200-0252",
+                "name": "Advertising-Marketing, PR and Market Research"
+              },
+              "additionalCategories": [
+                {
+                  "id": "600-6500-0075",
+                  "name": "Computer and Software"
+                }
+              ]
+            }
+          },
+          "tomtom": {
+            "category": {
+              "featureTypeId": "9352",
+              "serviceSubCategoryId": "9352003"
+            }
+          }
+        }
+      },
+      {
+        "description": {
+          "short": "Built for multi-location brands PinMeTo is a location marketing tool for online presence management.",
+          "long": "PinMeTo is a SaaS platform that connects multi-location brands with the biggest search, map, and social media platforms, letting them keep their business information up-to-date everywhere, manage their reviews, and maximize their social reach – all from one place.\n\nTrusted by enterprise companies like H&M, 7-Eleven, and Hertz, PinMeTo is quickly becoming a global leader among location marketing and local SEO technologies."
+        },
+        "pendingChanges": {},
+        "location": {
+          "lat": 38.714,
+          "lon": -9.14088
+        },
+        "name": "PinMeTo",
+        "address": {
+          "street": "Largo do Duque de Cadaval, 17",
+          "zip": "1200-160",
+          "city": "Lisboa",
+          "state": "Distrito de Lisboa",
+          "country": "Portugal",
+          "countryAlpha2Code": "PT"
+        },
+        "contact": {
+          "email": "communication@pinmeto.com",
+          "homepage": "https://www.pinmeto.com/?utm_source={{network}}_location&utm_medium=organic&utm_campaign={{storeid}}",
+          "phone": "+351933303304"
+        },
+        "isAlwaysOpen": false,
+        "locationDescriptor": "Lisbon",
+        "openHours": {
+          "mon": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0800",
+                "close": "1700"
+              }
+            ]
+          },
+          "tue": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1800"
+              }
+            ]
+          },
+          "wed": {
+            "state": "Closed",
+            "span": []
+          },
+          "thu": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "2000"
+              }
+            ]
+          },
+          "fri": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "0900",
+                "close": "1800"
+              }
+            ]
+          },
+          "sat": {
+            "state": "Closed",
+            "span": []
+          },
+          "sun": {
+            "state": "Closed",
+            "span": []
+          }
+        },
+        "specialOpenHours": [
+          {
+            "label": "Tired",
+            "isClosed": false,
+            "start": "2023-07-28",
+            "end": "2023-07-28",
+            "openTime": "1100",
+            "closeTime": "1300"
+          },
+          {
+            "label": "",
+            "isClosed": true,
+            "start": "2021-12-25",
+            "end": "2021-12-25",
+            "openTime": "0000",
+            "closeTime": "0000"
+          },
+          {
+            "label": "Lørdag fodbold - alt lukket",
+            "isClosed": true,
+            "start": "2021-06-12",
+            "end": "2021-06-12",
+            "openTime": "0000",
+            "closeTime": "0000"
+          }
+        ],
+        "permanentlyClosed": false,
+        "temporarilyClosedUntil": "",
+        "storeId": "8",
+        "text": "Built for multi-location brands PinMeTo is a location marketing tool for online presence management.",
+        "shortDescription": "Built for multi-location brands PinMeTo is a location marketing tool for online presence management.",
+        "longDescription": "PinMeTo is a SaaS platform that connects multi-location brands with the biggest search, map, and social media platforms, letting them keep their business information up-to-date everywhere, manage their reviews, and maximize their social reach – all from one place.\n\nTrusted by enterprise companies like H&M, 7-Eleven, and Hertz, PinMeTo is quickly becoming a global leader among location marketing and local SEO technologies.",
+        "network": {
+          "facebook": {
+            "pageId": "193583742199783",
+            "link": "https://www.facebook.com/193583742199783",
+            "coverImage": "https://scontent-lhr6-2.xx.fbcdn.net/v/t39.30808-6/480195352_596959966647973_249746422596078662_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=dc4938&_nc_ohc=qdmNjhfTxKgQ7kNvwHIgm3n&_nc_oc=AdlB6pnnxbvFfEh3Uz4CCFeLdgyqFDUYUCr0-IgaB7t5LWzKiMItjUYlLDRUZV1VQG4&_nc_zt=23&_nc_ht=scontent-lhr6-2.xx&edm=AJdBtusEAAAA&_nc_gid=D-9IpifiDBlv5YWhrwRFDg&oh=00_AffcUZG6ZMahjNzaXTulff5q-6NWCD9y57zZDeU_NeKAJg&oe=68F8C8DB",
+            "profileImage": "https://scontent-lhr6-1.xx.fbcdn.net/v/t39.30808-1/352033240_967337357791877_5017121996328403602_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=79bf43&_nc_ohc=QXji0S9YAf0Q7kNvwF3eTpE&_nc_oc=Adlp7xISkJYwHLQ2siOYXUbIt10ayvLeNP2oL5VyHQ1VjAywIhgDxa-6TXDnVrS328I&_nc_zt=24&_nc_ht=scontent-lhr6-1.xx&edm=AJdBtusEAAAA&_nc_gid=D-9IpifiDBlv5YWhrwRFDg&oh=00_AfeNlPk-ZzyECq80aHlYzpt_IqT0o3i0MTrwM-lLvqZ6vw&oe=68F8A6AA",
+            "categories": {
+              "primaryCategory": {
+                "id": "1706730532910578",
+                "name": "Internet Marketing Service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "1065597503495311",
+                  "name": "Software Company"
+                }
+              ]
+            }
+          },
+          "google": {
+            "placeId": "ChIJr5S5GuIzGQ0RUXZllSN3ubI",
+            "link": "https://maps.google.com/maps?cid=12878455604156659281",
+            "newReviewUrl": "https://search.google.com/local/writereview?placeid=ChIJr5S5GuIzGQ0RUXZllSN3ubI",
+            "coverImage": "https://lh3.googleusercontent.com/AZzzWaati9Z3lQVqBcsr0iq7at6xWBAj1WmFrdi6NRtDavWcNY05AtPNwvRM7BIiDy2FwBjjyeuOtA3j8w=s0",
+            "profileImage": "https://lh3.googleusercontent.com/a-/ALV-UjW4SA85dkCNsT5AkFxmlZloSMs68V-1TBP-DUtZXYw2v6L6lzU",
+            "categories": {
+              "primaryCategory": {
+                "name": "Internet marketing service",
+                "id": "gcid:internet_marketing_service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "gcid:software_company",
+                  "name": "Software company"
+                }
+              ]
+            }
+          },
+          "bing": {
+            "link": "http://www.bing.com/maps?ss=ypid.YN8149x8050365741584855452&amp;amp;mkt=pt-PT",
+            "categories": {
+              "primaryCategory": {
+                "id": "711949",
+                "name": "Software Company"
+              },
+              "additionalCategories": []
+            }
+          },
+          "foursquare": {
+            "categories": [
+              {
+                "id": "11001",
+                "name": "Advertising Agency"
+              }
+            ]
+          },
+          "overture": {
+            "categories": {
+              "primaryCategory": {
+                "id": "advertising_agency",
+                "name": "advertising agency"
+              },
+              "additionalCategories": [
+                {
+                  "id": "marketing_agency",
+                  "name": "marketing agency"
+                },
+                {
+                  "id": "internet_marketing_service",
+                  "name": "internet marketing service"
+                },
+                {
+                  "id": "software_development",
+                  "name": "software development"
+                }
+              ]
+            }
+          },
+          "here": {
+            "categories": {
+              "primaryCategory": {
+                "id": "700-7200-0252",
+                "name": "Advertising-Marketing, PR and Market Research"
+              },
+              "additionalCategories": [
+                {
+                  "id": "600-6500-0075",
+                  "name": "Computer and Software"
+                }
+              ]
+            }
+          },
+          "tomtom": {
+            "category": {
+              "featureTypeId": "9352",
+              "serviceSubCategoryId": "9352003"
+            }
+          }
+        }
+      },
+      {
+        "description": {
+          "short": "Built for multi-location brands, PinMeTo is a location marketing tool for online presence management.",
+          "long": "PinMeTo is a leading Swedish SaaS company specialized in location management for multi-location businesses. The advanced software solution streamlines accurate information across popular platforms such as Google, Apple, Bing, and Facebook. With seamless integration with major search engines, maps, and social media platforms, businesses can effortlessly maintain up-to-date information, manage reviews, and enhance their online presence.\nTrusted by brands like H&M, 7-Eleven, and Hertz, PinMeTo is becoming a global leader in location marketing and local SEO technologies."
+        },
+        "pendingChanges": {},
+        "location": {
+          "lat": 19.154951,
+          "lon": 72.887477
+        },
+        "name": "PinMeTo",
+        "address": {
+          "street": "A321, Master Mind 4, Royal Palms, Goregaon East",
+          "zip": "400065",
+          "city": "Mumbai",
+          "state": "State of Mahārāshtra",
+          "country": "India",
+          "countryAlpha2Code": "IN"
+        },
+        "contact": {
+          "phone": "+91 8369737548",
+          "email": "hello@pinmeto.com",
+          "homepage": "https://www.pinmeto.com/?utm_source={{network}}_location&utm_medium=organic&utm_campaign={{storeid}}"
+        },
+        "isAlwaysOpen": false,
+        "locationDescriptor": "Mumbai",
+        "openHours": {
+          "mon": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "1000",
+                "close": "1800"
+              }
+            ]
+          },
+          "tue": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "1000",
+                "close": "1800"
+              }
+            ]
+          },
+          "wed": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "1000",
+                "close": "1800"
+              }
+            ]
+          },
+          "thu": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "1000",
+                "close": "1800"
+              }
+            ]
+          },
+          "fri": {
+            "state": "Open",
+            "span": [
+              {
+                "open": "1000",
+                "close": "1800"
+              }
+            ]
+          },
+          "sat": {
+            "state": "Closed",
+            "span": []
+          },
+          "sun": {
+            "state": "Closed",
+            "span": []
+          }
+        },
+        "specialOpenHours": [],
+        "permanentlyClosed": false,
+        "storeId": "MUMBAI",
+        "text": "Built for multi-location brands, PinMeTo is a location marketing tool for online presence management.",
+        "shortDescription": "Built for multi-location brands, PinMeTo is a location marketing tool for online presence management.",
+        "longDescription": "PinMeTo is a leading Swedish SaaS company specialized in location management for multi-location businesses. The advanced software solution streamlines accurate information across popular platforms such as Google, Apple, Bing, and Facebook. With seamless integration with major search engines, maps, and social media platforms, businesses can effortlessly maintain up-to-date information, manage reviews, and enhance their online presence.\nTrusted by brands like H&M, 7-Eleven, and Hertz, PinMeTo is becoming a global leader in location marketing and local SEO technologies.",
+        "network": {
+          "google": {
+            "placeId": "ChIJl-CXRhfJ5zsROz2BNPyzC9o",
+            "link": "https://maps.google.com/maps?cid=15711849620806122811",
+            "newReviewUrl": "https://search.google.com/local/writereview?placeid=ChIJl-CXRhfJ5zsROz2BNPyzC9o",
+            "coverImage": "https://lh3.googleusercontent.com/Y82gNgU4Bs2HwofVNoTaa7_W3HXWKwIsZERZYmjHQsoPMzVdFBRMyWdAHmcZWlGuxS8_iJxLOtuAeBCQ=s0",
+            "profileImage": "https://lh3.googleusercontent.com/a-/ALV-UjV3FyS7AqgOmtuS5omLmv_byevYAK65r0Nfnx3iCo8T3Rb_btI",
+            "categories": {
+              "primaryCategory": {
+                "id": "gcid:internet_marketing_service",
+                "name": "Internet marketing service"
+              },
+              "additionalCategories": [
+                {
+                  "id": "gcid:software_company",
+                  "name": "Software company"
+                }
+              ]
+            }
+          },
+          "bing": {
+            "link": "http://www.bing.com/maps?ss=ypid.YN4070x10928280389225978517&amp;amp;mkt=en-IN",
+            "categories": {
+              "primaryCategory": {
+                "id": "711949",
+                "name": "Software Company"
+              },
+              "additionalCategories": []
+            }
+          },
+          "foursquare": {
+            "categories": [
+              {
+                "id": "11168",
+                "name": "Software Company"
+              }
+            ]
+          },
+          "overture": {
+            "categories": {
+              "primaryCategory": {
+                "id": "advertising_agency",
+                "name": "advertising agency"
+              },
+              "additionalCategories": [
+                {
+                  "id": "marketing_agency",
+                  "name": "marketing agency"
+                },
+                {
+                  "id": "internet_marketing_service",
+                  "name": "internet marketing service"
+                },
+                {
+                  "id": "software_development",
+                  "name": "software development"
+                }
+              ]
+            }
+          },
+          "here": {
+            "categories": {
+              "primaryCategory": {
+                "id": "700-7200-0252",
+                "name": "Advertising-Marketing, PR and Market Research"
+              },
+              "additionalCategories": [
+                {
+                  "id": "600-6500-0075",
+                  "name": "Computer and Software"
+                }
+              ]
+            }
+          },
+          "tomtom": {
+            "category": {
+              "featureTypeId": "9352",
+              "serviceSubCategoryId": "9352003"
+            }
+          }
+        }
+      }
+    ]
+  }

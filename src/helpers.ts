@@ -51,6 +51,11 @@ export function formatListResponse(
 export function truncateResponse(data: any): [string, boolean] {
   const jsonStr = JSON.stringify(data, null, 2);
 
+  // Handle when JSON.stringify returns undefined (e.g., for undefined input)
+  if (jsonStr === undefined) {
+    return ['undefined', false];
+  }
+
   if (jsonStr.length <= MAX_RESPONSE_CHARS) {
     return [jsonStr, false]; // [content, wasTruncated]
   }
@@ -68,7 +73,7 @@ export function formatLocationMarkdown(location: any): string {
   let md = '# Location Details\n\n';
   md += `**Store ID:** ${location.storeId || 'N/A'}\n`;
   md += `**Name:** ${location.name || 'N/A'}\n`;
-  md += `**Status:** ${location.isActive ? 'Active' : 'Inactive'}\n\n`;
+  md += `**Status:** ${location.permanentlyClosed === false ? 'Active' : 'Inactive'}\n\n`;
 
   if (location.address) {
     md += '## Address\n';
@@ -81,7 +86,9 @@ export function formatLocationMarkdown(location: any): string {
     md += '## Contact\n';
     if (location.contact.phone) md += `**Phone:** ${location.contact.phone}\n`;
     if (location.contact.email) md += `**Email:** ${location.contact.email}\n`;
-    if (location.contact.website) md += `**Website:** ${location.contact.website}\n`;
+    if (location.contact.website || location.contact.homepage) {
+      md += `**Website:** ${location.contact.website || location.contact.homepage}\n`;
+    }
     md += '\n';
   }
 
