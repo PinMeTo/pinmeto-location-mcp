@@ -5,7 +5,7 @@ import {
   LATEST_PROTOCOL_VERSION,
   Implementation
 } from '@modelcontextprotocol/sdk/types.js';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import os from 'os';
 import { getLocations, getLocation } from './tools/locations/locations';
 import {
@@ -33,6 +33,21 @@ const PACKAGE_NAME = packageJson.name;
 const PACKAGE_VERSION = packageJson.version;
 const TOKEN_CACHE_SECONDS = 59 * 60;
 
+/**
+ * Custom error class for PinMeTo API errors
+ * Preserves HTTP status codes and error types for better error handling
+ */
+export class PinMeToApiError extends Error {
+  constructor(
+    message: string,
+    public statusCode?: number,
+    public errorType?: 'http_error' | 'timeout' | 'network_error' | 'unknown'
+  ) {
+    super(message);
+    this.name = 'PinMeToApiError';
+  }
+}
+
 export class PinMeToMcpServer extends McpServer {
   private _configs: Configs;
 
@@ -56,8 +71,22 @@ export class PinMeToMcpServer extends McpServer {
       const response = await axios.get(url, { headers, timeout: 30000 });
       return response.data;
     } catch (e: any) {
-      console.error(`Request failed, reason: ${e}`);
-      return null;
+      // Enhance error handling to preserve HTTP status codes
+      if (axios.isAxiosError(e)) {
+        if (e.response) {
+          const status = e.response.status;
+          console.error(`API request failed with status ${status}: ${url}`);
+          throw new PinMeToApiError(`API request failed with status ${status}`, status, 'http_error');
+        } else if (e.code === 'ECONNABORTED') {
+          console.error(`Request timeout: ${url}`);
+          throw new PinMeToApiError('Request timed out', undefined, 'timeout');
+        } else if (e.code === 'ENOTFOUND' || e.code === 'ECONNREFUSED') {
+          console.error(`Network error: ${url}`);
+          throw new PinMeToApiError('Network error - unable to reach API', undefined, 'network_error');
+        }
+      }
+      console.error(`Request failed: ${e}`);
+      throw new PinMeToApiError('Request failed', undefined, 'unknown');
     }
   }
 
@@ -71,28 +100,30 @@ export class PinMeToMcpServer extends McpServer {
     let pageCount = 0;
 
     while (nextUrl) {
-      const resp = await this.makePinMeToRequest(nextUrl);
-      if (!resp) {
-        console.warn("Couldn't fetch all pages for the request");
+      try {
+        const resp = await this.makePinMeToRequest(nextUrl);
+        const pageData: T[] = resp['data'] || [];
+        allData.push(...pageData);
+        const paging = resp['paging'] || {};
+        nextUrl = paging['nextUrl'];
+        pageCount++;
+
+        // Check if we've reached the max pages limit
+        if (maxPages && pageCount >= maxPages) {
+          // If there's still a nextUrl, we didn't fetch everything
+          if (nextUrl && pageData.length > 0) {
+            areAllPagesFetched = false;
+          }
+          break;
+        }
+
+        if (!nextUrl || pageData.length == 0) break;
+      } catch (error) {
+        // If we fail to fetch a page, return what we have so far
+        console.warn("Couldn't fetch all pages for the request:", error);
         areAllPagesFetched = false;
         break;
       }
-      const pageData: T[] = resp['data'] || [];
-      allData.push(...pageData);
-      const paging = resp['paging'] || {};
-      nextUrl = paging['nextUrl'];
-      pageCount++;
-
-      // Check if we've reached the max pages limit
-      if (maxPages && pageCount >= maxPages) {
-        // If there's still a nextUrl, we didn't fetch everything
-        if (nextUrl && pageData.length > 0) {
-          areAllPagesFetched = false;
-        }
-        break;
-      }
-
-      if (!nextUrl || pageData.length == 0) break;
     }
     return [allData, areAllPagesFetched];
   }

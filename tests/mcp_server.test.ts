@@ -55,7 +55,8 @@ vi.mock('axios', () => ({
       }
 
       return Promise.reject(new Error('Not found'));
-    })
+    }),
+    isAxiosError: vi.fn(() => true)
   }
 }));
 
@@ -118,7 +119,7 @@ describe('Locations', () => {
     testTransport.onmessage?.({
       method: 'tools/call',
       params: {
-        name: 'get_locations',
+        name: 'pinmeto_get_locations',
         arguments: {
           fields: ['_id']
         }

@@ -1,3 +1,5 @@
+import { PinMeToApiError } from './mcp_server.js';
+
 const MAX_RESPONSE_CHARS = 25000; // ~25k tokens (MCP best practice)
 
 export function formatListResponse(
@@ -139,4 +141,84 @@ export function formatKeywordsMarkdown(keywords: any, storeId?: string): string 
   md += '\n```\n\n';
 
   return md;
+}
+
+/**
+ * Format API errors with specific, actionable messages
+ * Provides guidance based on error type and status code
+ */
+export function formatApiError(error: unknown, context?: string): string {
+  if (error instanceof PinMeToApiError) {
+    const contextStr = context ? ` ${context}` : '';
+
+    if (error.statusCode === 404) {
+      return `Error: Resource not found${contextStr}. Please verify the ID is correct and the resource exists.`;
+    } else if (error.statusCode === 403) {
+      return `Error: Permission denied${contextStr}. Check your PINMETO_APP_ID and PINMETO_APP_SECRET credentials.`;
+    } else if (error.statusCode === 429) {
+      return `Error: Rate limit exceeded${contextStr}. Please wait before making more requests.`;
+    } else if (error.statusCode === 401) {
+      return `Error: Authentication failed${contextStr}. Verify your API credentials are correct.`;
+    } else if (error.errorType === 'timeout') {
+      return `Error: Request timed out${contextStr}. The PinMeTo API may be slow. Please try again.`;
+    } else if (error.errorType === 'network_error') {
+      return `Error: Network error${contextStr}. Unable to reach the PinMeTo API. Check your internet connection.`;
+    } else if (error.statusCode) {
+      return `Error: API request failed with status ${error.statusCode}${contextStr}.`;
+    }
+  }
+
+  return `Error: Unexpected error occurred${context ? ` ${context}` : ''}: ${
+    error instanceof Error ? error.message : String(error)
+  }`;
+}
+
+/**
+ * Helper to handle tool responses with consistent error handling and formatting
+ * Reduces code duplication across tool implementations
+ */
+export async function handleToolResponse<T>(
+  dataFetcher: () => Promise<T>,
+  format: 'json' | 'markdown',
+  options: {
+    errorMessage: string;
+    markdownFormatter?: (data: T) => string;
+  }
+): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
+  try {
+    const data = await dataFetcher();
+
+    // Handle markdown format
+    if (format === 'markdown' && options.markdownFormatter) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: options.markdownFormatter(data)
+          }
+        ]
+      };
+    }
+
+    // Handle JSON format with truncation
+    const [responseText] = truncateResponse(data);
+    return {
+      content: [
+        {
+          type: 'text',
+          text: responseText
+        }
+      ]
+    };
+  } catch (error) {
+    // Format error with context
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `${options.errorMessage}\n\n${formatApiError(error)}`
+        }
+      ]
+    };
+  }
 }
