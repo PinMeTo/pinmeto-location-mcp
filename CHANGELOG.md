@@ -47,8 +47,6 @@ Major improvements to MCP server based on mcp-builder best practices verificatio
 
 ### Documentation
 
-- Added `MCP_IMPROVEMENTS.md` - Progress tracker with before/after comparison
-- Added `TESTING_CHECKLIST.md` - Comprehensive testing guide
 - Added `.env.example` - Configuration template
 - Updated `CLAUDE.md` - Complete development guide
 
@@ -61,7 +59,7 @@ Major improvements to MCP server based on mcp-builder best practices verificatio
 - Enhanced package.json metadata:
   - Added comprehensive keywords for npm discoverability
   - Added files field to control published content
-  - Added engines field requiring Node.js >=18.0.0
+  - Added engines field requiring Node.js >=22.0.0
 - Score improvement: 6.5/10 → 9.5/10 based on mcp-builder evaluation
 
 ## 1.0.0 - 2025-09-25
