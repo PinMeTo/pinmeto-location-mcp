@@ -3,21 +3,49 @@
  * Based on actual PinMeTo API responses
  */
 
-// Facebook Location Insights - single location
-export const mockFacebookLocationInsights = {
-  metrics: [
-    { key: '2024-01-01', value: 145 },
-    { key: '2024-01-02', value: 132 },
-    { key: '2024-01-03', value: 156 },
-    { key: '2024-01-04', value: 178 },
-    { key: '2024-01-05', value: 167 },
-    { key: '2024-01-06', value: 153 },
-    { key: '2024-01-07', value: 142 },
-    { key: '2024-01-08', value: 159 },
-    { key: '2024-01-09', value: 148 },
-    { key: '2024-01-10', value: 171 }
-  ]
-};
+// Facebook Location Insights - single location (real API format)
+export const mockFacebookLocationInsights = [
+  {
+    key: 'page_impressions',
+    metrics: [
+      { key: '2024-01-01', value: 145 },
+      { key: '2024-01-02', value: 132 },
+      { key: '2024-01-03', value: 156 },
+      { key: '2024-01-04', value: 178 },
+      { key: '2024-01-05', value: 167 }
+    ]
+  },
+  {
+    key: 'page_impressions_organic',
+    metrics: [
+      { key: '2024-01-01', value: 85 },
+      { key: '2024-01-02', value: 78 },
+      { key: '2024-01-03', value: 92 },
+      { key: '2024-01-04', value: 105 },
+      { key: '2024-01-05', value: 98 }
+    ]
+  },
+  {
+    key: 'page_engaged_users',
+    metrics: [
+      { key: '2024-01-01', value: 42 },
+      { key: '2024-01-02', value: 38 },
+      { key: '2024-01-03', value: 45 },
+      { key: '2024-01-04', value: 52 },
+      { key: '2024-01-05', value: 48 }
+    ]
+  },
+  {
+    key: 'page_post_engagements',
+    metrics: [
+      { key: '2024-01-01', value: 28 },
+      { key: '2024-01-02', value: 24 },
+      { key: '2024-01-03', value: 31 },
+      { key: '2024-01-04', value: 36 },
+      { key: '2024-01-05', value: 33 }
+    ]
+  }
+];
 
 // Facebook Brandpage Insights (aggregated)
 export const mockFacebookBrandpageInsights = {

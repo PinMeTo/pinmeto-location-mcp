@@ -4,7 +4,8 @@ import {
   truncateResponse,
   formatInsightsMarkdown,
   formatRatingsMarkdown,
-  handleToolResponse
+  handleToolResponse,
+  AggregationLevel
 } from '../../helpers';
 
 export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
@@ -56,7 +57,12 @@ Returns comprehensive Facebook insights including:
         .enum(['json', 'markdown'])
         .optional()
         .default('markdown')
-        .describe('Response format: json (raw data) or markdown (human-readable summary)')
+        .describe('Response format: json (raw data) or markdown (human-readable summary)'),
+      aggregation: z
+        .enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'total'])
+        .optional()
+        .default('total')
+        .describe('Data aggregation level. Default: total (all data summed into one period)')
     },
     {
       readOnlyHint: true,
@@ -68,12 +74,14 @@ Returns comprehensive Facebook insights including:
       storeId,
       from,
       to,
-      format
+      format,
+      aggregation
     }: {
       storeId: string;
       from: string;
       to: string;
       format?: 'json' | 'markdown';
+      aggregation?: AggregationLevel;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const locationUrl = `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/facebook?from=${from}&to=${to}`;
@@ -82,6 +90,7 @@ Returns comprehensive Facebook insights including:
         () => server.makePinMeToRequest(locationUrl),
         format || 'markdown',
         {
+          aggregation: aggregation || 'total',
           errorMessage: `Unable to fetch Facebook insights for storeId "${storeId}" (${from} to ${to}).
 
 **Troubleshooting steps:**
@@ -99,7 +108,7 @@ Returns comprehensive Facebook insights including:
 - Dates in wrong format (must be YYYY-MM-DD)
 
 Try using get_location first to verify the location exists and has the 'fb' field populated, which indicates Facebook Pages is connected.`,
-          markdownFormatter: (data) => formatInsightsMarkdown('Facebook', data, storeId)
+          markdownFormatter: (data, agg) => formatInsightsMarkdown('Facebook', data, storeId, agg)
         }
       );
     }
@@ -155,7 +164,12 @@ Returns aggregated Facebook insights across all location pages including:
         .enum(['json', 'markdown'])
         .optional()
         .default('markdown')
-        .describe('Response format: json (raw data) or markdown (human-readable summary)')
+        .describe('Response format: json (raw data) or markdown (human-readable summary)'),
+      aggregation: z
+        .enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'total'])
+        .optional()
+        .default('total')
+        .describe('Data aggregation level. Default: total (all data summed into one period)')
     },
     {
       readOnlyHint: true,
@@ -163,7 +177,7 @@ Returns aggregated Facebook insights across all location pages including:
       idempotentHint: true,
       openWorldHint: true
     },
-    async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
+    async ({ from, to, format, aggregation }: { from: string; to: string; format?: 'json' | 'markdown'; aggregation?: AggregationLevel }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/facebook?from=${from}&to=${to}`;
 
@@ -171,6 +185,7 @@ Returns aggregated Facebook insights across all location pages including:
         () => server.makePinMeToRequest(url),
         format || 'markdown',
         {
+          aggregation: aggregation || 'total',
           errorMessage: `Unable to fetch Facebook insights for all locations (${from} to ${to}).
 
 **Troubleshooting steps:**
@@ -188,7 +203,7 @@ Returns aggregated Facebook insights across all location pages including:
 - Dates in wrong format (must be YYYY-MM-DD)
 
 Try using get_locations first to verify you have locations with the 'fb' field populated.`,
-          markdownFormatter: (data) => formatInsightsMarkdown('Facebook (All Locations)', data)
+          markdownFormatter: (data, agg) => formatInsightsMarkdown('Facebook (All Locations)', data, undefined, agg)
         }
       );
     }
@@ -243,7 +258,12 @@ Returns Facebook insights for brand/corporate pages including:
         .enum(['json', 'markdown'])
         .optional()
         .default('markdown')
-        .describe('Response format: json (raw data) or markdown (human-readable summary)')
+        .describe('Response format: json (raw data) or markdown (human-readable summary)'),
+      aggregation: z
+        .enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'total'])
+        .optional()
+        .default('total')
+        .describe('Data aggregation level. Default: total (all data summed into one period)')
     },
     {
       readOnlyHint: true,
@@ -251,7 +271,7 @@ Returns Facebook insights for brand/corporate pages including:
       idempotentHint: true,
       openWorldHint: true
     },
-    async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
+    async ({ from, to, format, aggregation }: { from: string; to: string; format?: 'json' | 'markdown'; aggregation?: AggregationLevel }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const url = `${apiBaseUrl}/listings/v4/${accountId}/brand-page/insights/facebook?from=${from}&to=${to}`;
 
@@ -259,6 +279,7 @@ Returns Facebook insights for brand/corporate pages including:
         () => server.makePinMeToRequest(url),
         format || 'markdown',
         {
+          aggregation: aggregation || 'total',
           errorMessage: `Unable to fetch Facebook brand page insights (${from} to ${to}).
 
 **Troubleshooting steps:**
@@ -276,7 +297,7 @@ Returns Facebook insights for brand/corporate pages including:
 - Dates in wrong format (must be YYYY-MM-DD)
 
 Note: Brand pages are company-level Facebook Pages, separate from individual location pages. If you only have location pages, use get_all_facebook_insights instead.`,
-          markdownFormatter: (data) => formatInsightsMarkdown('Facebook Brand Page', data)
+          markdownFormatter: (data, agg) => formatInsightsMarkdown('Facebook Brand Page', data, undefined, agg)
         }
       );
     }

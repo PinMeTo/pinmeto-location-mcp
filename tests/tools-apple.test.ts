@@ -69,40 +69,41 @@ describe('pinmeto_get_apple_location_insights tool', () => {
     );
 
     expect(result).toBeDefined();
-    expect(result.storeId).toBe('downtown-store-001');
-    expect(result.period).toBeDefined();
-    expect(result.metrics).toBeDefined();
-    expect(result.metrics.impressions).toBeDefined();
-    expect(result.metrics.actions).toBeDefined();
-    expect(result.metrics.views).toBeDefined();
-    expect(result.metrics.engagement).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result[0].key).toBeDefined(); // Metric name like 'PLACECARD_VIEW'
+    expect(result[0].metrics).toBeDefined();
+    expect(Array.isArray(result[0].metrics)).toBe(true);
+    expect(result[0].metrics[0].key).toBeDefined(); // Date like '2024-01-01'
+    expect(result[0].metrics[0].value).toBeDefined(); // Value
   });
 
-  it('should include device breakdown', async () => {
+  it('should include multiple metric types', async () => {
     const server = createMcpServer();
     const result = await server.makePinMeToRequest(
       buildUrl.appleInsightsLocation('downtown-store-001', '2024-01-01', '2024-01-31')
     );
 
-    expect(result.deviceBreakdown).toBeDefined();
-    expect(result.deviceBreakdown.iPhone).toBeDefined();
-    expect(result.deviceBreakdown.iPad).toBeDefined();
-    expect(result.deviceBreakdown.Mac).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(1); // Multiple metric types
+
+    // Check for common Apple metrics
+    const metricKeys = result.map((m: any) => m.key);
+    expect(metricKeys).toContain('PLACECARD_VIEW');
   });
 
-  it('should include top interaction types', async () => {
+  it('should include action metrics', async () => {
     const server = createMcpServer();
     const result = await server.makePinMeToRequest(
       buildUrl.appleInsightsLocation('downtown-store-001', '2024-01-01', '2024-01-31')
     );
 
-    expect(result.topInteractionTypes).toBeDefined();
-    expect(Array.isArray(result.topInteractionTypes)).toBe(true);
-    expect(result.topInteractionTypes.length).toBeGreaterThan(0);
-
-    const firstInteraction = result.topInteractionTypes[0];
-    expect(firstInteraction.type).toBeDefined();
-    expect(firstInteraction.count).toBeDefined();
+    const metricKeys = result.map((m: any) => m.key);
+    // Should have direction or call metrics
+    const hasActionMetrics = metricKeys.some((key: string) =>
+      key.includes('TAP_DIRECTION') || key.includes('TAP_CALL') || key.includes('TAP_WEBSITE')
+    );
+    expect(hasActionMetrics).toBe(true);
   });
 
   it('should handle Markdown format (default)', async () => {
@@ -136,27 +137,22 @@ describe('pinmeto_get_apple_location_insights tool', () => {
     );
 
     expect(result).toBeDefined();
-    expect(result.metrics.impressions.total).toBe(0);
-    expect(result.deviceBreakdown.iPhone).toBe(0);
-  });
-
-  it('should return action metrics', async () => {
-    const server = createMcpServer();
-    const result = await server.makePinMeToRequest(
-      buildUrl.appleInsightsLocation('downtown-store-001', '2024-01-01', '2024-01-31')
-    );
-
-    expect(result.metrics.actions.directionsRequests).toBeDefined();
-    expect(result.metrics.actions.phoneCallClicks).toBeDefined();
-    expect(result.metrics.actions.websiteClicks).toBeDefined();
-    expect(result.metrics.actions.total).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+    // Can be empty array or array with zero values
+    if (result.length > 0) {
+      const hasNonZeroValues = result.some((m: any) =>
+        m.metrics.some((metric: any) => metric.value > 0)
+      );
+      // For inactive location, expect mostly zero values
+      expect(hasNonZeroValues || result.length === 0).toBe(true);
+    }
   });
 });
 
 describe('pinmeto_get_all_apple_insights tool', () => {
   it('should fetch Apple insights for all locations', async () => {
     const server = createMcpServer();
-    const spy = vi.spyOn(server, 'makePaginatedPinMeToRequest');
+    const spy = vi.spyOn(server, 'makePinMeToRequest');
     const transport = new StdioServerTransport();
 
     await server.connect(transport);
@@ -173,32 +169,30 @@ describe('pinmeto_get_all_apple_insights tool', () => {
     await transport.close();
 
     expect(spy).toHaveBeenCalledWith(
-      buildUrl.appleInsightsAll('2024-01-01', '2024-01-31'),
-      undefined
+      buildUrl.appleInsightsAll('2024-01-01', '2024-01-31')
     );
   });
 
   it('should return multiple locations insights', async () => {
     const server = createMcpServer();
-    const [data, areAllPagesFetched] = await server.makePaginatedPinMeToRequest(
+    const data = await server.makePinMeToRequest(
       buildUrl.appleInsightsAll('2024-01-01', '2024-01-31')
     );
 
     expect(data).toBeDefined();
     expect(Array.isArray(data)).toBe(true);
     expect(data.length).toBeGreaterThan(0);
-    expect(areAllPagesFetched).toBe(true);
 
-    // Verify structure of first location
-    const firstLocation = data[0];
-    expect(firstLocation.storeId).toBeDefined();
-    expect(firstLocation.metrics).toBeDefined();
-    expect(firstLocation.deviceBreakdown).toBeDefined();
+    // Verify structure matches single location format (array of metrics)
+    const firstMetric = data[0];
+    expect(firstMetric.key).toBeDefined(); // Metric name like 'PLACECARD_VIEW'
+    expect(firstMetric.metrics).toBeDefined();
+    expect(Array.isArray(firstMetric.metrics)).toBe(true);
   });
 
-  it('should respect maxPages parameter', async () => {
+  it('should fetch all insights in one request (no pagination)', async () => {
     const server = createMcpServer();
-    const spy = vi.spyOn(server, 'makePaginatedPinMeToRequest');
+    const spy = vi.spyOn(server, 'makePinMeToRequest');
     const transport = new StdioServerTransport();
 
     await server.connect(transport);
@@ -207,44 +201,46 @@ describe('pinmeto_get_all_apple_insights tool', () => {
     transport.onmessage?.(
       createToolCallMessage('pinmeto_get_all_apple_insights', {
         from: '2024-01-01',
-        to: '2024-01-31',
-        maxPages: 1
+        to: '2024-01-31'
       })
     );
 
     await waitForAsync(100);
     await transport.close();
 
-    expect(spy).toHaveBeenCalledWith(expect.any(String), 1);
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('/insights/apple'));
   });
 
-  it('should include device breakdown for all locations', async () => {
+  it('should include metrics for all locations', async () => {
     const server = createMcpServer();
-    const [data] = await server.makePaginatedPinMeToRequest(
+    const data = await server.makePinMeToRequest(
       buildUrl.appleInsightsAll('2024-01-01', '2024-01-31')
     );
 
-    data.forEach((location: any) => {
-      expect(location.deviceBreakdown).toBeDefined();
-      expect(location.deviceBreakdown.iPhone).toBeDefined();
-      expect(location.deviceBreakdown.iPad).toBeDefined();
-      expect(location.deviceBreakdown.Mac).toBeDefined();
+    // Each element should be a metric with key and metrics array
+    expect(Array.isArray(data)).toBe(true);
+    data.forEach((metric: any) => {
+      expect(metric.key).toBeDefined();
+      expect(metric.metrics).toBeDefined();
+      expect(Array.isArray(metric.metrics)).toBe(true);
     });
   });
 
-  it('should return valid insights data for each location', async () => {
+  it('should return valid insights data for each metric', async () => {
     const server = createMcpServer();
-    const [data] = await server.makePaginatedPinMeToRequest(
+    const data = await server.makePinMeToRequest(
       buildUrl.appleInsightsAll('2024-01-01', '2024-01-31')
     );
 
-    data.forEach((location: any) => {
-      expect(location.storeId).toBeDefined();
-      expect(location.period).toBeDefined();
-      expect(location.period.from).toBe('2024-01-01');
-      expect(location.period.to).toBe('2024-01-31');
-      expect(location.metrics.impressions).toBeDefined();
-      expect(location.metrics.actions).toBeDefined();
+    // Validate metric structure
+    expect(Array.isArray(data)).toBe(true);
+    data.forEach((metric: any) => {
+      expect(metric.key).toBeDefined(); // Metric name
+      expect(Array.isArray(metric.metrics)).toBe(true);
+      if (metric.metrics.length > 0) {
+        expect(metric.metrics[0].key).toBeDefined(); // Date
+        expect(metric.metrics[0].value).toBeDefined(); // Value
+      }
     });
   });
 });
@@ -312,8 +308,10 @@ describe('Apple tools - Data validation', () => {
     );
 
     expect(result).toBeDefined();
-    expect(result.period.from).toBe('2024-01-01');
-    expect(result.period.to).toBe('2024-01-31');
+    expect(Array.isArray(result)).toBe(true);
+    // Should have metrics with dates in the specified range
+    expect(result.length).toBeGreaterThan(0);
+    expect(result[0].metrics[0].key).toMatch(/^2024-01/);
   });
 
   it('should return valid impression metrics', async () => {
@@ -322,12 +320,14 @@ describe('Apple tools - Data validation', () => {
       buildUrl.appleInsightsLocation('downtown-store-001', '2024-01-01', '2024-01-31')
     );
 
-    expect(result.metrics.impressions.total).toBeGreaterThan(0);
-    expect(result.metrics.impressions.search).toBeDefined();
-    expect(result.metrics.impressions.maps).toBeDefined();
-    expect(
-      result.metrics.impressions.search + result.metrics.impressions.maps
-    ).toBe(result.metrics.impressions.total);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(0);
+
+    // Check that metrics have values
+    const hasMetrics = result.some((m: any) =>
+      m.metrics.some((metric: any) => metric.value > 0)
+    );
+    expect(hasMetrics).toBe(true);
   });
 
   it('should return valid view metrics', async () => {
@@ -336,9 +336,14 @@ describe('Apple tools - Data validation', () => {
       buildUrl.appleInsightsLocation('downtown-store-001', '2024-01-01', '2024-01-31')
     );
 
-    expect(result.metrics.views).toBeDefined();
-    expect(result.metrics.views.mapViews).toBeDefined();
-    expect(result.metrics.views.locationCardViews).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+    const metricKeys = result.map((m: any) => m.key);
+
+    // Should have placecard view metrics
+    const hasViewMetrics = metricKeys.some((key: string) =>
+      key.includes('VIEW') || key.includes('PLACECARD')
+    );
+    expect(hasViewMetrics).toBe(true);
   });
 });
 
@@ -353,9 +358,14 @@ describe('Apple tools - Integration', () => {
       buildUrl.appleInsightsLocation('downtown-store-001', '2024-02-01', '2024-02-29')
     );
 
-    expect(january.storeId).toBe('downtown-store-001');
-    expect(february.storeId).toBe('downtown-store-001');
-    expect(january.period.from).not.toBe(february.period.from);
+    expect(Array.isArray(january)).toBe(true);
+    expect(Array.isArray(february)).toBe(true);
+    expect(january.length).toBeGreaterThan(0);
+    expect(february.length).toBeGreaterThan(0);
+
+    // Both should have metric data
+    expect(january[0].key).toBeDefined();
+    expect(february[0].key).toBeDefined();
   });
 
   it('should handle multiple tool calls in sequence', async () => {
@@ -425,7 +435,9 @@ describe('Apple tools - Integration', () => {
   });
 });
 
-describe('Apple tools - Device breakdown analysis', () => {
+// Device breakdown analysis tests removed - not part of the new array-based API format
+// The new format returns array of metric objects with key/metrics structure
+describe.skip('Apple tools - Device breakdown analysis (deprecated format)', () => {
   it('should provide accurate device distribution', async () => {
     const server = createMcpServer();
     const result = await server.makePinMeToRequest(

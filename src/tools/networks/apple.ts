@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
-import { truncateResponse, formatInsightsMarkdown, handleToolResponse } from '../../helpers';
+import { truncateResponse, formatInsightsMarkdown, handleToolResponse, AggregationLevel } from '../../helpers';
 
 export function getAppleLocationInsights(server: PinMeToMcpServer) {
   server.tool(
@@ -51,7 +51,12 @@ Returns comprehensive Apple Maps insights including:
         .enum(['json', 'markdown'])
         .optional()
         .default('markdown')
-        .describe('Response format: json (raw data) or markdown (human-readable summary)')
+        .describe('Response format: json (raw data) or markdown (human-readable summary)'),
+      aggregation: z
+        .enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'total'])
+        .optional()
+        .default('total')
+        .describe('Data aggregation level. Default: total (all data summed into one period)')
     },
     {
       readOnlyHint: true,
@@ -63,12 +68,14 @@ Returns comprehensive Apple Maps insights including:
       storeId,
       from,
       to,
-      format
+      format,
+      aggregation
     }: {
       storeId: string;
       from: string;
       to: string;
       format?: 'json' | 'markdown';
+      aggregation?: AggregationLevel;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const locationUrl = `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/apple?from=${from}&to=${to}`;
@@ -77,6 +84,7 @@ Returns comprehensive Apple Maps insights including:
         () => server.makePinMeToRequest(locationUrl),
         format || 'markdown',
         {
+          aggregation: aggregation || 'total',
           errorMessage: `Unable to fetch Apple Maps insights for storeId "${storeId}" (${from} to ${to}).
 
 **Troubleshooting steps:**
@@ -95,7 +103,7 @@ Returns comprehensive Apple Maps insights including:
 - Apple Maps data not yet available for this location
 
 Try using get_location first to verify the location exists. Note: Apple Maps integration may not be available for all locations depending on your PinMeTo plan.`,
-          markdownFormatter: (data) => formatInsightsMarkdown('Apple Maps', data, storeId)
+          markdownFormatter: (data, agg) => formatInsightsMarkdown('Apple Maps', data, storeId, agg)
         }
       );
     }
@@ -147,20 +155,16 @@ Returns aggregated Apple Maps insights across all locations including:
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD format')
         .describe('End date in YYYY-MM-DD format (e.g., "2024-01-31")'),
-      maxPages: z
-        .number()
-        .int()
-        .min(1)
-        .max(10)
-        .optional()
-        .describe(
-          'Maximum number of pages to fetch (1-10). Omit to fetch all pages. Use to limit response size for large accounts.'
-        ),
       format: z
         .enum(['json', 'markdown'])
         .optional()
         .default('markdown')
-        .describe('Response format: json (raw data) or markdown (human-readable summary)')
+        .describe('Response format: json (raw data) or markdown (human-readable summary)'),
+      aggregation: z
+        .enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'total'])
+        .optional()
+        .default('total')
+        .describe('Data aggregation level. Default: total (all data summed into one period)')
     },
     {
       readOnlyHint: true,
@@ -171,27 +175,26 @@ Returns aggregated Apple Maps insights across all locations including:
     async ({
       from,
       to,
-      maxPages,
-      format
+      format,
+      aggregation
     }: {
       from: string;
       to: string;
-      maxPages?: number;
       format?: 'json' | 'markdown';
+      aggregation?: AggregationLevel;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/apple?from=${from}&to=${to}`;
 
       return handleToolResponse(
         async () => {
-          const [data, areAllPagesFetched] = await server.makePaginatedPinMeToRequest(
-            url,
-            maxPages
-          );
+          // Apple insights API returns array directly, no pagination wrapper
+          const data = await server.makePinMeToRequest(url);
           return data;
         },
         format || 'markdown',
         {
+          aggregation: aggregation || 'total',
           errorMessage: `Unable to fetch Apple Maps insights for all locations (${from} to ${to}).
 
 **Troubleshooting steps:**
@@ -210,7 +213,7 @@ Returns aggregated Apple Maps insights across all locations including:
 - Apple Maps feature not included in your PinMeTo plan
 
 Try using get_locations first to verify you have locations. Note: Apple Maps integration may not be available for all PinMeTo accounts or plans.`,
-          markdownFormatter: (data) => formatInsightsMarkdown('Apple Maps (All Locations)', data)
+          markdownFormatter: (data, agg) => formatInsightsMarkdown('Apple Maps (All Locations)', data, undefined, agg)
         }
       );
     }

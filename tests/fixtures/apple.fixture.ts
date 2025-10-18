@@ -3,271 +3,149 @@
  * Based on actual PinMeTo API responses
  */
 
-// Apple Location Insights - single location
-export const mockAppleLocationInsights = {
-  storeId: 'downtown-store-001',
-  period: {
-    from: '2024-01-01',
-    to: '2024-01-31'
-  },
-  metrics: {
-    impressions: {
-      total: 1245,
-      search: 678,
-      maps: 567
-    },
-    actions: {
-      directionsRequests: 89,
-      phoneCallClicks: 45,
-      websiteClicks: 23,
-      total: 157
-    },
-    views: {
-      mapViews: 456,
-      locationCardViews: 234
-    },
-    engagement: {
-      rate: 0.126,
-      uniqueUsers: 892
-    }
-  },
-  deviceBreakdown: {
-    iPhone: 756,
-    iPad: 234,
-    Mac: 255
-  },
-  topInteractionTypes: [
-    { type: 'directions', count: 89 },
-    { type: 'phone_call', count: 45 },
-    { type: 'website_click', count: 23 }
-  ]
-};
-
-// All Apple Insights (array format - multiple locations)
-export const mockAllAppleInsights = [
+// Apple Location Insights - single location (real API format)
+export const mockAppleLocationInsights = [
   {
-    storeId: 'downtown-store-001',
-    period: {
-      from: '2024-01-01',
-      to: '2024-01-31'
-    },
-    metrics: {
-      impressions: {
-        total: 1245,
-        search: 678,
-        maps: 567
-      },
-      actions: {
-        directionsRequests: 89,
-        phoneCallClicks: 45,
-        websiteClicks: 23,
-        total: 157
-      },
-      views: {
-        mapViews: 456,
-        locationCardViews: 234
-      },
-      engagement: {
-        rate: 0.126,
-        uniqueUsers: 892
-      }
-    },
-    deviceBreakdown: {
-      iPhone: 756,
-      iPad: 234,
-      Mac: 255
-    },
-    topInteractionTypes: [
-      { type: 'directions', count: 89 },
-      { type: 'phone_call', count: 45 }
+    key: 'PLACECARD_VIEW',
+    metrics: [
+      { key: '2024-01-01', value: 245 },
+      { key: '2024-01-02', value: 289 },
+      { key: '2024-01-03', value: 267 },
+      { key: '2024-01-04', value: 312 },
+      { key: '2024-01-05', value: 298 }
     ]
   },
   {
-    storeId: 'uptown-store-002',
-    period: {
-      from: '2024-01-01',
-      to: '2024-01-31'
-    },
-    metrics: {
-      impressions: {
-        total: 987,
-        search: 534,
-        maps: 453
-      },
-      actions: {
-        directionsRequests: 67,
-        phoneCallClicks: 34,
-        websiteClicks: 18,
-        total: 119
-      },
-      views: {
-        mapViews: 345,
-        locationCardViews: 178
-      },
-      engagement: {
-        rate: 0.121,
-        uniqueUsers: 678
-      }
-    },
-    deviceBreakdown: {
-      iPhone: 598,
-      iPad: 189,
-      Mac: 200
-    },
-    topInteractionTypes: [
-      { type: 'directions', count: 67 },
-      { type: 'phone_call', count: 34 }
+    key: 'PLACECARD_TAP_DIRECTION',
+    metrics: [
+      { key: '2024-01-01', value: 18 },
+      { key: '2024-01-02', value: 21 },
+      { key: '2024-01-03', value: 17 },
+      { key: '2024-01-04', value: 25 },
+      { key: '2024-01-05', value: 22 }
+    ]
+  },
+  {
+    key: 'PLACECARD_TAP_CALL',
+    metrics: [
+      { key: '2024-01-01', value: 9 },
+      { key: '2024-01-02', value: 11 },
+      { key: '2024-01-03', value: 8 },
+      { key: '2024-01-04', value: 13 },
+      { key: '2024-01-05', value: 10 }
+    ]
+  },
+  {
+    key: 'PLACECARD_TAP_WEBSITE',
+    metrics: [
+      { key: '2024-01-01', value: 5 },
+      { key: '2024-01-02', value: 7 },
+      { key: '2024-01-03', value: 4 },
+      { key: '2024-01-04', value: 8 },
+      { key: '2024-01-05', value: 6 }
+    ]
+  },
+  {
+    key: 'SEARCH_LOCATION_TAP_NAME',
+    metrics: [
+      { key: '2024-01-01', value: 135 },
+      { key: '2024-01-02', value: 156 },
+      { key: '2024-01-03', value: 142 },
+      { key: '2024-01-04', value: 178 },
+      { key: '2024-01-05', value: 165 }
     ]
   }
 ];
 
-// Empty Apple insights (no data available)
-export const mockAppleInsightsEmpty = {
-  storeId: 'closed-store-003',
-  period: {
-    from: '2024-01-01',
-    to: '2024-01-31'
-  },
-  metrics: {
-    impressions: {
-      total: 0,
-      search: 0,
-      maps: 0
-    },
-    actions: {
-      directionsRequests: 0,
-      phoneCallClicks: 0,
-      websiteClicks: 0,
-      total: 0
-    },
-    views: {
-      mapViews: 0,
-      locationCardViews: 0
-    },
-    engagement: {
-      rate: 0,
-      uniqueUsers: 0
-    }
-  },
-  deviceBreakdown: {
-    iPhone: 0,
-    iPad: 0,
-    Mac: 0
-  },
-  topInteractionTypes: []
-};
-
-// Paginated Apple insights
-export const mockAppleInsightsPaginatedPage1 = [
+// All Apple Insights (array format - multiple locations)
+// Real API returns same format as single location - array of metric objects
+export const mockAllAppleInsights = [
   {
-    storeId: 'downtown-store-001',
-    period: {
-      from: '2024-01-01',
-      to: '2024-01-31'
-    },
-    metrics: {
-      impressions: {
-        total: 1245,
-        search: 678,
-        maps: 567
-      },
-      actions: {
-        directionsRequests: 89,
-        phoneCallClicks: 45,
-        websiteClicks: 23,
-        total: 157
-      },
-      views: {
-        mapViews: 456,
-        locationCardViews: 234
-      },
-      engagement: {
-        rate: 0.126,
-        uniqueUsers: 892
-      }
-    },
-    deviceBreakdown: {
-      iPhone: 756,
-      iPad: 234,
-      Mac: 255
-    },
-    topInteractionTypes: [
-      { type: 'directions', count: 89 }
+    key: 'PLACECARD_VIEW',
+    metrics: [
+      { key: '2024-01-01', value: 245 },
+      { key: '2024-01-02', value: 289 },
+      { key: '2024-01-03', value: 267 },
+      { key: '2024-01-04', value: 312 },
+      { key: '2024-01-05', value: 298 }
     ]
   },
   {
-    storeId: 'uptown-store-002',
-    period: {
-      from: '2024-01-01',
-      to: '2024-01-31'
-    },
-    metrics: {
-      impressions: {
-        total: 987,
-        search: 534,
-        maps: 453
-      },
-      actions: {
-        directionsRequests: 67,
-        phoneCallClicks: 34,
-        websiteClicks: 18,
-        total: 119
-      },
-      views: {
-        mapViews: 345,
-        locationCardViews: 178
-      },
-      engagement: {
-        rate: 0.121,
-        uniqueUsers: 678
-      }
-    },
-    deviceBreakdown: {
-      iPhone: 598,
-      iPad: 189,
-      Mac: 200
-    },
-    topInteractionTypes: [
-      { type: 'directions', count: 67 }
+    key: 'PLACECARD_TAP_DIRECTION',
+    metrics: [
+      { key: '2024-01-01', value: 18 },
+      { key: '2024-01-02', value: 21 },
+      { key: '2024-01-03', value: 17 },
+      { key: '2024-01-04', value: 25 },
+      { key: '2024-01-05', value: 22 }
+    ]
+  },
+  {
+    key: 'PLACECARD_TAP_CALL',
+    metrics: [
+      { key: '2024-01-01', value: 9 },
+      { key: '2024-01-02', value: 11 },
+      { key: '2024-01-03', value: 8 },
+      { key: '2024-01-04', value: 13 },
+      { key: '2024-01-05', value: 10 }
+    ]
+  },
+  {
+    key: 'PLACECARD_TAP_WEBSITE',
+    metrics: [
+      { key: '2024-01-01', value: 5 },
+      { key: '2024-01-02', value: 7 },
+      { key: '2024-01-03', value: 4 },
+      { key: '2024-01-04', value: 8 },
+      { key: '2024-01-05', value: 6 }
+    ]
+  },
+  {
+    key: 'SEARCH_LOCATION_TAP_NAME',
+    metrics: [
+      { key: '2024-01-01', value: 135 },
+      { key: '2024-01-02', value: 156 },
+      { key: '2024-01-03', value: 142 },
+      { key: '2024-01-04', value: 178 },
+      { key: '2024-01-05', value: 165 }
+    ]
+  }
+];
+
+// Empty Apple insights - for inactive location (real API format)
+export const mockAppleInsightsEmpty: any[] = [];
+
+// Paginated Apple insights - same format as single location
+export const mockAppleInsightsPaginatedPage1 = [
+  {
+    key: 'PLACECARD_VIEW',
+    metrics: [
+      { key: '2024-01-01', value: 120 },
+      { key: '2024-01-02', value: 145 }
+    ]
+  },
+  {
+    key: 'PLACECARD_TAP_DIRECTION',
+    metrics: [
+      { key: '2024-01-01', value: 10 },
+      { key: '2024-01-02', value: 12 }
     ]
   }
 ];
 
 export const mockAppleInsightsPaginatedPage2 = [
   {
-    storeId: 'another-store-003',
-    period: {
-      from: '2024-01-01',
-      to: '2024-01-31'
-    },
-    metrics: {
-      impressions: {
-        total: 543,
-        search: 298,
-        maps: 245
-      },
-      actions: {
-        directionsRequests: 45,
-        phoneCallClicks: 23,
-        websiteClicks: 12,
-        total: 80
-      },
-      views: {
-        mapViews: 234,
-        locationCardViews: 112
-      },
-      engagement: {
-        rate: 0.147,
-        uniqueUsers: 456
-      }
-    },
-    deviceBreakdown: {
-      iPhone: 345,
-      iPad: 98,
-      Mac: 100
-    },
-    topInteractionTypes: [
-      { type: 'directions', count: 45 }
+    key: 'PLACECARD_TAP_CALL',
+    metrics: [
+      { key: '2024-01-01', value: 5 },
+      { key: '2024-01-02', value: 7 }
+    ]
+  },
+  {
+    key: 'PLACECARD_TAP_WEBSITE',
+    metrics: [
+      { key: '2024-01-01', value: 3 },
+      { key: '2024-01-02', value: 4 }
     ]
   }
 ];

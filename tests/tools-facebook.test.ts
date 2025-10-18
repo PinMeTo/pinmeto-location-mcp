@@ -69,11 +69,13 @@ describe('pinmeto_get_facebook_location_insights tool', () => {
     );
 
     expect(result).toBeDefined();
-    expect(result.metrics).toBeDefined();
-    expect(Array.isArray(result.metrics)).toBe(true);
-    expect(result.metrics.length).toBeGreaterThan(0);
-    expect(result.metrics[0].key).toBeDefined();
-    expect(result.metrics[0].value).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result[0].key).toBeDefined(); // Metric name like 'page_impressions'
+    expect(result[0].metrics).toBeDefined();
+    expect(Array.isArray(result[0].metrics)).toBe(true);
+    expect(result[0].metrics[0].key).toBeDefined(); // Date like '2024-01-01'
+    expect(result[0].metrics[0].value).toBeDefined(); // Value
   });
 
   it('should handle empty insights for inactive location', async () => {
@@ -355,11 +357,12 @@ describe('Facebook tools - Data validation', () => {
       buildUrl.facebookInsightsLocation('downtown-store-001', '2024-01-01', '2024-01-31')
     );
 
-    expect(result.metrics).toBeDefined();
-    expect(Array.isArray(result.metrics)).toBe(true);
-    expect(result.metrics.length).toBeGreaterThan(0);
-    expect(result.metrics[0].key).toBeDefined();
-    expect(result.metrics[0].value).toBeGreaterThan(0);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result[0].key).toBeDefined(); // Metric name
+    expect(result[0].metrics).toBeDefined();
+    expect(Array.isArray(result[0].metrics)).toBe(true);
+    expect(result[0].metrics[0].value).toBeGreaterThan(0);
   });
 });
 
@@ -374,9 +377,10 @@ describe('Facebook tools - Integration', () => {
       buildUrl.facebookRatingsLocation('downtown-store-001', '2024-01-01', '2024-01-31')
     );
 
-    // Verify insights structure
-    expect(insights.metrics).toBeDefined();
-    expect(Array.isArray(insights.metrics)).toBe(true);
+    // Verify insights structure (new format: array of metric objects)
+    expect(Array.isArray(insights)).toBe(true);
+    expect(insights.length).toBeGreaterThan(0);
+    expect(insights[0].metrics).toBeDefined();
 
     // Verify ratings structure and storeId
     expect(Array.isArray(ratings)).toBe(true);
@@ -423,5 +427,203 @@ describe('Facebook tools - Integration', () => {
     await transport.close();
 
     expect(mockAxiosGet).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('Facebook tools - Aggregation parameter', () => {
+  it('should accept daily aggregation parameter', async () => {
+    const server = createMcpServer();
+    const transport = new StdioServerTransport();
+
+    await server.connect(transport);
+    transport.onmessage?.(createInitializeMessage());
+
+    transport.onmessage?.(
+      createToolCallMessage('pinmeto_get_facebook_location_insights', {
+        storeId: 'downtown-store-001',
+        from: '2024-01-01',
+        to: '2024-01-31',
+        aggregation: 'daily'
+      })
+    );
+
+    await waitForAsync(100);
+    await transport.close();
+
+    expect(mockAxiosGet).toHaveBeenCalled();
+  });
+
+  it('should accept weekly aggregation parameter', async () => {
+    const server = createMcpServer();
+    const transport = new StdioServerTransport();
+
+    await server.connect(transport);
+    transport.onmessage?.(createInitializeMessage());
+
+    transport.onmessage?.(
+      createToolCallMessage('pinmeto_get_facebook_location_insights', {
+        storeId: 'downtown-store-001',
+        from: '2024-01-01',
+        to: '2024-01-31',
+        aggregation: 'weekly'
+      })
+    );
+
+    await waitForAsync(100);
+    await transport.close();
+
+    expect(mockAxiosGet).toHaveBeenCalled();
+  });
+
+  it('should accept monthly aggregation parameter', async () => {
+    const server = createMcpServer();
+    const transport = new StdioServerTransport();
+
+    await server.connect(transport);
+    transport.onmessage?.(createInitializeMessage());
+
+    transport.onmessage?.(
+      createToolCallMessage('pinmeto_get_facebook_location_insights', {
+        storeId: 'downtown-store-001',
+        from: '2024-01-01',
+        to: '2024-01-31',
+        aggregation: 'monthly'
+      })
+    );
+
+    await waitForAsync(100);
+    await transport.close();
+
+    expect(mockAxiosGet).toHaveBeenCalled();
+  });
+
+  it('should accept quarterly aggregation parameter', async () => {
+    const server = createMcpServer();
+    const transport = new StdioServerTransport();
+
+    await server.connect(transport);
+    transport.onmessage?.(createInitializeMessage());
+
+    transport.onmessage?.(
+      createToolCallMessage('pinmeto_get_facebook_location_insights', {
+        storeId: 'downtown-store-001',
+        from: '2024-01-01',
+        to: '2024-12-31',
+        aggregation: 'quarterly'
+      })
+    );
+
+    await waitForAsync(100);
+    await transport.close();
+
+    expect(mockAxiosGet).toHaveBeenCalled();
+  });
+
+  it('should accept yearly aggregation parameter', async () => {
+    const server = createMcpServer();
+    const transport = new StdioServerTransport();
+
+    await server.connect(transport);
+    transport.onmessage?.(createInitializeMessage());
+
+    transport.onmessage?.(
+      createToolCallMessage('pinmeto_get_facebook_location_insights', {
+        storeId: 'downtown-store-001',
+        from: '2024-01-01',
+        to: '2024-12-31',
+        aggregation: 'yearly'
+      })
+    );
+
+    await waitForAsync(100);
+    await transport.close();
+
+    expect(mockAxiosGet).toHaveBeenCalled();
+  });
+
+  it('should accept total aggregation parameter (default)', async () => {
+    const server = createMcpServer();
+    const transport = new StdioServerTransport();
+
+    await server.connect(transport);
+    transport.onmessage?.(createInitializeMessage());
+
+    transport.onmessage?.(
+      createToolCallMessage('pinmeto_get_facebook_location_insights', {
+        storeId: 'downtown-store-001',
+        from: '2024-01-01',
+        to: '2024-01-31',
+        aggregation: 'total'
+      })
+    );
+
+    await waitForAsync(100);
+    await transport.close();
+
+    expect(mockAxiosGet).toHaveBeenCalled();
+  });
+
+  it('should default to total when aggregation not specified', async () => {
+    const server = createMcpServer();
+    const transport = new StdioServerTransport();
+
+    await server.connect(transport);
+    transport.onmessage?.(createInitializeMessage());
+
+    transport.onmessage?.(
+      createToolCallMessage('pinmeto_get_facebook_location_insights', {
+        storeId: 'downtown-store-001',
+        from: '2024-01-01',
+        to: '2024-01-31'
+        // No aggregation parameter
+      })
+    );
+
+    await waitForAsync(100);
+    await transport.close();
+
+    expect(mockAxiosGet).toHaveBeenCalled();
+  });
+
+  it('should support aggregation in get_all_facebook_insights', async () => {
+    const server = createMcpServer();
+    const transport = new StdioServerTransport();
+
+    await server.connect(transport);
+    transport.onmessage?.(createInitializeMessage());
+
+    transport.onmessage?.(
+      createToolCallMessage('pinmeto_get_all_facebook_insights', {
+        from: '2024-01-01',
+        to: '2024-01-31',
+        aggregation: 'monthly'
+      })
+    );
+
+    await waitForAsync(100);
+    await transport.close();
+
+    expect(mockAxiosGet).toHaveBeenCalled();
+  });
+
+  it('should support aggregation in get_all_facebook_brandpage_insights', async () => {
+    const server = createMcpServer();
+    const transport = new StdioServerTransport();
+
+    await server.connect(transport);
+    transport.onmessage?.(createInitializeMessage());
+
+    transport.onmessage?.(
+      createToolCallMessage('pinmeto_get_all_facebook_brandpage_insights', {
+        from: '2024-01-01',
+        to: '2024-01-31',
+        aggregation: 'quarterly'
+      })
+    );
+
+    await waitForAsync(100);
+    await transport.close();
+
+    expect(mockAxiosGet).toHaveBeenCalled();
   });
 });

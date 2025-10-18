@@ -3,21 +3,49 @@
  * Based on actual PinMeTo API responses
  */
 
-// Google Location Insights - single location
-export const mockGoogleLocationInsights = {
-  metrics: [
-    { key: '2024-01-01', value: 425 },
-    { key: '2024-01-02', value: 398 },
-    { key: '2024-01-03', value: 467 },
-    { key: '2024-01-04', value: 512 },
-    { key: '2024-01-05', value: 489 },
-    { key: '2024-01-06', value: 456 },
-    { key: '2024-01-07', value: 392 },
-    { key: '2024-01-08', value: 445 },
-    { key: '2024-01-09', value: 423 },
-    { key: '2024-01-10', value: 478 }
-  ]
-};
+// Google Location Insights - single location (real API format)
+export const mockGoogleLocationInsights = [
+  {
+    key: 'BUSINESS_IMPRESSIONS_DESKTOP_MAPS',
+    metrics: [
+      { key: '2024-01-01', value: 100 },
+      { key: '2024-01-02', value: 150 },
+      { key: '2024-01-03', value: 120 },
+      { key: '2024-01-04', value: 200 },
+      { key: '2024-01-05', value: 180 }
+    ]
+  },
+  {
+    key: 'BUSINESS_IMPRESSIONS_MOBILE_SEARCH',
+    metrics: [
+      { key: '2024-01-01', value: 50 },
+      { key: '2024-01-02', value: 75 },
+      { key: '2024-01-03', value: 60 },
+      { key: '2024-01-04', value: 100 },
+      { key: '2024-01-05', value: 90 }
+    ]
+  },
+  {
+    key: 'BUSINESS_DIRECTION_REQUESTS',
+    metrics: [
+      { key: '2024-01-01', value: 10 },
+      { key: '2024-01-02', value: 12 },
+      { key: '2024-01-03', value: 8 },
+      { key: '2024-01-04', value: 15 },
+      { key: '2024-01-05', value: 11 }
+    ]
+  },
+  {
+    key: 'WEBSITE_CLICKS',
+    metrics: [
+      { key: '2024-01-01', value: 5 },
+      { key: '2024-01-02', value: 7 },
+      { key: '2024-01-03', value: 6 },
+      { key: '2024-01-04', value: 9 },
+      { key: '2024-01-05', value: 8 }
+    ]
+  }
+];
 
 // All Google Insights (array format - multiple locations)
 export const mockAllGoogleInsights = [

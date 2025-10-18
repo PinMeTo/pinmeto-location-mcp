@@ -203,55 +203,19 @@ export const mockAxiosGet = vi.fn((url: string, config: any) => {
     const to = urlObj.searchParams.get('to');
 
     if (storeId === 'closed-store-003') {
-      const emptyData = { ...mockAppleInsightsEmpty };
-      if (from && to) {
-        emptyData.period = { from, to };
-      }
-      return Promise.resolve({ data: emptyData });
+      // Return empty array for inactive location
+      return Promise.resolve({ data: mockAppleInsightsEmpty });
     }
 
-    // Return data with customized period if dates are provided
-    const data = { ...mockAppleLocationInsights };
-    if (from && to) {
-      data.period = { from, to };
-    }
-    return Promise.resolve({ data });
+    // Return the array-formatted Apple insights directly (new API format)
+    // Note: The new format doesn't include a period wrapper, just array of metric objects
+    return Promise.resolve({ data: mockAppleLocationInsights });
   }
 
   // Apple insights - all locations (NOTE: path is /locations/insights/apple, not just /insights/apple)
+  // Real API returns array directly, no pagination wrapper
   if (url.includes('/locations/insights/apple') && !url.match(/\/locations\/[^/]+\/insights\/apple/)) {
-    // Extract date parameters from URL if present
-    const urlObj = new URL(url, 'http://example.com');
-    const from = urlObj.searchParams.get('from');
-    const to = urlObj.searchParams.get('to');
-
-    if (url.includes('page=2')) {
-      const page2Data = mockAppleInsightsPaginatedPage2.map((loc: any) => {
-        if (from && to) {
-          return { ...loc, period: { from, to } };
-        }
-        return loc;
-      });
-      return Promise.resolve({
-        data: {
-          data: page2Data,
-          paging: {}
-        }
-      });
-    }
-
-    const allData = mockAllAppleInsights.map((loc: any) => {
-      if (from && to) {
-        return { ...loc, period: { from, to } };
-      }
-      return loc;
-    });
-    return Promise.resolve({
-      data: {
-        data: allData,
-        paging: {}
-      }
-    });
+    return Promise.resolve({ data: mockAllAppleInsights });
   }
 
   // Locations endpoints (MUST be after network-specific patterns to avoid conflicts)

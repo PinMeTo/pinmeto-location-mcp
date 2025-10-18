@@ -5,7 +5,8 @@ import {
   formatInsightsMarkdown,
   formatRatingsMarkdown,
   formatKeywordsMarkdown,
-  handleToolResponse
+  handleToolResponse,
+  AggregationLevel
 } from '../../helpers';
 
 export function getGoogleLocationInsights(server: PinMeToMcpServer) {
@@ -57,7 +58,12 @@ Returns comprehensive Google insights including:
         .enum(['json', 'markdown'])
         .optional()
         .default('markdown')
-        .describe('Response format: json (raw data) or markdown (human-readable summary)')
+        .describe('Response format: json (raw data) or markdown (human-readable summary)'),
+      aggregation: z
+        .enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'total'])
+        .optional()
+        .default('total')
+        .describe('Data aggregation level. Default: total (all data summed into one period)')
     },
     {
       readOnlyHint: true,
@@ -69,12 +75,14 @@ Returns comprehensive Google insights including:
       storeId,
       from,
       to,
-      format
+      format,
+      aggregation
     }: {
       storeId: string;
       from: string;
       to: string;
       format?: 'json' | 'markdown';
+      aggregation?: AggregationLevel;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const locationUrl = `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/google?from=${from}&to=${to}`;
@@ -83,6 +91,7 @@ Returns comprehensive Google insights including:
         () => server.makePinMeToRequest(locationUrl),
         format || 'markdown',
         {
+          aggregation: aggregation || 'total',
           errorMessage: `Unable to fetch Google insights for storeId "${storeId}" (${from} to ${to}).
 
 **Troubleshooting steps:**
@@ -100,7 +109,7 @@ Returns comprehensive Google insights including:
 - Dates in wrong format (must be YYYY-MM-DD)
 
 Try using pinmeto_get_location first to verify the location exists and has the 'google' field populated.`,
-          markdownFormatter: (data) => formatInsightsMarkdown('Google', data, storeId)
+          markdownFormatter: (data, agg) => formatInsightsMarkdown('Google', data, storeId, agg)
         }
       );
     }
@@ -156,7 +165,12 @@ Returns aggregated Google insights across all locations including:
         .enum(['json', 'markdown'])
         .optional()
         .default('markdown')
-        .describe('Response format: json (raw data) or markdown (human-readable summary)')
+        .describe('Response format: json (raw data) or markdown (human-readable summary)'),
+      aggregation: z
+        .enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'total'])
+        .optional()
+        .default('total')
+        .describe('Data aggregation level. Default: total (all data summed into one period)')
     },
     {
       readOnlyHint: true,
@@ -164,7 +178,7 @@ Returns aggregated Google insights across all locations including:
       idempotentHint: true,
       openWorldHint: true
     },
-    async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
+    async ({ from, to, format, aggregation }: { from: string; to: string; format?: 'json' | 'markdown'; aggregation?: AggregationLevel }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/google?from=${from}&to=${to}`;
 
@@ -172,6 +186,7 @@ Returns aggregated Google insights across all locations including:
         () => server.makePinMeToRequest(url),
         format || 'markdown',
         {
+          aggregation: aggregation || 'total',
           errorMessage: `Unable to fetch Google insights for all locations (${from} to ${to}).
 
 **Troubleshooting steps:**
@@ -189,7 +204,7 @@ Returns aggregated Google insights across all locations including:
 - Dates in wrong format (must be YYYY-MM-DD)
 
 Try using pinmeto_get_locations first to verify you have locations with the 'google' field populated.`,
-          markdownFormatter: (data) => formatInsightsMarkdown('Google (All Locations)', data)
+          markdownFormatter: (data, agg) => formatInsightsMarkdown('Google (All Locations)', data, undefined, agg)
         }
       );
     }

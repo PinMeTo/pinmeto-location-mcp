@@ -12,7 +12,8 @@ import {
   formatRatingsMarkdown,
   formatKeywordsMarkdown,
   formatApiError,
-  handleToolResponse
+  handleToolResponse,
+  aggregateInsightsData
 } from '../src/helpers';
 import { PinMeToApiError } from '../src/mcp_server';
 import { mockLocation1, mockLocation2 } from './fixtures/locations.fixture';
@@ -175,19 +176,19 @@ describe('formatLocationMarkdown', () => {
     expect(result).toContain('**Name:** Test Location');
   });
 
-  it('should format operating hours', () => {
+  it('should show network integrations when available', () => {
     const result = formatLocationMarkdown(mockLocation1);
 
-    expect(result).toContain('## Operating Hours');
-    expect(result).toContain('mon'); // Days are abbreviated in the API (mon, tue, etc.)
+    // Should show which networks are integrated
+    expect(result).toContain('**Status:** Active');
   });
 
   it('should format contact information', () => {
     const result = formatLocationMarkdown(mockLocation1);
 
-    expect(result).toContain('**Phone:**');
-    expect(result).toContain('**Email:**');
-    expect(result).toContain('**Website:**');
+    expect(result).toContain('📞');
+    expect(result).toContain('✉️');
+    expect(result).toContain('🌐');
   });
 });
 
@@ -196,8 +197,9 @@ describe('formatInsightsMarkdown', () => {
     const result = formatInsightsMarkdown('Google', mockGoogleLocationInsights);
 
     expect(result).toContain('# Google Insights');
-    expect(result).toContain('## Metrics');
-    expect(result).toContain('```json');
+    // With real API format, should show aggregated markdown
+    expect(result).toContain('**Period:**');
+    expect(result).toContain('**Aggregation:**');
   });
 
   it('should include storeId when provided', () => {
@@ -226,21 +228,24 @@ describe('formatInsightsMarkdown', () => {
     expect(appleResult).toContain('# Apple Insights');
   });
 
-  it('should include JSON code block', () => {
+  it('should format insights data with aggregation', () => {
     const result = formatInsightsMarkdown('Google', mockGoogleLocationInsights);
 
-    expect(result).toContain('```json');
-    expect(result).toContain('```');
+    // Should include the aggregated insights data
+    expect(result).toContain('Google Insights');
+    expect(result).toContain('Impressions'); // Metric category
+    expect(result).toContain('Desktop Maps'); // Metric name
   });
 });
 
 describe('formatRatingsMarkdown', () => {
-  it('should format ratings with platform name', () => {
+  it('should format ratings with summary stats', () => {
     const result = formatRatingsMarkdown('Google', mockGoogleLocationRatings);
 
     expect(result).toContain('# Google Ratings');
-    expect(result).toContain('## Rating Details');
-    expect(result).toContain('```json');
+    expect(result).toContain('## Summary');
+    expect(result).toContain('## Rating Distribution');
+    expect(result).toContain('Average Rating');
   });
 
   it('should include storeId when provided', () => {
@@ -269,12 +274,13 @@ describe('formatRatingsMarkdown', () => {
 });
 
 describe('formatKeywordsMarkdown', () => {
-  it('should format keywords data', () => {
+  it('should format keywords with summary stats', () => {
     const result = formatKeywordsMarkdown(mockGoogleKeywordsForLocation);
 
     expect(result).toContain('# Google Keywords');
-    expect(result).toContain('## Keywords');
-    expect(result).toContain('```json');
+    expect(result).toContain('## Summary');
+    expect(result).toContain('## Top Keywords');
+    expect(result).toContain('Total Keywords');
   });
 
   it('should include storeId when provided', () => {
@@ -289,11 +295,12 @@ describe('formatKeywordsMarkdown', () => {
     expect(result).toBe('No keyword data available.');
   });
 
-  it('should include JSON code block', () => {
+  it('should show top keywords ranked by impressions', () => {
     const result = formatKeywordsMarkdown(mockGoogleKeywordsForLocation);
 
-    expect(result).toContain('```json');
-    expect(result).toContain('```');
+    // Should show ranked list of keywords
+    expect(result).toMatch(/1\.\s+\*\*"[^"]+"\*\*/);
+    expect(result).toContain('impressions');
   });
 });
 
@@ -453,6 +460,260 @@ describe('handleToolResponse', () => {
 
     expect(result.content[0].text).toContain('async');
     expect(result.content[0].text).toContain('data');
+  });
+});
+
+describe('aggregateInsightsData', () => {
+  // Mock metric data for testing aggregations
+  const createMockMetrics = () => [
+    {
+      key: 'BUSINESS_IMPRESSIONS_DESKTOP_MAPS',
+      metrics: [
+        { key: '2024-01-01', value: 100 },
+        { key: '2024-01-02', value: 150 },
+        { key: '2024-01-03', value: 120 },
+        { key: '2024-01-08', value: 200 }, // Week 2
+        { key: '2024-01-15', value: 180 }, // Week 3
+        { key: '2024-02-01', value: 250 }, // February
+        { key: '2024-04-01', value: 300 }, // Q2
+        { key: '2025-01-01', value: 400 } // New year
+      ]
+    },
+    {
+      key: 'BUSINESS_IMPRESSIONS_MOBILE_SEARCH',
+      metrics: [
+        { key: '2024-01-01', value: 50 },
+        { key: '2024-01-02', value: 75 },
+        { key: '2024-01-03', value: 60 },
+        { key: '2024-01-08', value: 100 },
+        { key: '2024-01-15', value: 90 },
+        { key: '2024-02-01', value: 125 },
+        { key: '2024-04-01', value: 150 },
+        { key: '2025-01-01', value: 200 }
+      ]
+    }
+  ];
+
+  it('should aggregate by total (sum all metrics)', () => {
+    const data = createMockMetrics();
+    const result = aggregateInsightsData(data, 'total');
+
+    expect(result.aggregation).toBe('total');
+    expect(result.dateRange.from).toBe('2024-01-01');
+    expect(result.dateRange.to).toBe('2025-01-01');
+    expect(result.periods).toHaveLength(1);
+    expect(result.periods[0].period).toBe('Total');
+
+    // Verify totals: sum of all values
+    const metrics = result.periods[0].metrics;
+    expect(metrics['BUSINESS_IMPRESSIONS_DESKTOP_MAPS']).toBe(1700); // 100+150+120+200+180+250+300+400
+    expect(metrics['BUSINESS_IMPRESSIONS_MOBILE_SEARCH']).toBe(850); // 50+75+60+100+90+125+150+200
+  });
+
+  it('should aggregate by daily (one period per day)', () => {
+    const data = createMockMetrics();
+    const result = aggregateInsightsData(data, 'daily');
+
+    expect(result.aggregation).toBe('daily');
+    expect(result.periods).toHaveLength(8); // 8 unique dates
+
+    // Check first day
+    const day1 = result.periods.find(p => p.period === '2024-01-01');
+    expect(day1).toBeDefined();
+    expect(day1!.metrics['BUSINESS_IMPRESSIONS_DESKTOP_MAPS']).toBe(100);
+    expect(day1!.metrics['BUSINESS_IMPRESSIONS_MOBILE_SEARCH']).toBe(50);
+
+    // Check another day
+    const day2 = result.periods.find(p => p.period === '2024-01-02');
+    expect(day2).toBeDefined();
+    expect(day2!.metrics['BUSINESS_IMPRESSIONS_DESKTOP_MAPS']).toBe(150);
+    expect(day2!.metrics['BUSINESS_IMPRESSIONS_MOBILE_SEARCH']).toBe(75);
+  });
+
+  it('should aggregate by weekly (group by week number)', () => {
+    const data = createMockMetrics();
+    const result = aggregateInsightsData(data, 'weekly');
+
+    expect(result.aggregation).toBe('weekly');
+    expect(result.periods.length).toBeGreaterThan(0);
+
+    // Week 1 of 2024 should contain Jan 1-3
+    const week1 = result.periods.find(p => p.period === '2024-W01');
+    expect(week1).toBeDefined();
+    expect(week1!.metrics['BUSINESS_IMPRESSIONS_DESKTOP_MAPS']).toBe(370); // 100+150+120
+    expect(week1!.metrics['BUSINESS_IMPRESSIONS_MOBILE_SEARCH']).toBe(185); // 50+75+60
+
+    // Should have multiple weeks
+    const allWeeks = result.periods.filter(p => p.period.startsWith('2024-W'));
+    expect(allWeeks.length).toBeGreaterThan(1);
+  });
+
+  it('should aggregate by monthly (group by month)', () => {
+    const data = createMockMetrics();
+    const result = aggregateInsightsData(data, 'monthly');
+
+    expect(result.aggregation).toBe('monthly');
+
+    // January 2024
+    const jan = result.periods.find(p => p.period === '2024-01');
+    expect(jan).toBeDefined();
+    expect(jan!.metrics['BUSINESS_IMPRESSIONS_DESKTOP_MAPS']).toBe(750); // 100+150+120+200+180
+    expect(jan!.metrics['BUSINESS_IMPRESSIONS_MOBILE_SEARCH']).toBe(375); // 50+75+60+100+90
+
+    // February 2024
+    const feb = result.periods.find(p => p.period === '2024-02');
+    expect(feb).toBeDefined();
+    expect(feb!.metrics['BUSINESS_IMPRESSIONS_DESKTOP_MAPS']).toBe(250);
+    expect(feb!.metrics['BUSINESS_IMPRESSIONS_MOBILE_SEARCH']).toBe(125);
+
+    // Should have at least 3 months (Jan, Feb, Apr 2024 + Jan 2025)
+    expect(result.periods.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('should aggregate by quarterly (group by quarter)', () => {
+    const data = createMockMetrics();
+    const result = aggregateInsightsData(data, 'quarterly');
+
+    expect(result.aggregation).toBe('quarterly');
+
+    // Q1 2024 (Jan-Mar)
+    const q1 = result.periods.find(p => p.period === '2024-Q1');
+    expect(q1).toBeDefined();
+    expect(q1!.metrics['BUSINESS_IMPRESSIONS_DESKTOP_MAPS']).toBe(1000); // Jan+Feb: 750+250
+    expect(q1!.metrics['BUSINESS_IMPRESSIONS_MOBILE_SEARCH']).toBe(500); // Jan+Feb: 375+125
+
+    // Q2 2024 (Apr-Jun)
+    const q2 = result.periods.find(p => p.period === '2024-Q2');
+    expect(q2).toBeDefined();
+    expect(q2!.metrics['BUSINESS_IMPRESSIONS_DESKTOP_MAPS']).toBe(300);
+    expect(q2!.metrics['BUSINESS_IMPRESSIONS_MOBILE_SEARCH']).toBe(150);
+
+    // Q1 2025
+    const q1_2025 = result.periods.find(p => p.period === '2025-Q1');
+    expect(q1_2025).toBeDefined();
+    expect(q1_2025!.metrics['BUSINESS_IMPRESSIONS_DESKTOP_MAPS']).toBe(400);
+  });
+
+  it('should aggregate by yearly (group by year)', () => {
+    const data = createMockMetrics();
+    const result = aggregateInsightsData(data, 'yearly');
+
+    expect(result.aggregation).toBe('yearly');
+    expect(result.periods).toHaveLength(2); // 2024 and 2025
+
+    // 2024
+    const year2024 = result.periods.find(p => p.period === '2024');
+    expect(year2024).toBeDefined();
+    expect(year2024!.metrics['BUSINESS_IMPRESSIONS_DESKTOP_MAPS']).toBe(1300); // All 2024 data
+    expect(year2024!.metrics['BUSINESS_IMPRESSIONS_MOBILE_SEARCH']).toBe(650);
+
+    // 2025
+    const year2025 = result.periods.find(p => p.period === '2025');
+    expect(year2025).toBeDefined();
+    expect(year2025!.metrics['BUSINESS_IMPRESSIONS_DESKTOP_MAPS']).toBe(400);
+    expect(year2025!.metrics['BUSINESS_IMPRESSIONS_MOBILE_SEARCH']).toBe(200);
+  });
+
+  it('should handle empty data', () => {
+    const result = aggregateInsightsData([], 'total');
+
+    expect(result.aggregation).toBe('total');
+    expect(result.dateRange.from).toBe('');
+    expect(result.dateRange.to).toBe('');
+    expect(result.periods).toHaveLength(0);
+  });
+
+  it('should handle single metric with single date', () => {
+    const data = [
+      {
+        key: 'TEST_METRIC',
+        metrics: [{ key: '2024-01-01', value: 100 }]
+      }
+    ];
+    const result = aggregateInsightsData(data, 'total');
+
+    expect(result.periods).toHaveLength(1);
+    expect(result.periods[0].metrics['TEST_METRIC']).toBe(100);
+    expect(result.dateRange.from).toBe('2024-01-01');
+    expect(result.dateRange.to).toBe('2024-01-01');
+  });
+
+  it('should sort periods chronologically for daily aggregation', () => {
+    const data = [
+      {
+        key: 'TEST_METRIC',
+        metrics: [
+          { key: '2024-01-05', value: 50 },
+          { key: '2024-01-01', value: 10 },
+          { key: '2024-01-03', value: 30 }
+        ]
+      }
+    ];
+    const result = aggregateInsightsData(data, 'daily');
+
+    expect(result.periods).toHaveLength(3);
+    expect(result.periods[0].period).toBe('2024-01-01');
+    expect(result.periods[1].period).toBe('2024-01-03');
+    expect(result.periods[2].period).toBe('2024-01-05');
+  });
+
+  it('should sort periods chronologically for monthly aggregation', () => {
+    const data = [
+      {
+        key: 'TEST_METRIC',
+        metrics: [
+          { key: '2024-03-01', value: 30 },
+          { key: '2024-01-01', value: 10 },
+          { key: '2024-02-01', value: 20 }
+        ]
+      }
+    ];
+    const result = aggregateInsightsData(data, 'monthly');
+
+    expect(result.periods).toHaveLength(3);
+    expect(result.periods[0].period).toBe('2024-01');
+    expect(result.periods[1].period).toBe('2024-02');
+    expect(result.periods[2].period).toBe('2024-03');
+  });
+
+  it('should handle null or undefined data gracefully', () => {
+    const result1 = aggregateInsightsData(null as any, 'total');
+    const result2 = aggregateInsightsData(undefined as any, 'total');
+
+    expect(result1.periods).toHaveLength(0);
+    expect(result2.periods).toHaveLength(0);
+  });
+
+  it('should handle multiple metrics for the same period', () => {
+    const data = [
+      {
+        key: 'METRIC_A',
+        metrics: [{ key: '2024-01-01', value: 100 }]
+      },
+      {
+        key: 'METRIC_B',
+        metrics: [{ key: '2024-01-01', value: 200 }]
+      },
+      {
+        key: 'METRIC_C',
+        metrics: [{ key: '2024-01-01', value: 300 }]
+      }
+    ];
+    const result = aggregateInsightsData(data, 'total');
+
+    expect(result.periods).toHaveLength(1);
+    expect(result.periods[0].metrics['METRIC_A']).toBe(100);
+    expect(result.periods[0].metrics['METRIC_B']).toBe(200);
+    expect(result.periods[0].metrics['METRIC_C']).toBe(300);
+  });
+
+  it('should default to total aggregation when not specified', () => {
+    const data = createMockMetrics();
+    const result = aggregateInsightsData(data);
+
+    expect(result.aggregation).toBe('total');
+    expect(result.periods).toHaveLength(1);
+    expect(result.periods[0].period).toBe('Total');
   });
 });
 
