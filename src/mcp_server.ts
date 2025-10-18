@@ -61,11 +61,11 @@ export class PinMeToMcpServer extends McpServer {
     }
   }
 
-  public async makePaginatedPinMeToRequest(
+  public async makePaginatedPinMeToRequest<T = any>(
     url: string,
     maxPages?: number
-  ): Promise<[any[], boolean]> {
-    const allData: any[] = [];
+  ): Promise<[T[], boolean]> {
+    const allData: T[] = [];
     let nextUrl: string | undefined = url;
     let areAllPagesFetched = true;
     let pageCount = 0;
@@ -77,7 +77,7 @@ export class PinMeToMcpServer extends McpServer {
         areAllPagesFetched = false;
         break;
       }
-      const pageData: any[] = resp['data'] || [];
+      const pageData: T[] = resp['data'] || [];
       allData.push(...pageData);
       const paging = resp['paging'] || {};
       nextUrl = paging['nextUrl'];

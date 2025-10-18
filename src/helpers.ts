@@ -1,18 +1,49 @@
 const MAX_RESPONSE_CHARS = 25000; // ~25k tokens (MCP best practice)
 
-export function formatListResponse(response: any[], areAllPagesFetched: boolean): string {
+export function formatListResponse(
+  response: any[],
+  areAllPagesFetched: boolean,
+  options?: {
+    offset?: number;
+    limit?: number;
+    total?: number;
+  }
+): string {
   if (response.length === 0) {
     return 'The response was empty...';
   }
-  let formattedMessage = '-'.repeat(20);
+
+  // Build structured pagination response following MCP best practices
+  const paginatedResponse: any = {
+    count: response.length,
+    items: response
+  };
+
+  // Add offset if provided
+  if (options?.offset !== undefined) {
+    paginatedResponse.offset = options.offset;
+  }
+
+  // Add total if known
+  if (options?.total !== undefined) {
+    paginatedResponse.total = options.total;
+  }
+
+  // Add pagination metadata
+  paginatedResponse.has_more = !areAllPagesFetched;
+
+  // Calculate next_offset if there's more data
+  if (!areAllPagesFetched && options?.offset !== undefined) {
+    paginatedResponse.next_offset = options.offset + response.length;
+  }
+
+  // Add helpful message if not all pages fetched
   if (!areAllPagesFetched) {
-    formattedMessage =
-      'Not All pages were successfully fetched, collected data:\n' + formattedMessage;
+    paginatedResponse.message =
+      'Not all pages were fetched. Use offset parameter or increase maxPages to see more results.';
   }
-  for (const result of response) {
-    formattedMessage += '\n' + JSON.stringify(result, null, 2) + '\n' + '-'.repeat(20);
-  }
-  return formattedMessage;
+
+  return JSON.stringify(paginatedResponse, null, 2);
 }
 
 export function truncateResponse(data: any): [string, boolean] {
