@@ -6,6 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PinMeTo Location MCP is a Model Context Protocol server that integrates the PinMeTo platform with AI agents, enabling natural language interaction with location analytics data from Google, Facebook, and Apple.
 
+## Claude Code Documentation
+
+**Documentation Directory**
+- All Claude-related markdown files (context notes, todos, planning documents, etc.) should be created in `.claude/documentations/`
+- This keeps AI-generated documentation organized and separate from project documentation
+- The `.claude/` directory structure should not be committed to version control
+
 ## Development Commands
 
 ### Build and Run
