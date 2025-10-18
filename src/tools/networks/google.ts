@@ -9,7 +9,7 @@ import {
 
 export function getGoogleLocationInsights(server: PinMeToMcpServer) {
   server.tool(
-    'get_google_location_insights',
+    'pinmeto_get_google_location_insights',
     `Fetch Google Business Profile performance metrics for a specific location over a date range.
 
 Returns comprehensive Google insights including:
@@ -55,8 +55,14 @@ Returns comprehensive Google insights including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({
       storeId,
@@ -127,7 +133,7 @@ Try using get_location first to verify the location exists and has the 'google' 
 
 export function getAllGoogleInsights(server: PinMeToMcpServer) {
   server.tool(
-    'get_all_google_insights',
+    'pinmeto_get_all_google_insights',
     `Fetch Google Business Profile performance metrics for ALL locations in your account over a date range.
 
 Returns aggregated Google insights across all locations including:
@@ -173,8 +179,14 @@ Returns aggregated Google insights across all locations including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -234,7 +246,7 @@ Try using get_locations first to verify you have locations with the 'google' fie
 
 export const getAllGoogleRatings = (server: PinMeToMcpServer) => {
   server.tool(
-    'get_all_google_ratings',
+    'pinmeto_get_all_google_ratings',
     `Fetch Google customer ratings and reviews summary for ALL locations in your account over a date range.
 
 Returns aggregated Google ratings data across all locations including:
@@ -280,8 +292,14 @@ Returns aggregated Google ratings data across all locations including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -340,7 +358,7 @@ Note: This endpoint returns data only for locations that have reviews. If you ha
 
 export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
   server.tool(
-    'get_google_location_ratings',
+    'pinmeto_get_google_location_ratings',
     `Fetch Google customer ratings and reviews details for a specific location over a date range.
 
 Returns detailed Google ratings data for one location including:
@@ -390,8 +408,14 @@ Returns detailed Google ratings data for one location including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({
       storeId,
@@ -461,7 +485,7 @@ Note: This endpoint returns data only if reviews exist. An empty result means no
 
 export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
   server.tool(
-    'get_google_keywords',
+    'pinmeto_get_google_keywords',
     `Fetch Google search keywords and queries that led customers to ALL locations in your account.
 
 Returns keyword data aggregated across all locations including:
@@ -508,8 +532,14 @@ Returns keyword data aggregated across all locations including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -570,7 +600,7 @@ Note: Keyword data is aggregated monthly and may not be available for very recen
 
 export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
   server.tool(
-    'get_google_keywords_for_location',
+    'pinmeto_get_google_keywords_for_location',
     `Fetch Google search keywords and queries that led customers to a specific location.
 
 Returns keyword data for one location including:
@@ -621,8 +651,14 @@ Returns keyword data for one location including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({
       storeId,

@@ -1,4 +1,4 @@
-const MAX_RESPONSE_CHARS = 100000; // ~25k tokens
+const MAX_RESPONSE_CHARS = 25000; // ~25k tokens (MCP best practice)
 
 export function formatListResponse(response: any[], areAllPagesFetched: boolean): string {
   if (response.length === 0) {

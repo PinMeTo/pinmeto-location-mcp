@@ -4,7 +4,7 @@ import { truncateResponse, formatInsightsMarkdown } from '../../helpers';
 
 export function getAppleLocationInsights(server: PinMeToMcpServer) {
   server.tool(
-    'get_apple_location_insights',
+    'pinmeto_get_apple_location_insights',
     `Fetch Apple Maps performance metrics for a specific location over a date range.
 
 Returns comprehensive Apple Maps insights including:
@@ -50,8 +50,14 @@ Returns comprehensive Apple Maps insights including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({
       storeId,
@@ -123,7 +129,7 @@ Try using get_location first to verify the location exists. Note: Apple Maps int
 
 export function getAllAppleInsights(server: PinMeToMcpServer) {
   server.tool(
-    'get_all_apple_insights',
+    'pinmeto_get_all_apple_insights',
     `Fetch Apple Maps performance metrics for ALL locations in your account over a date range.
 
 Returns aggregated Apple Maps insights across all locations including:
@@ -169,8 +175,14 @@ Returns aggregated Apple Maps insights across all locations including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;

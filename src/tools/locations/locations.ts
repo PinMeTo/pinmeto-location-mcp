@@ -8,7 +8,7 @@ import { PinMeToMcpServer } from '../../mcp_server';
 
 export function getLocation(server: PinMeToMcpServer) {
   server.tool(
-    'get_location',
+    'pinmeto_get_location',
     `Retrieve comprehensive details for a specific PinMeTo location by storeId.
 
 Returns complete location data including:
@@ -39,8 +39,14 @@ Returns complete location data including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({ storeId, format }: { storeId: string; format?: 'json' | 'markdown' }) => {
       const { locationsApiBaseUrl, accountId } = server.configs;
@@ -132,7 +138,7 @@ export function getLocations(server: PinMeToMcpServer) {
   ] as const;
   const FieldsEnum = z.enum(validFieldsList);
   server.tool(
-    'get_locations',
+    'pinmeto_get_locations',
     `Retrieve a list of all locations in your PinMeTo account with optional field filtering.
 
 This is the primary tool for discovering storeIds, which are required by most other tools. Returns a paginated list of all locations with customizable field selection.
@@ -180,6 +186,12 @@ _id, type, site, name, alternativeNames, location, locationDescriptor, isActive,
         .describe(
           'Maximum number of pages to fetch (1-10). Each page contains up to 1000 locations. Omit to fetch all pages. Use to limit response size for large accounts.'
         )
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({ fields, maxPages }: { fields?: string[]; maxPages?: number }) => {
       let fieldsParam: string;

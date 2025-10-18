@@ -4,7 +4,7 @@ import { truncateResponse, formatInsightsMarkdown, formatRatingsMarkdown } from 
 
 export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
   server.tool(
-    'get_facebook_location_insights',
+    'pinmeto_get_facebook_location_insights',
     `Fetch Facebook Page performance metrics for a specific location over a date range.
 
 Returns comprehensive Facebook insights including:
@@ -50,8 +50,14 @@ Returns comprehensive Facebook insights including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({
       storeId,
@@ -122,7 +128,7 @@ Try using get_location first to verify the location exists and has the 'fb' fiel
 
 export function getAllFacebookInsights(server: PinMeToMcpServer) {
   server.tool(
-    'get_all_facebook_insights',
+    'pinmeto_get_all_facebook_insights',
     `Fetch Facebook Page performance metrics for ALL location pages in your account over a date range.
 
 Returns aggregated Facebook insights across all location pages including:
@@ -168,8 +174,14 @@ Returns aggregated Facebook insights across all location pages including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -229,7 +241,7 @@ Try using get_locations first to verify you have locations with the 'fb' field p
 
 export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
   server.tool(
-    'get_all_facebook_brandpage_insights',
+    'pinmeto_get_all_facebook_brandpage_insights',
     `Fetch Facebook Page performance metrics for brand pages (company-level pages, not location-specific).
 
 Returns Facebook insights for brand/corporate pages including:
@@ -274,8 +286,14 @@ Returns Facebook insights for brand/corporate pages including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -335,7 +353,7 @@ Note: Brand pages are company-level Facebook Pages, separate from individual loc
 
 export const getAllFacebookRatings = (server: PinMeToMcpServer) => {
   server.tool(
-    'get_all_facebook_ratings',
+    'pinmeto_get_all_facebook_ratings',
     `Fetch Facebook customer ratings and reviews summary for ALL location pages in your account over a date range.
 
 Returns aggregated Facebook ratings data across all locations including:
@@ -381,8 +399,14 @@ Returns aggregated Facebook ratings data across all locations including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -440,7 +464,7 @@ Note: This endpoint returns data only for locations that have reviews. If you ha
 
 export const getFacebookLocationRatings = (server: PinMeToMcpServer) => {
   server.tool(
-    'get_facebook_location_ratings',
+    'pinmeto_get_facebook_location_ratings',
     `Fetch Facebook customer ratings and recommendations details for a specific location over a date range.
 
 Returns detailed Facebook ratings data for one location including:
@@ -490,8 +514,14 @@ Returns detailed Facebook ratings data for one location including:
       format: z
         .enum(['json', 'markdown'])
         .optional()
-        .default('json')
+        .default('markdown')
         .describe('Response format: json (raw data) or markdown (human-readable summary)')
+    },
+    {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true
     },
     async ({
       storeId,
