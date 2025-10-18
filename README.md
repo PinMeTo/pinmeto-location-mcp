@@ -262,6 +262,7 @@ The PinMeTo MCP Server provides 15 comprehensive tools organized by category. Al
 > - **Google insights:** ~10 days lag - request dates at least 10 days in the past
 > - **Facebook insights:** ~3 days lag - request dates at least 3 days in the past
 > - **Apple insights:** ~4 days lag - request dates at least 4 days in the past
+> - **Google keywords:** Updated monthly - data for a given month becomes available a few days after the month ends
 
 ### Location Management (2 tools)
 

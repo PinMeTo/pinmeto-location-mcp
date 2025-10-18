@@ -492,6 +492,7 @@ Returns keyword data aggregated across all locations including:
 - Example: "2024-01" for January 2024, "2024-12" for December 2024
 - Data aggregated by full calendar months
 - Maximum 18 months of historical data
+- ⚠️ **Keywords are updated monthly** - data for a given month becomes available a few days after the month ends
 
 **Example use case:**
 "What are the top Google search keywords that brought customers to our locations in Q4 2024?"`,
@@ -600,6 +601,7 @@ Returns keyword data for one location including:
 - Example: "2024-01" for January 2024, "2024-12" for December 2024
 - Data aggregated by full calendar months
 - Maximum 18 months of historical data
+- ⚠️ **Keywords are updated monthly** - data for a given month becomes available a few days after the month ends
 
 **Example use case:**
 "What search terms are customers using to find our downtown location on Google in the last 6 months?"`,
