@@ -6,251 +6,67 @@ The [PinMeTo](https://www.pinmeto.com/) MCP Server enables seamless integration 
 
 ## Installation
 
-The MCP Server can be built from this repository, or a single-click installer is available for Claude Desktop.
+### One-Click Installation for Claude Desktop
+
+**Step 1:** Download the latest installer
+
+Visit the [Releases page](https://github.com/PinMeTo/pinmeto-location-mcp/releases) and download the latest `.mcpb` file:
+
+📦 **[Download Latest Release →](https://github.com/PinMeTo/pinmeto-location-mcp/releases/latest)**
+
+**Step 2:** Install in Claude Desktop
+
+1. Double-click the downloaded `.mcpb` file (Claude Desktop must be open)
+2. Enter your PinMeTo API credentials when prompted:
+   - Get your credentials from [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3)
+   - You'll need: Account ID, App ID, and App Secret
+
+<img width="655" height="596" alt="PinMeTo MCP Installation" src="https://github.com/user-attachments/assets/30af64b3-81c3-4bb1-9b05-656831004757" />
+
+**Step 3:** Enable and use
+
+Enable the PinMeTo connector in Claude Desktop. You can now interact with your location data through natural language!
 
 ---
 
-## Claude Desktop: One-Click Installation
-
-The single-click installer binary for Claude Desktop is available in the "Releases" tab:
-
-<https://github.com/PinMeTo/pinmeto-location-mcp/releases>
-
-Below are instructions on how to generate the binary with `npx`:
-
-### Prerequisites (Claude Desktop: One-Click Installation)
-
-- **npm**
-- **npx** (included with npm)
-- **Claude Desktop**
-
-### Steps (Claude Desktop: One-Click Installation)
-
-1. **Clone the repository:**
-
-    ```zsh
-    git clone https://github.com/PinMeTo/pinmeto-location-mcp.git
-    ```
-
-2. **Open your project folder** in your text editor.
-
-    ```zsh
-    cd pinmeto-location-mcp
-    ```
-
-3. **Build** and **Run the MCPB installer:**
-
-   ```bash
-   npm install
-   npm run build
-   npx @anthropic-ai/mcpb pack
-   ```
-
-   - This generates a `.mcpb` file in your project directory.
-
-4. **Install in Claude Desktop:**
-   - With Claude Desktop open, double-click the `.mcpb` file.
-   - Enter your PinMeTo API credentials when prompted ([PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3)).
-     <img width="655" height="596" alt="Screenshot 2025-09-25 at 14 51 20" src="https://github.com/user-attachments/assets/30af64b3-81c3-4bb1-9b05-656831004757" />
-
-- Enable the connector in Claude. You can now use the PinMeTo MCP integration.
+**For developers:** Want to build from source or contribute? See [BUILDING.md](BUILDING.md) for development instructions.
 
 ---
 
-## Claude Desktop: Manual Installation
+## Quick Start
 
-Below are instructions on how to manually integrate the PinMeTo MCP with Claude Desktop:
+Once installed, here's how to get started with PinMeTo MCP:
 
-### Prerequisites (Claude Desktop: Manual Installation)
+### 1. Find Your Locations
+```
+"Show me all my locations"
+```
+This returns storeIds you'll need for other queries.
 
-- **Node.js v22+** (recommended: [NVM](https://github.com/nvm-sh/nvm))
-- **npm** (included with Node.js)
-- **Claude Desktop**
+### 2. Get a Quick Overview
+```
+"Get complete overview for store [storeId] for last month"
+```
+Returns location details, network links, and insights from all platforms in one call.
 
-### Steps (Claude Desktop: Manual Installation)
+### 3. Generate Reports
 
-1. **Clone the repository:**
+**For all locations:**
+```
+"Get multi-platform insights for all locations from [start-date] to [end-date]"
+```
 
-    ```zsh
-    git clone https://github.com/PinMeTo/pinmeto-location-mcp.git
-    ```
+**Year-over-year comparison:**
+```
+"Compare current quarter to same quarter last year for all platforms"
+```
 
-2. **Open your project folder** in your text editor.
-
-    ```zsh
-    cd pinmeto-location-mcp
-    ```
-
-3. **Install dependencies and build the project:**
-
-   ```bash
-   npm install
-   npm run build
-   ```
-
-4. **Configure Claude Desktop:**
-    - Open your `claude_desktop_config.json` file. You can go to Preferences → Developer → Edit Config in the Claude Desktop Client. Or use on Mac:
-
-    ```bash
-    code ~/Library/Application\ Support/Claude/claude_desktop_config.json
-    ```
-
-    - Add the following MCP server configuration (with node)
-
-        ```json
-        {
-        "mcpServers": {
-            "PinMeTo": {
-            "command": "/absolute/path/to/node",
-            "args": ["/absolute/path/to/project/build/index.js"],
-            "env": {
-                "PINMETO_API_URL": "",
-                "PINMETO_ACCOUNT_ID": "",
-                "PINMETO_APP_ID": "",
-                "PINMETO_APP_SECRET": ""
-            }
-            }
-        }
-        }
-        ```
-
-    - Add the following MCP server configuration (with npx)
-
-        ```json
-        {
-        "mcpServers": {
-            "PinMeTo": {
-                "command": "npx",
-                "args": ["-y", "PinMeTo/pinmeto-location-mcp"],
-                "env": {
-                    "PINMETO_ACCOUNT_ID": "",
-                    "PINMETO_APP_ID": "",
-                    "PINMETO_APP_SECRET": ""
-                }
-            }
-        }
-
-        }
-
-        ```
-
-    - Use absolute paths for both Node and your project:
-    - Node path: `which node`
-    - Project path: `pwd`
-
-5. **Get your PinMeTo API credentials:**
-   - Visit [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3) and fill in the environment variables above.
-
-6. **Restart Claude Desktop:**
-   - Ensure all permissions are granted. You should now see "PinMeTo MCP" in your MCP selection.
-
-<!-- ---
-
-## Cursor: Direct Link Installation
-
-Below are instructions on how to manually integrate the PinMeTo MCP with Cursor using a direct link:
-
-### Prerequisites (Cursor: Direct Link Installation)
-
-- **Node.js v22+** (recommended: [NVM](https://github.com/nvm-sh/nvm))
-- **npm** (included with Node.js)
-
-### Installation (Cursor: Direct Link Installation)
-
-1. **Clone the repository:**
-
-    ```zsh
-    git clone https://github.com/PinMeTo/pinmeto-location-mcp.git
-    ```
-
-2. **Open your project folder** in your text editor.
-
-    ```zsh
-    cd pinmeto-location-mcp
-    ```
-
-3. **Install dependencies and build the project:**
-
-   ```bash
-   npm install
-   npm run build
-   ```
-
-4. **Copy the link and paste it in your browser.**
-
-    ```bash
-    cursor://anysphere.cursor-deeplink/mcp/install?name=PinMeTo&config=eyJlbnYiOnsiUElOTUVUT19BUElfVVJMIjoiIiwiUElOTUVUT19BQ0NPVU5UX0lEIjoiIiwiUElOTUVUT19BUFBfSUQiOiIiLCJQSU5NRVRPX0FQUF9TRUNSRVQiOiIifSwiY29tbWFuZCI6Ii9hYnNvbHV0ZS9wYXRoL3RvL25vZGUgL2Fic29sdXRlL3BhdGgvdG8vcHJvamVjdC9idWlsZC9pbmRleC5qcyJ9
-    ```
-
-Enter your credentials.
-
-- Use absolute paths for both Node and your project:
-  - Node path: `which node`
-  - Project path: `pwd`
-
-![Cursor Configuration](img/cursor_config.png)
+**Remember:** Account for data lag when selecting dates:
+- Google: 10 days
+- Facebook: 3 days
+- Apple: 4 days
 
 ---
-
-## Cursor: Manual Installation
-
-Below are instructions on how to manually integrate the PinMeTo MCP with Cursor manually:
-
-### Prerequisites (Cursor: Manual Installation)
-
-- **Node.js v22+** (recommended: [NVM](https://github.com/nvm-sh/nvm))
-- **npm** (included with Node.js)
-
-### Installation (Cursor: Manual Installation)
-
-1. **Clone the repository:**
-
-    ```zsh
-    git clone https://github.com/PinMeTo/pinmeto-location-mcp.git
-    ```
-
-2. **Open your project folder** in your text editor.
-
-    ```zsh
-    cd pinmeto-location-mcp
-    ```
-
-3. **Install dependencies and build the project:**
-
-   ```bash
-   npm install
-   npm run build
-   ```
-
-4. **To add this MCP server to Cursor**:
-
-    1. Go to **Settings → Cursor Settings → MCP**.
-    2. Click **+ Add New MCP Server**. This opens an `mcp.json` file.
-    3. Add the same JSON configuration as shown in the Claude Desktop instructions.
-
-        ```json
-        {
-        "mcpServers": {
-            "PinMeTo": {
-            "command": "/absolute/path/to/node",
-            "args": ["/absolute/path/to/project/build/index.js"],
-            "env": {
-                "PINMETO_API_URL": "",
-                "PINMETO_ACCOUNT_ID": "",
-                "PINMETO_APP_ID": "",
-                "PINMETO_APP_SECRET": ""
-            }
-            }
-        }
-        }
-        ```
-
-**Tip:**
-
-- `~/.cursor/mcp.json` is your global MCP settings.
-- `.cursor/mcp.json` is project-specific. For most cases, add the server to your project-specific file.
-
---- -->
 
 ## Available Tools
 
@@ -635,12 +451,6 @@ Need keyword data?
 
 *Whichever is more recent
 
-**Important:** Always request dates accounting for data lag:
-- Google insights: Request dates ≥10 days in the past
-- Facebook insights: Request dates ≥3 days in the past
-- Apple insights: Request dates ≥4 days in the past
-- Google keywords: Request complete months only
-
 ### Detailed Field Reference
 
 #### Google Business Profile Fields
@@ -699,71 +509,110 @@ Need keyword data?
 
 ### Common Workflows
 
-#### Workflow 1: Monthly Performance Report
+#### Workflow 1: Executive Monthly Report ⚡
 
-**Goal:** Generate monthly performance summary across all platforms
+**Goal:** Generate comprehensive monthly report across all platforms
 
-```
-1. Get all locations (filtered for speed)
-   → pinmeto_get_locations with fields: ['storeId', 'name', 'google', 'fb']
-
-2. Get Google insights for all locations (last month)
-   → pinmeto_get_all_google_insights
-   → from: "2024-01-01", to: "2024-01-31"
-   → aggregation: "total" (default)
-
-3. Get Facebook insights for all locations
-   → pinmeto_get_all_facebook_insights (same dates)
-
-4. Get Apple insights for all locations
-   → pinmeto_get_all_apple_insights (same dates)
-
-Result: Complete multi-platform report in ~2,000 tokens (vs 50,000+ without aggregation)
-```
-
-#### Workflow 2: Location Deep-Dive
-
-**Goal:** Analyze single location performance with weekly trends
+**Best approach:** Use composite tools for 6x faster results
 
 ```
-1. Find the location
-   → pinmeto_get_locations with fields: ['storeId', 'name']
+1. Multi-platform overview (one call!)
+   → pinmeto_get_multi_platform_insights
+   → from: "2024-10-01", to: "2024-10-31"
+   → aggregation: "total"
+
+   Returns: Google, Facebook, and Apple insights for all locations in one unified report
+
+2. Year-over-year comparison (optional)
+   → pinmeto_get_yoy_comparison
+   → current_from: "2024-10-01", current_to: "2024-10-31"
+   → aggregation: "monthly" (for month-by-month breakdown)
+
+   Returns: Comparison to October 2023 with change indicators
+
+Result: Complete executive report in ~1 minute (vs 10+ minutes with individual tools)
+```
+
+**Alternative:** Use individual tools if you need platform-specific customization:
+```
+1. pinmeto_get_all_google_insights
+2. pinmeto_get_all_facebook_insights
+3. pinmeto_get_all_apple_insights
+```
+
+---
+
+#### Workflow 2: Store Manager Report ⚡
+
+**Goal:** Complete performance overview for a specific location
+
+**Best approach:** Use location overview tool
+
+```
+1. Get complete overview (one call!)
+   → pinmeto_get_location_overview
+   → storeId: "downtown-store-001"
+   → from: "2024-10-01", to: "2024-10-31"
+   → include_ratings: true (default)
+
+   Returns:
+   - Location details with network integration links
+   - Google, Facebook, and Apple insights
+   - Customer ratings from Google and Facebook
+
+2. Deep-dive into keywords (optional)
+   → pinmeto_get_google_keywords_for_location
+   → from: "2024-10", to: "2024-10"
+
+Result: Comprehensive single-location report with all platforms
+```
+
+**Alternative:** For weekly trends, use individual tools with `aggregation: "weekly"`
+
+---
+
+#### Workflow 3: Year-over-Year Growth Analysis ⚡
+
+**Goal:** Measure annual growth with quarterly breakdown
+
+```
+1. Compare full year with quarterly trends
+   → pinmeto_get_yoy_comparison
+   → current_from: "2024-01-01", current_to: "2024-12-31"
+   → aggregation: "quarterly"
+   → include_ratings: true
+
+   Returns: Q1-Q4 2024 vs Q1-Q4 2023 comparison with:
+   - Metrics changes and percentages
+   - Quarterly trend visibility
+   - Optional ratings comparison
+
+Result: Executive-ready YoY analysis with quarterly breakdown
+```
+
+---
+
+#### Workflow 4: Location Deep-Dive (Custom Analysis)
+
+**Goal:** Detailed analysis with custom metrics and time periods
+
+```
+1. Find locations
+   → pinmeto_get_locations
+   → fields: ['storeId', 'name', 'google', 'fb']
 
 2. Get location details
    → pinmeto_get_location with storeId
 
-3. Get Google insights with weekly breakdown
-   → pinmeto_get_google_location_insights
-   → aggregation: "weekly"
+3. Get platform-specific insights with custom aggregation
+   → pinmeto_get_google_location_insights (aggregation: "weekly")
+   → pinmeto_get_facebook_location_insights (aggregation: "weekly")
+   → pinmeto_get_apple_location_insights (aggregation: "weekly")
 
-4. Get customer reviews
-   → pinmeto_get_google_location_ratings (same period)
-   → pinmeto_get_facebook_location_ratings (same period)
-
-5. Understand search behavior
+4. Analyze search behavior
    → pinmeto_get_google_keywords_for_location (month format)
 
-Result: Comprehensive single-location analysis with trend data
-```
-
-#### Workflow 3: Competitive Location Comparison
-
-**Goal:** Compare performance between multiple specific locations
-
-```
-1. Get locations list
-   → pinmeto_get_locations
-
-2. Get insights for each location separately
-   → pinmeto_get_google_location_insights for Store A
-   → pinmeto_get_google_location_insights for Store B
-   → pinmeto_get_google_location_insights for Store C
-   → Use aggregation: "monthly" for 3-month trend comparison
-
-3. Identify keyword differences
-   → pinmeto_get_google_keywords_for_location for each store
-
-Result: Side-by-side comparison with monthly trends
+Result: Granular weekly trends for custom analysis
 ```
 
 ### Troubleshooting Guide
@@ -851,167 +700,63 @@ Result: Side-by-side comparison with monthly trends
 
 ---
 
-## Aggregation Feature
+## Technical Details
 
-All insight tools support intelligent data aggregation to dramatically reduce context usage while maintaining data insights.
+### Smart Data Aggregation
 
-### Why Aggregation Matters
+All insight tools automatically aggregate daily data to reduce context usage by up to **97%**.
 
-**The Problem:** Insights APIs return daily data points. A 30-day request for Google insights returns 30 separate data objects per metric, which can consume 15,000+ tokens for a single location.
+**Aggregation Levels:**
 
-**The Solution:** Automatic aggregation combines daily data into meaningful periods, reducing context usage by up to **97%** while preserving analytical value.
+| Level | Description | Use Case |
+|-------|-------------|----------|
+| **`total`** (default) | Sum all data into single totals | Quick summaries, period comparisons |
+| `daily` | Raw daily breakdown | Detailed day-by-day analysis |
+| `weekly` | Group by week | Week-over-week trends |
+| `monthly` | Group by month | Month-over-month comparison |
+| `quarterly` | Group by quarter | Quarterly business reviews |
+| `yearly` | Group by year | Year-over-year analysis |
 
-### Aggregation Levels
+**Performance Impact:**
 
-| Level | Description | Use Case | Example Output |
-|-------|-------------|----------|----------------|
-| **`total`** (default) | Sum all data into single totals | Quick summaries, period comparisons | 30 days → 1 total |
-| `daily` | Raw daily breakdown | Detailed day-by-day analysis | 30 days → 30 data points |
-| `weekly` | Group by week | Week-over-week trends | 30 days → 4-5 weeks |
-| `monthly` | Group by month | Month-over-month comparison | 90 days → 3 months |
-| `quarterly` | Group by quarter | Quarterly business reviews | 1 year → 4 quarters |
-| `yearly` | Group by year | Year-over-year analysis | Multi-year → annual totals |
+| Scenario | Without Aggregation | With Aggregation | Savings |
+|----------|---------------------|------------------|---------|
+| 30-day single location | ~15,000 tokens | ~500 tokens | **97%** |
+| 30-day all platforms | ~45,000 tokens | ~1,500 tokens | **97%** |
+| 90-day multi-location | ~90,000 tokens | ~1,200 tokens | **99%** |
 
-### Context Savings
+**Markdown Output:**
 
-| Scenario | Without Aggregation | With `aggregation='total'` | Savings |
-|----------|---------------------|---------------------------|---------|
-| 30-day Google insights (1 location) | ~15,000 tokens | ~500 tokens | **97%** |
-| 30-day all networks (3 networks) | ~45,000 tokens | ~1,500 tokens | **97%** |
-| 90-day multi-location report | ~90,000 tokens | ~1,200 tokens | **99%** |
+All tools default to markdown format with smart formatting:
+- Metrics organized by category (Impressions, Actions, Engagement)
+- Human-readable numbers with comma separators
+- Period and aggregation level clearly displayed
+- Emojis for better readability (ratings, locations)
 
-### Markdown Output Enhancement
-
-When using `format='markdown'` (the default), responses now show:
-
-**Before (raw JSON dump):**
+**Examples:**
 ```
-# Google Insights
-```json
-{ "metrics": [ ... 30 daily objects ... ] }
-```
-~5,000 tokens
+# Default (total aggregation)
+"Get Google insights for store ABC from 2024-01-01 to 2024-03-31"
+→ Returns quarterly total
 
-**After (smart summary):**
-```
-# Google Insights
-**Period:** 2024-01-01 to 2024-01-31
-**Aggregation:** total
-
-### Impressions & Visibility
-- Desktop Search Impressions: 12,450
-- Mobile Search Impressions: 8,230
-- Desktop Maps Impressions: 3,120
-
-### Customer Actions
-- Direction Requests: 892
-- Call Clicks: 234
-- Website Clicks: 156
-```
-~200 tokens (96% reduction)
-
-### Usage Examples
-
-```
-# Get monthly totals (default behavior)
-"Get Google insights for store ABC123 from 2024-01-01 to 2024-03-31"
-→ Returns quarterly total automatically
-
-# Weekly breakdown for trend analysis
-"Get Google insights for store ABC123 from 2024-01-01 to 2024-01-31 with weekly aggregation"
+# Weekly breakdown
+"Get Google insights for store ABC from 2024-01-01 to 2024-01-31 with weekly aggregation"
 → Returns 4-5 weekly summaries
 
-# Daily data when needed
-"Get Google insights for store ABC123 from 2024-01-01 to 2024-01-07 with daily aggregation"
+# Daily data
+"Get Google insights for store ABC from 2024-01-01 to 2024-01-07 with daily aggregation"
 → Returns all 7 daily data points
 ```
 
----
+### Output Formats
 
-## Example Workflows
-
-### Basic Workflow: Analyze a Single Location
-```
-1. Get all locations: "Show me all my locations"
-   → Uses get_locations to find storeIds
-
-2. Get location details: "Show me details for storeId ABC123"
-   → Uses get_location (markdown format by default)
-
-3. Get Google insights summary: "Get Google insights for ABC123 from 2024-01-01 to 2024-01-31"
-   → Uses get_google_location_insights (automatically aggregates to total)
-   → Returns summary with ~500 tokens instead of ~15,000
-
-4. Get weekly trends: "Get Google insights for ABC123 for January with weekly breakdown"
-   → Uses get_google_location_insights with aggregation: "weekly"
-   → Returns 4-5 weekly summaries for trend analysis
-
-5. Compare platforms: "Get Facebook and Apple insights for the same location and dates"
-   → Uses get_facebook_location_insights and get_apple_location_insights
-   → Both use automatic aggregation for efficient summaries
-```
-
-### Cross-Location Analysis
-```
-1. Get all locations: "List all my active locations"
-   → Uses get_locations with fields: ["storeId", "name", "isActive"]
-
-2. Compare Google performance: "Get Google insights for all locations for last month"
-   → Uses get_all_google_insights (automatically aggregates to monthly total)
-   → Returns efficient summary across all locations (~1,500 tokens vs ~45,000)
-
-3. Quarterly trends: "Show me quarterly Google insights for all locations this year"
-   → Uses get_all_google_insights with aggregation: "quarterly"
-   → Returns 4 quarterly summaries for year-over-year analysis
-
-4. Find rating issues: "Show me all Facebook ratings for last month"
-   → Uses get_all_facebook_ratings to identify locations needing attention
-   → Markdown format shows rating distributions and response rates
-```
-
-### Keyword Research
-```
-1. Get Google keywords: "What search terms brought customers to my locations in January 2024?"
-   → Uses get_google_keywords with from: "2024-01", to: "2024-01"
-
-2. Analyze specific location: "Show me keywords for storeId ABC123"
-   → Uses get_google_keywords_for_location
-```
-
----
-
-## Features
-
-### Smart Data Aggregation ✨ NEW
-- **Automatic daily data aggregation** reduces context usage by up to 97%
-- **6 aggregation levels**: daily, weekly, monthly, quarterly, yearly, total
-- **Default to total** for maximum efficiency
-- Works seamlessly with all insight tools across Google, Facebook, and Apple
-
-### Enhanced Markdown Output ✨ NEW
-All tools support two output formats:
+- **Markdown** (default): Human-readable summaries optimized for presentation
 - **JSON**: Raw API data for programmatic processing
-- **Markdown** (default): Smart summaries with categorized metrics
-  - **Insights**: Organized by category (Impressions & Visibility, Customer Actions, Engagement)
-  - **Ratings**: Summary stats, distribution charts, and recent reviews
-  - **Keywords**: Ranked lists with impression counts and percentages
-  - **Locations**: Concise format with emojis for better readability
-
-### Input Validation
-- Date parameters use regex validation (YYYY-MM-DD or YYYY-MM)
-- Clear error messages with format examples when validation fails
-- Helpful troubleshooting steps for common issues
-
-### Pagination Control
-- `get_locations` supports `maxPages` parameter (1-10 pages)
-- `get_all_apple_insights` supports pagination for large datasets
-- Each page contains up to 1000 locations
-- Useful for large accounts to limit response size
 
 ### Response Size Management
-- Smart aggregation reduces typical responses from 15,000 to 500 tokens
+
 - Automatic 25k character limit prevents context overflow
 - Truncated responses include helpful messages suggesting filters
-- Ensures reliable performance with large datasets
+- Use field filtering and pagination for large datasets
 
 ---
