@@ -254,7 +254,7 @@ Below are instructions on how to manually integrate the PinMeTo MCP with Cursor 
 
 ## Available Tools
 
-The PinMeTo MCP Server provides 15 comprehensive tools organized by category. All tools support both JSON (raw data) and Markdown (human-readable summaries) output formats.
+The PinMeTo MCP Server provides 18 comprehensive tools organized by category. All tools support both JSON (raw data) and Markdown (human-readable summaries) output formats.
 
 > **✨ New: Smart Data Aggregation**
 >
@@ -467,6 +467,116 @@ Get Apple Maps insights for all locations in your account.
 
 ---
 
+### Composite Reporting Tools (3 tools)
+
+> **⚡ High-Performance Reports**
+>
+> These composite tools make multiple API calls in parallel and generate unified reports, reducing report generation time from minutes to seconds (up to 6x faster).
+
+#### `get_multi_platform_insights`
+Fetch insights from Google, Facebook, and Apple for ALL locations in a single call.
+
+**Returns:**
+- Unified report with insights from all selected platforms
+- Aggregated metrics by category (Impressions, Customer Actions, etc.)
+- Platform-specific performance data
+
+**Parameters:**
+- `from` (required) - Start date in YYYY-MM-DD format
+- `to` (required) - End date in YYYY-MM-DD format
+- `platforms` (optional) - Array of platforms: `['google', 'facebook', 'apple']` (default: all platforms)
+- `aggregation` (optional) - `daily`, `weekly`, `monthly`, `quarterly`, `yearly`, or `total` (default: `total`)
+- `format` (optional) - `json` or `markdown` (default: `markdown`)
+
+**Performance:** Makes 3 parallel API calls instead of 3+ sequential agent round-trips.
+
+**Use cases:**
+- Executive dashboards and monthly reports
+- Multi-platform performance analysis
+- Quarterly/yearly reporting for all locations
+- Comparing performance across different networks
+
+**Example:**
+```
+Get multi-platform insights for all locations from October 1 to October 31, 2024
+```
+
+---
+
+#### `get_yoy_comparison`
+Compare current period performance to the same period last year across multiple platforms.
+
+**Returns:**
+- Year-over-year comparison tables with metrics, changes, and percentages
+- Separate comparison for each period when using monthly/weekly/daily aggregation
+- Optional ratings comparison for Google
+
+**Parameters:**
+- `current_from` (required) - Current period start date in YYYY-MM-DD format
+- `current_to` (required) - Current period end date in YYYY-MM-DD format
+- `platforms` (optional) - Array of platforms: `['google', 'facebook', 'apple']` (default: all platforms)
+- `include_ratings` (optional) - Include Google ratings comparison (default: `false`)
+- `aggregation` (optional) - `daily`, `weekly`, `monthly`, `quarterly`, `yearly`, or `total` (default: `total`)
+- `format` (optional) - `json` or `markdown` (default: `markdown`)
+
+**Performance:** Makes 6-12 parallel API calls (depending on platforms and ratings) instead of 15+ sequential agent round-trips.
+
+**How it works:**
+- Automatically calculates previous year dates (e.g., Oct 2024 → Oct 2023)
+- Fetches both current and previous year data in parallel
+- Generates comparison with change indicators (📈 increase, 📉 decrease, ➖ no change)
+
+**Use cases:**
+- Annual performance reviews
+- Year-over-year trend analysis with monthly/quarterly breakdown
+- Growth measurement and executive summaries
+- Historical context for current performance
+
+**Example:**
+```
+Compare Q4 2024 (Oct 1 - Dec 31) to Q4 2023 for all platforms with monthly breakdown
+(use aggregation: 'monthly')
+```
+
+---
+
+#### `get_location_overview`
+Get a complete overview for a specific location including insights and ratings from all platforms.
+
+**Returns:**
+- Location details (name, address, contact information)
+- Network integration links (Google Business Profile, Facebook, Apple Maps)
+- Insights from Google, Facebook, and Apple
+- Optional ratings data
+
+**Parameters:**
+- `storeId` (required) - The PinMeTo store ID
+- `from` (required) - Start date in YYYY-MM-DD format
+- `to` (required) - End date in YYYY-MM-DD format
+- `include_ratings` (optional) - Include ratings data (default: `true`)
+- `aggregation` (optional) - `daily`, `weekly`, `monthly`, `quarterly`, `yearly`, or `total` (default: `total`)
+- `format` (optional) - `json` or `markdown` (default: `markdown`)
+
+**Performance:** Makes up to 6 parallel API calls instead of 6+ sequential agent round-trips.
+
+**Network integration details displayed:**
+- Google Business Profile: Profile link, Place ID, review URL
+- Facebook: Profile link, Page ID
+- Apple Maps: Profile link
+
+**Use cases:**
+- Single location performance review
+- Store manager reports
+- Location-specific deep-dive analysis
+- Troubleshooting individual location issues
+
+**Example:**
+```
+Get complete overview for store "downtown-store-001" for October 2024
+```
+
+---
+
 ## API Reference & Best Practices
 
 ### Tool Selection Guide
@@ -474,6 +584,11 @@ Get Apple Maps insights for all locations in your account.
 When working with PinMeTo MCP, follow this decision tree to choose the right tool:
 
 ```
+Need comprehensive reports? ⚡ NEW
+├─ Multi-platform insights for all locations → pinmeto_get_multi_platform_insights
+├─ Year-over-year comparison → pinmeto_get_yoy_comparison
+└─ Complete overview for one location → pinmeto_get_location_overview
+
 Need location data?
 ├─ All locations → pinmeto_get_locations
 │  └─ Filter fields for faster responses: ['storeId', 'name', 'isActive']
@@ -500,6 +615,7 @@ Need keyword data?
 ```
 
 **Pro Tips:**
+- **Use composite tools** for comprehensive reports (up to 6x faster)
 - **Always start with `pinmeto_get_locations`** to discover storeIds
 - **Use field filtering** for large accounts (100+ locations)
 - **Use aggregation** to reduce context usage (default: `total`)

@@ -4,7 +4,7 @@
   "display_name": "PinMeTo Location MCP",
   "version": "1.0.4",
   "description": "Connect with your PinMeTo location data.",
-  "long_description": "The PinMeTo MCP Server enables seamless integration between the PinMeTo platform and AI agents such as Claude LLM, allowing users to interact with their location data and business insights through natural language. This server exposes a suite of tools that let you retrieve, analyze, and summarize data from multiple sources—including Google, Facebook, and Apple—covering metrics such as impressions, clicks, ratings, and more.",
+  "long_description": "The PinMeTo MCP Server enables seamless integration between the PinMeTo platform and AI agents such as Claude LLM, allowing users to interact with their location data and business insights through natural language. This server exposes 18 comprehensive tools that let you retrieve, analyze, and summarize data from multiple sources—including Google, Facebook, and Apple—covering metrics such as impressions, clicks, ratings, and more. New composite reporting tools generate comprehensive multi-platform reports up to 6x faster by executing parallel API calls.",
   "author": {
     "name": "PinMeTo",
     "url": "https://www.pinmeto.com/"
