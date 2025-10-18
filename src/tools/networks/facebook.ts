@@ -14,11 +14,9 @@ export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
     `Fetch Facebook Page performance metrics for a specific location over a date range.
 
 Returns comprehensive Facebook insights including:
-- **Page views**: How many times the Facebook Page was viewed
-- **Engagement**: Likes, comments, shares, and other interactions
-- **Reach**: Number of unique users who saw content from the page
-- **Post performance**: Metrics for individual posts
-- **Actions**: Button clicks, website visits, direction requests, phone calls
+- **Page impressions**: Total (page_impressions), unique (page_impressions_unique), organic (page_impressions_organic, page_impressions_organic_unique), paid (page_impressions_paid, page_impressions_paid_unique)
+- **Engagement**: Total page actions (page_total_actions)
+- **Followers**: New likes (page_fan_adds), unlikes (page_fan_removes), total fans (page_fans)
 
 **When to use this tool:**
 - Analyzing individual location's Facebook Page performance
@@ -121,11 +119,9 @@ export function getAllFacebookInsights(server: PinMeToMcpServer) {
     `Fetch Facebook Page performance metrics for ALL location pages in your account over a date range.
 
 Returns aggregated Facebook insights across all location pages including:
-- **Page views**: Total views across all location Facebook Pages
-- **Engagement**: Combined likes, comments, shares, and interactions
-- **Reach**: Total unique users who saw content from all pages
-- **Post performance**: Aggregate metrics for posts across locations
-- **Actions**: Total customer actions (calls, website visits, directions)
+- **Page impressions**: Total (page_impressions), unique (page_impressions_unique), organic (page_impressions_organic, page_impressions_organic_unique), paid (page_impressions_paid, page_impressions_paid_unique)
+- **Engagement**: Total page actions (page_total_actions)
+- **Followers**: New likes (page_fan_adds), unlikes (page_fan_removes), total fans (page_fans)
 
 **When to use this tool:**
 - Getting a high-level overview of Facebook performance across your entire business
@@ -216,11 +212,9 @@ export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
     `Fetch Facebook Page performance metrics for brand pages (company-level pages, not location-specific).
 
 Returns Facebook insights for brand/corporate pages including:
-- **Page views**: Total views of the brand page
-- **Engagement**: Likes, comments, shares on brand-level content
-- **Reach**: Unique users who saw brand page content
-- **Follower growth**: New page likes and unlikes
-- **Post performance**: Metrics for company-level posts
+- **Page impressions**: Total (page_impressions), unique (page_impressions_unique), organic (page_impressions_organic, page_impressions_organic_unique), paid (page_impressions_paid, page_impressions_paid_unique)
+- **Engagement**: Total page actions (page_total_actions)
+- **Followers**: New likes (page_fan_adds), unlikes (page_fan_removes), total fans (page_fans)
 
 **When to use this tool:**
 - Analyzing corporate/brand Facebook Page performance (not location pages)

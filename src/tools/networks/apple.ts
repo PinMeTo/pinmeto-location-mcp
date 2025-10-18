@@ -8,11 +8,9 @@ export function getAppleLocationInsights(server: PinMeToMcpServer) {
     `Fetch Apple Maps performance metrics for a specific location over a date range.
 
 Returns comprehensive Apple Maps insights including:
-- **Impressions**: How many times your location appeared in Apple Maps searches
-- **Actions**: Customer actions (directions requests, phone calls, website taps)
-- **Views**: Map views and location card views
-- **Engagement**: Interactions with your Apple Maps listing
-- **Devices**: Breakdown by iPhone, iPad, Mac usage
+- **Views**: Location card views (PLACECARD_VIEW)
+- **Actions**: Phone calls (PLACECARD_TAP_CALL), direction requests (PLACECARD_TAP_DIRECTION), website taps (PLACECARD_TAP_WEBSITE)
+- **Search discovery**: By name (SEARCH_LOCATION_TAP_NAME), by category (SEARCH_LOCATION_TAP_CATEGORY), other (SEARCH_LOCATION_TAP_OTHER)
 
 **When to use this tool:**
 - Analyzing individual location performance on Apple Maps
@@ -116,11 +114,9 @@ export function getAllAppleInsights(server: PinMeToMcpServer) {
     `Fetch Apple Maps performance metrics for ALL locations in your account over a date range.
 
 Returns aggregated Apple Maps insights across all locations including:
-- **Impressions**: Total visibility across Apple Maps for all locations
-- **Actions**: Aggregated customer actions (directions, calls, website taps)
-- **Views**: Combined map views and location card views
-- **Engagement**: Total interactions with Apple Maps listings
-- **Devices**: Device breakdown (iPhone, iPad, Mac) across all locations
+- **Views**: Location card views (PLACECARD_VIEW)
+- **Actions**: Phone calls (PLACECARD_TAP_CALL), direction requests (PLACECARD_TAP_DIRECTION), website taps (PLACECARD_TAP_WEBSITE)
+- **Search discovery**: By name (SEARCH_LOCATION_TAP_NAME), by category (SEARCH_LOCATION_TAP_CATEGORY), other (SEARCH_LOCATION_TAP_OTHER)
 
 **When to use this tool:**
 - Getting a high-level overview of Apple Maps performance across your entire business

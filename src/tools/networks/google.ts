@@ -15,8 +15,8 @@ export function getGoogleLocationInsights(server: PinMeToMcpServer) {
     `Fetch Google Business Profile performance metrics for a specific location over a date range.
 
 Returns comprehensive Google insights including:
-- **Impressions**: How many times your location appeared in Google Search and Maps
-- **Actions**: Customer actions (calls, website visits, direction requests, booking clicks)
+- **Impressions**: Desktop search (BUSINESS_IMPRESSIONS_DESKTOP_SEARCH), mobile search (BUSINESS_IMPRESSIONS_MOBILE_SEARCH), desktop maps (BUSINESS_IMPRESSIONS_DESKTOP_MAPS), mobile maps (BUSINESS_IMPRESSIONS_MOBILE_MAPS)
+- **Actions**: Direction requests (BUSINESS_DIRECTION_REQUESTS), phone calls (CALL_CLICKS), website clicks (WEBSITE_CLICKS)
 - **Queries**: Search terms and categories that led customers to find your location
 - **Photos**: Photo view counts and customer-uploaded photo metrics
 - **Local posts**: Engagement metrics for Google posts
@@ -122,8 +122,8 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
     `Fetch Google Business Profile performance metrics for ALL locations in your account over a date range.
 
 Returns aggregated Google insights across all locations including:
-- **Impressions**: Total visibility across Google Search and Maps for all locations
-- **Actions**: Aggregated customer actions (calls, website visits, directions, bookings)
+- **Impressions**: Desktop search (BUSINESS_IMPRESSIONS_DESKTOP_SEARCH), mobile search (BUSINESS_IMPRESSIONS_MOBILE_SEARCH), desktop maps (BUSINESS_IMPRESSIONS_DESKTOP_MAPS), mobile maps (BUSINESS_IMPRESSIONS_MOBILE_MAPS)
+- **Actions**: Direction requests (BUSINESS_DIRECTION_REQUESTS), phone calls (CALL_CLICKS), website clicks (WEBSITE_CLICKS)
 - **Queries**: Top search terms across all locations
 - **Photos**: Combined photo engagement metrics
 - **Local posts**: Total post engagement across locations
@@ -407,11 +407,9 @@ export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
     `Fetch Google search keywords and queries that led customers to ALL locations in your account.
 
 Returns keyword data aggregated across all locations including:
-- **Search terms**: Actual keywords customers used to find your locations
-- **Impression counts**: How many times each keyword led to your listing appearing
-- **Click counts**: How many times customers clicked after searching these keywords
-- **Query categories**: Types of searches (navigational, discovery, branded, etc.)
-- **Trending keywords**: Rising or declining search terms
+- **Search terms** (keyword): Actual keywords customers used to find your locations
+- **Impression counts** (value): How many times each keyword led to your listing appearing
+- **Location coverage** (locationCounts): Number of locations that received traffic from each keyword
 
 **When to use this tool:**
 - Understanding how customers discover your business on Google
@@ -497,11 +495,8 @@ export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
     `Fetch Google search keywords and queries that led customers to a specific location.
 
 Returns keyword data for one location including:
-- **Search terms**: Actual keywords customers used to find this location
-- **Impression counts**: How many times each keyword led to this listing appearing
-- **Click counts**: How many times customers clicked after searching these keywords
-- **Query categories**: Types of searches (navigational, discovery, branded, etc.)
-- **Local vs branded**: Breakdown of generic local searches vs branded searches
+- **Search terms** (keyword): Actual keywords customers used to find this location
+- **Impression counts** (value): How many times each keyword led to this listing appearing
 
 **When to use this tool:**
 - Optimizing Google Business Profile for a specific location
