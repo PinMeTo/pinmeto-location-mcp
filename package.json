@@ -4,6 +4,7 @@
   "description": "PinMeTo Location MCP",
   "main": "index.js",
   "scripts": {
+    "prepare": "npm run build",
     "release": "npm publish ./build",
     "build": "node manifest.js && tsc && cp package.json build/",
     "start": "NODE_ENV=development node build/index.js",

@@ -50,6 +50,7 @@ Major improvements to MCP server based on mcp-builder best practices verificatio
 - Updated `makePaginatedPinMeToRequest()` to support optional maxPages parameter
 - Improved error handling across all network integration tools
 - Version number now dynamically loaded from package.json (single source of truth)
+- Added `prepare` script to enable npx installation directly from GitHub
 - Score improvement: 6.5/10 → 9.5/10 based on mcp-builder evaluation
 
 ## 1.0.0 - 2025-09-25
