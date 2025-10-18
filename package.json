@@ -17,13 +17,31 @@
     "url": "git+https://github.com/PinMeTo/pinmeto-location-mcp"
   },
   "keywords": [
-    "mcp"
+    "mcp",
+    "model-context-protocol",
+    "pinmeto",
+    "location",
+    "analytics",
+    "google-business",
+    "facebook",
+    "apple-maps",
+    "claude",
+    "ai"
+  ],
+  "files": [
+    "build/**/*",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "bin": {
     "pinmeto-location-mcp": "./build/index.js"
   },
   "author": "pinmeto",
   "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "bugs": {
     "url": "https://github.com/PinMeTo/pinmeto-location-mcp/issues"
   },
