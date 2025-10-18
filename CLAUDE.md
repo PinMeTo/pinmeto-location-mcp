@@ -162,3 +162,26 @@ export function toolName(server: PinMeToMcpServer) {
 - Use `npm run inspector` to test tools interactively
 - Check console.error output - server logs to stderr
 - Set `NODE_ENV=development` and create .env file for local testing
+
+## Git Best Practices
+
+**Commit Messages:**
+- Do NOT reference Claude, Claude Code, or AI assistance in commit messages
+- Write clear, professional commit messages that focus on what changed and why
+- Use conventional commit format when appropriate (feat:, fix:, docs:, etc.)
+- Keep commit messages relevant to the technical changes made
+
+**Example - Good commit message:**
+```
+Add format parameter to all tools for flexible output
+
+- Implements JSON and Markdown output formats
+- Updates tool descriptions with format documentation
+- Adds helper functions for Markdown formatting
+```
+
+**Example - Avoid:**
+```
+Add format parameter (suggested by Claude)
+Generated with Claude Code
+```
