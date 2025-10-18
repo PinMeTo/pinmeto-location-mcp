@@ -38,6 +38,13 @@ Major improvements to MCP server based on mcp-builder best practices verificatio
   - Educational context for AI agents
   - References to related tools
 
+### Fixed
+
+- **GitHub npx installation**: Added `prepare` script to automatically build the project when installing from GitHub ([#6](https://github.com/PinMeTo/pinmeto-location-mcp/issues/6))
+  - Previously `npx github:PinMeTo/pinmeto-location-mcp` would fail because build/ directory was gitignored
+  - The prepare script now runs `npm run build` automatically after installation
+  - Enables one-command installation directly from GitHub
+
 ### Documentation
 
 - Added `MCP_IMPROVEMENTS.md` - Progress tracker with before/after comparison
@@ -50,7 +57,6 @@ Major improvements to MCP server based on mcp-builder best practices verificatio
 - Updated `makePaginatedPinMeToRequest()` to support optional maxPages parameter
 - Improved error handling across all network integration tools
 - Version number now dynamically loaded from package.json (single source of truth)
-- Added `prepare` script to enable npx installation directly from GitHub
 - Score improvement: 6.5/10 → 9.5/10 based on mcp-builder evaluation
 
 ## 1.0.0 - 2025-09-25
