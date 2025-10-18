@@ -29,7 +29,7 @@ Returns comprehensive Apple Maps insights including:
 **Date range notes:**
 - Historical data availability depends on when Apple integration was activated
 - Use YYYY-MM-DD format (e.g., "2024-01-15")
-- Insights are typically available 48-72 hours after the date
+- ⚠️ **Data lag: Apple insights are delayed by approximately 4 days** - request dates at least 4 days in the past
 - Apple Maps insights may have more limited history than Google/Facebook
 
 **Example use case:**
@@ -152,7 +152,7 @@ Returns aggregated Apple Maps insights across all locations including:
 **Date range notes:**
 - Historical data availability depends on when Apple integration was activated
 - Use YYYY-MM-DD format (e.g., "2024-01-15")
-- Insights typically available 48-72 hours after the date
+- ⚠️ **Data lag: Apple insights are delayed by approximately 4 days** - request dates at least 4 days in the past
 - Response includes data for all locations with active Apple Maps integrations
 
 **Example use case:**

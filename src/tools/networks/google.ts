@@ -34,7 +34,7 @@ Returns comprehensive Google insights including:
 **Date range notes:**
 - Maximum 18 months of historical data available
 - Use YYYY-MM-DD format (e.g., "2024-01-15")
-- Insights are typically available 48-72 hours after the date
+- ⚠️ **Data lag: Google insights are delayed by approximately 10 days** - request dates at least 10 days in the past
 - Longer date ranges provide better trend analysis
 
 **Example use case:**
@@ -156,7 +156,7 @@ Returns aggregated Google insights across all locations including:
 **Date range notes:**
 - Maximum 18 months of historical data available
 - Use YYYY-MM-DD format (e.g., "2024-01-15")
-- Insights typically available 48-72 hours after the date
+- ⚠️ **Data lag: Google insights are delayed by approximately 10 days** - request dates at least 10 days in the past
 - Response includes data for all locations with active Google integrations
 
 **Example use case:**

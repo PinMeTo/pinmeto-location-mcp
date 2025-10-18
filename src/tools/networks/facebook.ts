@@ -29,7 +29,7 @@ Returns comprehensive Facebook insights including:
 **Date range notes:**
 - Maximum 2 years of historical data available
 - Use YYYY-MM-DD format (e.g., "2024-01-15")
-- Insights are typically available 24-48 hours after the date
+- ⚠️ **Data lag: Facebook insights are delayed by approximately 3 days** - request dates at least 3 days in the past
 - Longer date ranges provide better trend analysis
 
 **Example use case:**
@@ -151,7 +151,7 @@ Returns aggregated Facebook insights across all location pages including:
 **Date range notes:**
 - Maximum 2 years of historical data available
 - Use YYYY-MM-DD format (e.g., "2024-01-15")
-- Insights typically available 24-48 hours after the date
+- ⚠️ **Data lag: Facebook insights are delayed by approximately 3 days** - request dates at least 3 days in the past
 - Response includes data for all locations with active Facebook integrations
 
 **Example use case:**
@@ -258,7 +258,7 @@ Returns Facebook insights for brand/corporate pages including:
 **Date range notes:**
 - Maximum 2 years of historical data available
 - Use YYYY-MM-DD format (e.g., "2024-01-15")
-- Insights typically available 24-48 hours after the date
+- ⚠️ **Data lag: Facebook insights are delayed by approximately 3 days** - request dates at least 3 days in the past
 
 **Example use case:**
 "Show me our corporate Facebook brand page performance for Q4 to measure our company-wide social media campaign effectiveness"`,

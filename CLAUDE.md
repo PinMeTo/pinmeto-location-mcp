@@ -105,6 +105,11 @@ export function toolName(server: PinMeToMcpServer) {
 - Most endpoints use `YYYY-MM-DD` format
 - Google keywords use `YYYY-MM` format
 
+**Data Availability & Lag Times**
+- ⚠️ **Google insights:** Delayed by ~10 days - request dates at least 10 days in the past
+- ⚠️ **Facebook insights:** Delayed by ~3 days - request dates at least 3 days in the past
+- ⚠️ **Apple insights:** Delayed by ~4 days - request dates at least 4 days in the past
+
 ## Configuration
 
 **Environment Variables (Required)**

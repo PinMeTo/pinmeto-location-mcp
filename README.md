@@ -256,6 +256,13 @@ Below are instructions on how to manually integrate the PinMeTo MCP with Cursor 
 
 The PinMeTo MCP Server provides 15 comprehensive tools organized by category. All tools support both JSON (raw data) and Markdown (human-readable summaries) output formats.
 
+> **⚠️ Important: Data Availability Lag**
+>
+> Insights data from different platforms have varying delay periods:
+> - **Google insights:** ~10 days lag - request dates at least 10 days in the past
+> - **Facebook insights:** ~3 days lag - request dates at least 3 days in the past
+> - **Apple insights:** ~4 days lag - request dates at least 4 days in the past
+
 ### Location Management (2 tools)
 
 #### `get_location`
