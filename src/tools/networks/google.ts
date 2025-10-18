@@ -32,7 +32,7 @@ Returns comprehensive Google insights including:
 3. For comparing across multiple locations, use get_all_google_insights instead
 
 **Date range notes:**
-- Maximum 18 months of historical data available
+- Historical data available from **September 2021** or 18 months back, whichever is more recent
 - Use YYYY-MM-DD format (e.g., "2024-01-15")
 - ⚠️ **Data lag: Google insights are delayed by approximately 10 days** - request dates at least 10 days in the past
 - Longer date ranges provide better trend analysis
@@ -84,13 +84,13 @@ Returns comprehensive Google insights including:
 **Troubleshooting steps:**
 1. Verify the storeId exists using get_locations tool
 2. Confirm the location has an active Google Business Profile integration
-3. Check if the date range is within the last 18 months
+3. Check if the date range is after September 2021 or within the last 18 months
 4. Ensure dates are valid and 'from' date is before 'to' date
 5. Google insights may take 48-72 hours to become available for recent dates
 
 **Common issues:**
 - Location not yet synced with Google Business Profile
-- Date range too far in the past (>18 months)
+- Date range before September 2021 or >18 months in the past
 - Invalid storeId for this account
 - Location's Google integration is disconnected or pending
 - Dates in wrong format (must be YYYY-MM-DD)
@@ -154,7 +154,7 @@ Returns aggregated Google insights across all locations including:
 - Use single location tool for: Individual location deep-dives, specific store performance analysis
 
 **Date range notes:**
-- Maximum 18 months of historical data available
+- Historical data available from **September 2021** or 18 months back, whichever is more recent
 - Use YYYY-MM-DD format (e.g., "2024-01-15")
 - ⚠️ **Data lag: Google insights are delayed by approximately 10 days** - request dates at least 10 days in the past
 - Response includes data for all locations with active Google integrations
@@ -191,14 +191,14 @@ Returns aggregated Google insights across all locations including:
 **Troubleshooting steps:**
 1. Verify your PINMETO_ACCOUNT_ID is correct
 2. Confirm you have locations with active Google Business Profile integrations
-3. Check if the date range is within the last 18 months
+3. Check if the date range is after September 2021 or within the last 18 months
 4. Ensure dates are valid and 'from' date is before 'to' date
 5. Google insights may take 48-72 hours to become available for recent dates
 
 **Common issues:**
 - No locations in account have Google Business Profile connected
 - Account ID is incorrect
-- Date range too far in the past (>18 months)
+- Date range before September 2021 or >18 months in the past
 - All locations have disconnected Google integrations
 - Dates in wrong format (must be YYYY-MM-DD)
 
@@ -491,7 +491,7 @@ Returns keyword data aggregated across all locations including:
 - Keywords use **YYYY-MM** format (month granularity only), unlike other tools
 - Example: "2024-01" for January 2024, "2024-12" for December 2024
 - Data aggregated by full calendar months
-- Maximum 18 months of historical data
+- Historical data available from **September 2021** or 18 months back, whichever is more recent
 - ⚠️ **Keywords are updated monthly** - data for a given month becomes available a few days after the month ends
 
 **Example use case:**
@@ -529,12 +529,12 @@ Returns keyword data aggregated across all locations including:
 2. Confirm you have locations with active Google Business Profile integrations
 3. Check date format is YYYY-MM (month only, not YYYY-MM-DD)
 4. Ensure 'from' month is before or equal to 'to' month
-5. Verify date range is within last 18 months
+5. Verify date range is after September 2021 or within last 18 months
 
 **Common issues:**
 - Wrong date format (must be YYYY-MM, e.g., "2024-01")
 - No locations have Google Business Profile connected
-- Date range too far in the past (>18 months)
+- Date range before September 2021 or >18 months in the past
 - Account ID is incorrect
 - Keyword data takes longer to sync (48-72 hours delay)
 
@@ -600,7 +600,7 @@ Returns keyword data for one location including:
 - Keywords use **YYYY-MM** format (month granularity only), unlike other tools
 - Example: "2024-01" for January 2024, "2024-12" for December 2024
 - Data aggregated by full calendar months
-- Maximum 18 months of historical data
+- Historical data available from **September 2021** or 18 months back, whichever is more recent
 - ⚠️ **Keywords are updated monthly** - data for a given month becomes available a few days after the month ends
 
 **Example use case:**
@@ -652,13 +652,13 @@ Returns keyword data for one location including:
 2. Confirm the location has an active Google Business Profile integration
 3. Check date format is YYYY-MM (month only, not YYYY-MM-DD)
 4. Ensure 'from' month is before or equal to 'to' month
-5. Verify date range is within last 18 months
+5. Verify date range is after September 2021 or within last 18 months
 
 **Common issues:**
 - Wrong date format (must be YYYY-MM, e.g., "2024-01")
 - Location not synced with Google Business Profile
 - Invalid storeId for this account
-- Date range too far in the past (>18 months)
+- Date range before September 2021 or >18 months in the past
 - Location is new and has no keyword data yet
 - Keyword data takes 48-72 hours to sync
 
