@@ -26,11 +26,12 @@ import {
 import { getAllAppleInsights, getAppleLocationInsights } from './tools/networks/apple';
 import { analyzeLocationPrompt, summarizeAllInsightsPrompt } from './prompts';
 import { Configs, getConfigs } from './configs';
+import packageJson from '../package.json';
 
 import { ServerOptions } from '@modelcontextprotocol/sdk/server';
 
-const PACKAGE_NAME = '@pinmeto/pinmeto-location-mcp';
-const PACKAGE_VERSION = '1.0.2';
+const PACKAGE_NAME = packageJson.name;
+const PACKAGE_VERSION = packageJson.version;
 const TOKEN_CACHE_SECONDS = 59 * 60;
 
 export class PinMeToMcpServer extends McpServer {
