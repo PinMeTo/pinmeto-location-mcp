@@ -17,6 +17,7 @@ PinMeTo Location MCP is a Model Context Protocol server that integrates the PinM
 
 ### Build and Run
 - `npm run build` - Compiles TypeScript, generates manifest.json, and copies package.json to build/
+- `npm run build:test` - Builds a test version with "-test" suffix (e.g., "1.0.4-test") for testing before release
 - `npm start` - Runs the MCP server in development mode (requires .env file)
 - `npm run inspector` - Launches MCP inspector for debugging tools
 
@@ -26,9 +27,45 @@ PinMeTo Location MCP is a Model Context Protocol server that integrates the PinM
 
 ### Packaging
 - `npx @anthropic-ai/mcpb pack` - Creates .mcpb installer file for Claude Desktop (run after build)
+- `npm run pack:test` - Builds test version AND creates .mcpb installer in one command (convenience shortcut)
+
+### Build Variants
+
+**Production Build** (`npm run build`):
+- Uses the exact version from package.json (e.g., "1.0.4")
+- For final releases and publishing to npm
+
+**Test Build** (`npm run build:test`):
+- Appends "-test" to version (e.g., "1.0.4-test")
+- Use for testing changes before releasing
+- Creates a separate .mcpb installer that won't conflict with production version
+- Allows side-by-side installation in Claude Desktop for testing
+
+**Workflow for testing new features:**
+```bash
+# Quick method (one command):
+npm run pack:test
+# Builds test version AND creates .mcpb installer
+
+# Or step-by-step:
+# 1. Build test version
+npm run build:test
+
+# 2. Create test installer
+npx @anthropic-ai/mcpb pack
+# Creates: pinmeto-location-mcp.mcpb with version "1.0.4-test-{hash}-{timestamp}"
+
+# 3. Install in Claude Desktop and test
+# The test version appears separately from production version
+
+# 4. When ready to release, build production version
+npm run build
+npx @anthropic-ai/mcpb pack
+```
 
 ### Important Build Notes
 - The build process has three steps: `node manifest.js && tsc && cp package.json build/`
+- Test builds use `VERSION_POSTFIX=test` environment variable
 - Always run the complete build before packaging or testing
 - The `build/` directory is gitignored and contains compiled output
 

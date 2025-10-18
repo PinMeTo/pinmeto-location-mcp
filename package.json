@@ -1,6 +1,6 @@
 {
   "name": "@pinmeto/pinmeto-location-mcp",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "PinMeTo Location MCP",
   "main": "index.js",
   "scripts": {
