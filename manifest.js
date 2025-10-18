@@ -1,11 +1,48 @@
 const { writeFileSync } = require('fs');
+const { execSync } = require('child_process');
 const { version, description, name } = require('./package.json');
+
+// Generate dynamic version postfix for test builds
+function getVersionPostfix() {
+  if (!process.env.VERSION_POSTFIX) {
+    return '';
+  }
+
+  const basePostfix = process.env.VERSION_POSTFIX;
+
+  // Try to get git commit hash
+  let gitHash = '';
+  try {
+    gitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
+  } catch (e) {
+    // Git not available or not a git repo
+  }
+
+  // Generate timestamp-based identifier (YYYYMMDD-HHMMSS)
+  const now = new Date();
+  const timestamp = now
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/T/, '-')
+    .replace(/\..+/, '')
+    .slice(0, 15); // YYYYMMDD-HHMMSS
+
+  // Combine: test-gitHash-timestamp or test-timestamp
+  if (gitHash) {
+    return `${basePostfix}-${gitHash}-${timestamp}`;
+  }
+  return `${basePostfix}-${timestamp}`;
+}
+
+const versionWithPostfix = process.env.VERSION_POSTFIX
+  ? `${version}-${getVersionPostfix()}`
+  : version;
 
 const manifest = {
   manifest_version: '0.2',
   name: name,
   display_name: description,
-  version: version,
+  version: versionWithPostfix,
   description: 'Connect with your PinMeTo location data.',
   long_description:
     'The PinMeTo MCP Server enables seamless integration between the PinMeTo platform and AI agents such as Claude LLM, allowing users to interact with their location data and business insights through natural language. This server exposes a suite of tools that let you retrieve, analyze, and summarize data from multiple sources—including Google, Facebook, and Apple—covering metrics such as impressions, clicks, ratings, and more.',

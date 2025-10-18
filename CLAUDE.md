@@ -18,7 +18,7 @@ PinMeTo Location MCP is a Model Context Protocol server that integrates the PinM
 ### Build and Run
 - `npm run build` - Compiles TypeScript, generates manifest.json, and copies package.json to build/
 - `npm start` - Runs the MCP server in development mode (requires .env file)
-- `npm run inspector` - Launches MCP inspector for debugging tools and prompts
+- `npm run inspector` - Launches MCP inspector for debugging tools
 
 ### Testing and Formatting
 - `npm test` - Runs test suite with Vitest
@@ -47,7 +47,7 @@ PinMeTo Location MCP is a Model Context Protocol server that integrates the PinM
 - Provides utility methods:
   - `makePinMeToRequest(url)` - Single API request with automatic auth
   - `makePaginatedPinMeToRequest(url)` - Handles paginated responses
-- The `createMcpServer()` function registers all tools and prompts
+- The `createMcpServer()` function registers all tools
 
 **Configuration (`src/configs.ts`)**
 - Validates required environment variables (PINMETO_ACCOUNT_ID, PINMETO_APP_ID, PINMETO_APP_SECRET)
@@ -88,12 +88,6 @@ export function toolName(server: PinMeToMcpServer) {
   );
 }
 ```
-
-### Prompts
-
-`src/prompts.ts` contains reusable prompt templates:
-- `analyzeLocationPrompt` - Analyze single location data
-- `summarizeAllInsightsPrompt` - Summarize insights across all locations
 
 ## API Integration
 

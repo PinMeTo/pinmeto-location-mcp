@@ -24,7 +24,6 @@ import {
   getFacebookLocationsInsights
 } from './tools/networks/facebook';
 import { getAllAppleInsights, getAppleLocationInsights } from './tools/networks/apple';
-import { analyzeLocationPrompt, summarizeAllInsightsPrompt } from './prompts';
 import { Configs, getConfigs } from './configs';
 import packageJson from '../package.json';
 
@@ -140,7 +139,6 @@ export function createMcpServer() {
     name: 'PinMeTo Location MCP',
     version: PACKAGE_VERSION,
     capabilities: {
-      prompts: {},
       resources: {},
       tools: {}
     }
@@ -188,10 +186,6 @@ export function createMcpServer() {
   // Apple
   getAppleLocationInsights(mcpServer);
   getAllAppleInsights(mcpServer);
-
-  // Prompts
-  analyzeLocationPrompt(mcpServer);
-  summarizeAllInsightsPrompt(mcpServer);
 
   return mcpServer;
 }

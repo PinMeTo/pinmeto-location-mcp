@@ -8,6 +8,8 @@
     "prepare": "npm run build",
     "release": "npm publish ./build",
     "build": "npm run clean && node manifest.js && tsc && cp package.json build/",
+    "build:test": "npm run clean && VERSION_POSTFIX=test node manifest.js && tsc && cp package.json build/",
+    "pack:test": "npm run build:test && npx @anthropic-ai/mcpb pack",
     "start": "NODE_ENV=development node build/index.js",
     "format": "prettier --write \"**/*.{js,ts}\"",
     "inspector": "NODE_ENV=development npx @modelcontextprotocol/inspector",
