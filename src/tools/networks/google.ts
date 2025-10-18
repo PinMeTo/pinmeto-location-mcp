@@ -25,22 +25,20 @@ Returns comprehensive Google insights including:
 - Analyzing individual location performance on Google Business Profile
 - Comparing time periods for a single location (e.g., month-over-month)
 - Investigating drops or spikes in visibility or customer actions
-- Understanding which search queries drive the most traffic
 - Measuring effectiveness of Google Business Profile optimizations
 
-**Workflow:**
-1. Use get_locations first to find the storeId (if you don't know it)
-2. Use this tool with the storeId and date range
-3. For comparing across multiple locations, use get_all_google_insights instead
+**Workflow:** Use pinmeto_get_locations to find storeId → call this tool with storeId and date range → analyze results. For multi-location comparisons, use pinmeto_get_all_google_insights instead.
 
-**Date range notes:**
-- Historical data available from **September 2021** or 18 months back, whichever is more recent
-- Use YYYY-MM-DD format (e.g., "2024-01-15")
-- ⚠️ **Data lag: Google insights are delayed by approximately 10 days** - request dates at least 10 days in the past
-- Longer date ranges provide better trend analysis
+**vs. pinmeto_get_all_google_insights:**
+- Use this tool for: Individual location deep-dives, specific store analysis
+- Use all locations tool for: Overall business performance, multi-location comparisons, executive summaries
 
-**Example use case:**
-"Compare last month's Google performance to the previous month for the downtown store to see if our new photos improved engagement"`,
+**Date requirements:**
+- Format: YYYY-MM-DD (e.g., "2024-01-15")
+- Historical data: September 2021 or 18 months back (whichever more recent)
+- ⚠️ **Data lag: ~10 days** - request dates at least 10 days in the past
+
+**Example:** "Compare last month's Google performance to previous month for the downtown store to see if new photos improved engagement"`,
     {
       storeId: z
         .string()
@@ -129,29 +127,23 @@ Returns aggregated Google insights across all locations including:
 - **Local posts**: Total post engagement across locations
 
 **When to use this tool:**
-- Getting a high-level overview of Google performance across your entire business
+- High-level overview of Google performance across entire business
 - Comparing overall performance between time periods
-- Identifying top-performing locations by comparing against individual location insights
-- Analyzing aggregate trends and patterns
+- Identifying top-performing locations (compare against individual location insights)
 - Monthly/quarterly reporting on Google Business Profile performance
 
-**Workflow:**
-1. Use this tool to get aggregate metrics for all locations
-2. Use get_google_location_insights for specific locations that need deeper analysis
-3. Combine with get_locations to map storeIds to location names
+**Workflow:** Call this tool for aggregate metrics → use pinmeto_get_google_location_insights for specific locations needing deeper analysis → combine with pinmeto_get_locations to map storeIds to names.
 
-**vs. get_google_location_insights:**
+**vs. pinmeto_get_google_location_insights:**
 - Use this tool for: Overall business performance, multi-location comparisons, executive summaries
-- Use single location tool for: Individual location deep-dives, specific store performance analysis
+- Use single location tool for: Individual location deep-dives, specific store analysis
 
-**Date range notes:**
-- Historical data available from **September 2021** or 18 months back, whichever is more recent
-- Use YYYY-MM-DD format (e.g., "2024-01-15")
-- ⚠️ **Data lag: Google insights are delayed by approximately 10 days** - request dates at least 10 days in the past
-- Response includes data for all locations with active Google integrations
+**Date requirements:**
+- Format: YYYY-MM-DD (e.g., "2024-01-15")
+- Historical data: September 2021 or 18 months back (whichever more recent)
+- ⚠️ **Data lag: ~10 days** - request dates at least 10 days in the past
 
-**Example use case:**
-"Show me total Google impressions and actions for all our locations last month compared to the previous month"`,
+**Example:** "Show total Google impressions and actions for all locations last month compared to previous month"`,
     {
       from: z
         .string()
@@ -216,7 +208,7 @@ export const getAllGoogleRatings = (server: PinMeToMcpServer) => {
     'pinmeto_get_all_google_ratings',
     `Fetch Google customer ratings and reviews summary for ALL locations in your account over a date range.
 
-Returns aggregated Google ratings data across all locations including:
+Returns aggregated Google ratings data including:
 - **Average ratings**: Overall star rating across all locations
 - **Total reviews**: Count of reviews received in the date range
 - **Rating distribution**: Breakdown by star rating (5-star, 4-star, etc.)
@@ -226,27 +218,22 @@ Returns aggregated Google ratings data across all locations including:
 **When to use this tool:**
 - Monitoring overall reputation across all Google Business Profile locations
 - Tracking review acquisition trends across your business
-- Identifying which locations may need attention for review management
 - Monthly/quarterly reputation reporting
 - Comparing review performance between time periods
 
-**Workflow:**
-1. Use this tool to get overall ratings metrics across all locations
-2. Use get_google_location_ratings for specific locations with issues
-3. Combine with get_locations to identify locations by name
+**Workflow:** Call this tool for overall ratings metrics → use pinmeto_get_google_location_ratings for specific locations with issues → combine with pinmeto_get_locations to identify locations by name.
 
-**vs. get_google_location_ratings:**
+**vs. pinmeto_get_google_location_ratings:**
 - Use this tool for: Company-wide reputation overview, aggregate metrics, executive reports
-- Use single location tool for: Individual location review management, specific store reputation analysis
+- Use single location tool for: Individual location review management, specific store analysis
 
-**Date range notes:**
-- Reviews are dated by when they were posted, not when they occurred
-- Use YYYY-MM-DD format (e.g., "2024-01-15")
-- Historical review data is typically available indefinitely
+**Date requirements:**
+- Format: YYYY-MM-DD (e.g., "2024-01-15")
+- Reviews dated by when posted (not when they occurred)
+- Historical data typically available indefinitely
 - Recent reviews may take 24-48 hours to sync
 
-**Example use case:**
-"Show me total Google reviews and average rating across all locations for Q4 2024"`,
+**Example:** "Show total Google reviews and average rating across all locations for Q4 2024"`,
     {
       from: z
         .string()
@@ -316,25 +303,20 @@ Returns detailed Google ratings data for one location including:
 - Responding to customer feedback for a particular store
 - Analyzing sentiment and themes in reviews for one location
 - Investigating sudden rating changes at a specific location
-- Preparing for review response campaigns
 
-**Workflow:**
-1. Use get_locations first to find the storeId (if you don't know it)
-2. Use this tool to get review details for that location
-3. For overview across all locations, use get_all_google_ratings instead
+**Workflow:** Use pinmeto_get_locations to find storeId → call this tool to get review details → for overview across all locations, use pinmeto_get_all_google_ratings instead.
 
-**vs. get_all_google_ratings:**
+**vs. pinmeto_get_all_google_ratings:**
 - Use this tool for: Individual location review management, detailed review analysis, responding to specific reviews
 - Use all locations tool for: Company-wide metrics, executive reporting, identifying problem locations
 
-**Date range notes:**
-- Reviews are dated by when they were posted
-- Use YYYY-MM-DD format (e.g., "2024-01-15")
-- Historical review data is typically available indefinitely
+**Date requirements:**
+- Format: YYYY-MM-DD (e.g., "2024-01-15")
+- Reviews dated by when posted
+- Historical data typically available indefinitely
 - Recent reviews may take 24-48 hours to sync
 
-**Example use case:**
-"Get all Google reviews for the downtown store from the last 30 days so I can identify common complaints"`,
+**Example:** "Get all Google reviews for downtown store from last 30 days to identify common complaints"`,
     {
       storeId: z
         .string()
@@ -406,7 +388,7 @@ export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
     'pinmeto_get_google_keywords',
     `Fetch Google search keywords and queries that led customers to ALL locations in your account.
 
-Returns keyword data aggregated across all locations including:
+Returns keyword data aggregated across all locations:
 - **Search terms** (keyword): Actual keywords customers used to find your locations
 - **Impression counts** (value): How many times each keyword led to your listing appearing
 - **Location coverage** (locationCounts): Number of locations that received traffic from each keyword
@@ -414,28 +396,22 @@ Returns keyword data aggregated across all locations including:
 **When to use this tool:**
 - Understanding how customers discover your business on Google
 - SEO and local search optimization
-- Identifying brand awareness gaps
 - Content strategy for Google Business Profile posts
 - Comparing keyword performance across time periods
 
-**Workflow:**
-1. Use this tool to get overall keyword trends across all locations
-2. Use get_google_keywords_for_location for location-specific keyword analysis
-3. Combine with get_all_google_insights to correlate keywords with actions
+**Workflow:** Call this tool for overall keyword trends → use pinmeto_get_google_keywords_for_location for location-specific analysis → combine with pinmeto_get_all_google_insights to correlate keywords with actions.
 
-**vs. get_google_keywords_for_location:**
+**vs. pinmeto_get_google_keywords_for_location:**
 - Use this tool for: Company-wide search trends, aggregate keyword analysis, SEO strategy
 - Use single location tool for: Location-specific optimization, local keyword research
 
 **Date format (IMPORTANT):**
-- Keywords use **YYYY-MM** format (month granularity only), unlike other tools
+- Uses **YYYY-MM** format (month granularity only), unlike other tools
 - Example: "2024-01" for January 2024, "2024-12" for December 2024
-- Data aggregated by full calendar months
-- Historical data available from **August 2023** or when the location was created, whichever is more recent
-- ⚠️ **Keywords are updated monthly** - data for a given month becomes available a few days after the month ends
+- Historical data: August 2023 or when location was created (whichever more recent)
+- ⚠️ **Updated monthly** - data for a month available a few days after month ends
 
-**Example use case:**
-"What are the top Google search keywords that brought customers to our locations in Q4 2024?"`,
+**Example:** "Top Google search keywords that brought customers to our locations in Q4 2024"`,
     {
       from: z
         .string()
@@ -494,7 +470,7 @@ export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
     'pinmeto_get_google_keywords_for_location',
     `Fetch Google search keywords and queries that led customers to a specific location.
 
-Returns keyword data for one location including:
+Returns keyword data for one location:
 - **Search terms** (keyword): Actual keywords customers used to find this location
 - **Impression counts** (value): How many times each keyword led to this listing appearing
 
@@ -503,26 +479,20 @@ Returns keyword data for one location including:
 - Understanding local search behavior at one store
 - Identifying location-specific keyword opportunities
 - Comparing keywords between locations
-- Local SEO strategy for individual stores
 
-**Workflow:**
-1. Use get_locations first to find the storeId (if you don't know it)
-2. Use this tool to get keyword data for that location
-3. Compare with get_google_keywords (all locations) to see how this location's keywords differ
+**Workflow:** Use pinmeto_get_locations to find storeId → call this tool to get keyword data → compare with pinmeto_get_google_keywords (all locations) to see how this location's keywords differ.
 
-**vs. get_google_keywords:**
+**vs. pinmeto_get_google_keywords:**
 - Use this tool for: Location-specific SEO, individual store optimization, local keyword research
 - Use all locations tool for: Company-wide search trends, aggregate keyword strategy
 
 **Date format (IMPORTANT):**
-- Keywords use **YYYY-MM** format (month granularity only), unlike other tools
+- Uses **YYYY-MM** format (month granularity only), unlike other tools
 - Example: "2024-01" for January 2024, "2024-12" for December 2024
-- Data aggregated by full calendar months
-- Historical data available from **August 2023** or when the location was created, whichever is more recent
-- ⚠️ **Keywords are updated monthly** - data for a given month becomes available a few days after the month ends
+- Historical data: August 2023 or when location was created (whichever more recent)
+- ⚠️ **Updated monthly** - data for a month available a few days after month ends
 
-**Example use case:**
-"What search terms are customers using to find our downtown location on Google in the last 6 months?"`,
+**Example:** "Search terms customers use to find our downtown location on Google in last 6 months"`,
     {
       storeId: z
         .string()

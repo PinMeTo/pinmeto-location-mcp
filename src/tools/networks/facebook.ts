@@ -23,21 +23,19 @@ Returns comprehensive Facebook insights including:
 - Comparing time periods for a single location (e.g., month-over-month)
 - Investigating drops or spikes in Facebook engagement
 - Measuring effectiveness of Facebook posts and content strategy
-- Understanding which content types drive the most engagement
 
-**Workflow:**
-1. Use get_locations first to find the storeId (if you don't know it)
-2. Use this tool with the storeId and date range
-3. For comparing across multiple locations, use get_all_facebook_insights instead
+**Workflow:** Use pinmeto_get_locations to find storeId → call this tool with storeId and date range → analyze results. For multi-location comparisons, use pinmeto_get_all_facebook_insights instead.
 
-**Date range notes:**
+**vs. pinmeto_get_all_facebook_insights:**
+- Use this tool for: Individual location deep-dives, specific store analysis
+- Use all locations tool for: Overall business performance, multi-location comparisons, executive summaries
+
+**Date requirements:**
+- Format: YYYY-MM-DD (e.g., "2024-01-15")
 - Maximum 2 years of historical data available
-- Use YYYY-MM-DD format (e.g., "2024-01-15")
-- ⚠️ **Data lag: Facebook insights are delayed by approximately 3 days** - request dates at least 3 days in the past
-- Longer date ranges provide better trend analysis
+- ⚠️ **Data lag: ~3 days** - request dates at least 3 days in the past
 
-**Example use case:**
-"Compare last month's Facebook engagement to the previous month for the downtown store to see if our new post strategy worked"`,
+**Example:** "Compare last month's Facebook engagement to previous month for downtown store to see if new post strategy worked"`,
     {
       storeId: z
         .string()
@@ -124,29 +122,23 @@ Returns aggregated Facebook insights across all location pages including:
 - **Followers**: New likes (page_fan_adds), unlikes (page_fan_removes), total fans (page_fans)
 
 **When to use this tool:**
-- Getting a high-level overview of Facebook performance across your entire business
+- High-level overview of Facebook performance across entire business
 - Comparing overall performance between time periods
-- Identifying top-performing locations by comparing against individual location insights
+- Identifying top-performing locations (compare against individual location insights)
 - Monthly/quarterly reporting on Facebook Page performance
-- Analyzing aggregate trends and patterns
 
-**Workflow:**
-1. Use this tool to get aggregate metrics for all location pages
-2. Use get_facebook_location_insights for specific locations that need deeper analysis
-3. Combine with get_locations to map storeIds to location names
+**Workflow:** Call this tool for aggregate metrics → use pinmeto_get_facebook_location_insights for specific locations needing deeper analysis → combine with pinmeto_get_locations to map storeIds to names.
 
-**vs. get_facebook_location_insights:**
+**vs. pinmeto_get_facebook_location_insights:**
 - Use this tool for: Overall business performance, multi-location comparisons, executive summaries
-- Use single location tool for: Individual location deep-dives, specific store performance analysis
+- Use single location tool for: Individual location deep-dives, specific store analysis
 
-**Date range notes:**
+**Date requirements:**
+- Format: YYYY-MM-DD (e.g., "2024-01-15")
 - Maximum 2 years of historical data available
-- Use YYYY-MM-DD format (e.g., "2024-01-15")
-- ⚠️ **Data lag: Facebook insights are delayed by approximately 3 days** - request dates at least 3 days in the past
-- Response includes data for all locations with active Facebook integrations
+- ⚠️ **Data lag: ~3 days** - request dates at least 3 days in the past
 
-**Example use case:**
-"Show me total Facebook page views and engagement for all our location pages last quarter compared to the previous quarter"`,
+**Example:** "Show total Facebook page views and engagement for all location pages last quarter compared to previous quarter"`,
     {
       from: z
         .string()
@@ -220,25 +212,20 @@ Returns Facebook insights for brand/corporate pages including:
 - Analyzing corporate/brand Facebook Page performance (not location pages)
 - Tracking brand-level social media engagement
 - Measuring effectiveness of company-wide Facebook campaigns
-- Monitoring brand page follower growth
 - Comparing brand page performance to location pages
 
-**vs. get_all_facebook_insights:**
+**vs. pinmeto_get_all_facebook_insights:**
 - Use this tool for: Corporate brand page metrics, company-wide social strategy
-- Use get_all_facebook_insights for: Location-specific pages, store-level performance
+- Use all locations tool for: Location-specific pages, store-level performance
 
-**Workflow:**
-1. Use this tool to get brand page metrics
-2. Compare with get_all_facebook_insights to see location vs brand performance
-3. Use for corporate marketing reporting and strategy
+**Workflow:** Call this tool for brand page metrics → compare with pinmeto_get_all_facebook_insights to see location vs brand performance → use for corporate marketing reporting.
 
-**Date range notes:**
+**Date requirements:**
+- Format: YYYY-MM-DD (e.g., "2024-01-15")
 - Maximum 2 years of historical data available
-- Use YYYY-MM-DD format (e.g., "2024-01-15")
-- ⚠️ **Data lag: Facebook insights are delayed by approximately 3 days** - request dates at least 3 days in the past
+- ⚠️ **Data lag: ~3 days** - request dates at least 3 days in the past
 
-**Example use case:**
-"Show me our corporate Facebook brand page performance for Q4 to measure our company-wide social media campaign effectiveness"`,
+**Example:** "Show corporate Facebook brand page performance for Q4 to measure company-wide social media campaign effectiveness"`,
     {
       from: z
         .string()
@@ -313,27 +300,22 @@ Returns aggregated Facebook ratings data across all locations including:
 **When to use this tool:**
 - Monitoring overall reputation across all Facebook location pages
 - Tracking review acquisition trends across your business
-- Identifying which locations may need attention for review management
 - Monthly/quarterly reputation reporting
 - Comparing review performance between time periods
 
-**Workflow:**
-1. Use this tool to get overall ratings metrics across all locations
-2. Use get_facebook_location_ratings for specific locations with issues
-3. Combine with get_locations to identify locations by name
+**Workflow:** Call this tool for overall ratings metrics → use pinmeto_get_facebook_location_ratings for specific locations with issues → combine with pinmeto_get_locations to identify locations by name.
 
-**vs. get_facebook_location_ratings:**
+**vs. pinmeto_get_facebook_location_ratings:**
 - Use this tool for: Company-wide reputation overview, aggregate metrics, executive reports
-- Use single location tool for: Individual location review management, specific store reputation analysis
+- Use single location tool for: Individual location review management, specific store analysis
 
-**Date range notes:**
-- Recommendations are dated by when they were posted
-- Use YYYY-MM-DD format (e.g., "2024-01-15")
-- Historical review data is typically available indefinitely
+**Date requirements:**
+- Format: YYYY-MM-DD (e.g., "2024-01-15")
+- Recommendations dated by when posted
+- Historical data typically available indefinitely
 - Recent reviews may take 24-48 hours to sync
 
-**Example use case:**
-"Show me total Facebook recommendations and average rating across all locations for last quarter"`,
+**Example:** "Show total Facebook recommendations and average rating across all locations for last quarter"`,
     {
       from: z
         .string()
@@ -403,25 +385,20 @@ Returns detailed Facebook ratings data for one location including:
 - Responding to customer feedback for a particular store
 - Analyzing sentiment and themes in Facebook recommendations for one location
 - Investigating sudden rating changes at a specific location
-- Preparing for review response campaigns
 
-**Workflow:**
-1. Use get_locations first to find the storeId (if you don't know it)
-2. Use this tool to get review details for that location
-3. For overview across all locations, use get_all_facebook_ratings instead
+**Workflow:** Use pinmeto_get_locations to find storeId → call this tool to get review details → for overview across all locations, use pinmeto_get_all_facebook_ratings instead.
 
-**vs. get_all_facebook_ratings:**
+**vs. pinmeto_get_all_facebook_ratings:**
 - Use this tool for: Individual location review management, detailed review analysis, responding to specific reviews
 - Use all locations tool for: Company-wide metrics, executive reporting, identifying problem locations
 
-**Date range notes:**
-- Recommendations are dated by when they were posted
-- Use YYYY-MM-DD format (e.g., "2024-01-15")
-- Historical review data is typically available indefinitely
+**Date requirements:**
+- Format: YYYY-MM-DD (e.g., "2024-01-15")
+- Recommendations dated by when posted
+- Historical data typically available indefinitely
 - Recent reviews may take 24-48 hours to sync
 
-**Example use case:**
-"Get all Facebook recommendations for the downtown store from the last 30 days so I can identify common feedback themes"`,
+**Example:** "Get all Facebook recommendations for downtown store from last 30 days to identify common feedback themes"`,
     {
       storeId: z
         .string()

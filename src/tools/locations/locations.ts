@@ -24,14 +24,10 @@ Returns complete location data including:
 - When you need detailed information about a single location
 - To verify location data before fetching network-specific insights
 - To check if a location has active network integrations
-- As a first step before using insight/rating tools
 
-**Workflow example:**
-1. Use get_locations first to find the storeId
-2. Use this tool to get location details
-3. Use network-specific tools (get_google_location_insights, etc.) with the same storeId
+**Workflow:** Use pinmeto_get_locations to find storeId → call this tool to get location details → use network-specific tools (pinmeto_get_google_location_insights, etc.) with the storeId.
 
-**Note:** If you don't know the storeId, use get_locations first to list all locations and their IDs.`,
+**Note:** If you don't know the storeId, use pinmeto_get_locations first to list all locations and their IDs.`,
     {
       storeId: z
         .string()
@@ -125,11 +121,11 @@ This is the primary tool for discovering storeIds, which are required by most ot
 - Identify active vs inactive locations
 
 **Field filtering:**
-Use the 'fields' parameter to limit response size when you only need specific information:
+Use 'fields' parameter to limit response size:
 - Basic info: ['storeId', 'name', 'isActive']
 - Contact: ['storeId', 'name', 'contact', 'address']
 - Network status: ['storeId', 'name', 'google', 'fb']
-- Omit fields parameter to get all available data
+- Omit to get all available data
 
 **Available fields:**
 _id, type, site, name, alternativeNames, location, locationDescriptor, isActive, storeId, address, openHours, isAlwaysOpen, specialOpenHours, permanentlyClosed, openingDate, temporarilyClosedUntil, temporarilyClosedMessage, contact, google, fb, networkCategories, networkActionLinks, networkAttributes, networkServiceItems, networkCustomName, shortDescription, longDescription, customData, wifiSsid, serviceAreas
@@ -137,14 +133,11 @@ _id, type, site, name, alternativeNames, location, locationDescriptor, isActive,
 **Pagination:**
 - Returns up to 1000 locations per page
 - Use maxPages to limit response size (helpful for large accounts)
-- Default behavior: fetches all pages automatically
+- Default: fetches all pages automatically
 
-**Typical workflow:**
-1. Use this tool to get list of locations (often with fields=['storeId', 'name', 'isActive'])
-2. Identify the location(s) you want to analyze
-3. Use network-specific tools with the storeId(s) from step 1
+**Workflow:** Call this tool to get locations list (often with fields=['storeId', 'name', 'isActive']) → identify location(s) to analyze → use network-specific tools with the storeId(s).
 
-**Performance tip:** For large accounts (100+ locations), use field filtering and maxPages to get faster responses.`,
+**Performance tip:** For large accounts (100+ locations), use field filtering and maxPages for faster responses.`,
     {
       fields: z
         .array(FieldsEnum)

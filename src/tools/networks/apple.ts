@@ -17,21 +17,19 @@ Returns comprehensive Apple Maps insights including:
 - Comparing time periods for a single location (e.g., month-over-month)
 - Investigating drops or spikes in Apple Maps visibility
 - Understanding Apple ecosystem user behavior for a specific store
-- Measuring effectiveness of Apple Maps Connect optimizations
 
-**Workflow:**
-1. Use get_locations first to find the storeId (if you don't know it)
-2. Use this tool with the storeId and date range
-3. For comparing across multiple locations, use get_all_apple_insights instead
+**Workflow:** Use pinmeto_get_locations to find storeId → call this tool with storeId and date range → analyze results. For multi-location comparisons, use pinmeto_get_all_apple_insights instead.
 
-**Date range notes:**
-- Historical data availability depends on when Apple integration was activated
-- Use YYYY-MM-DD format (e.g., "2024-01-15")
-- ⚠️ **Data lag: Apple insights are delayed by approximately 4 days** - request dates at least 4 days in the past
-- Apple Maps insights may have more limited history than Google/Facebook
+**vs. pinmeto_get_all_apple_insights:**
+- Use this tool for: Individual location deep-dives, specific store analysis
+- Use all locations tool for: Overall business performance, multi-location comparisons, executive summaries
 
-**Example use case:**
-"Compare last month's Apple Maps performance to the previous month for the downtown store to see if our updated photos improved engagement"`,
+**Date requirements:**
+- Format: YYYY-MM-DD (e.g., "2024-01-15")
+- Historical data depends on when Apple integration was activated
+- ⚠️ **Data lag: ~4 days** - request dates at least 4 days in the past
+
+**Example:** "Compare last month's Apple Maps performance to previous month for downtown store to see if updated photos improved engagement"`,
     {
       storeId: z
         .string()
@@ -119,29 +117,23 @@ Returns aggregated Apple Maps insights across all locations including:
 - **Search discovery**: By name (SEARCH_LOCATION_TAP_NAME), by category (SEARCH_LOCATION_TAP_CATEGORY), other (SEARCH_LOCATION_TAP_OTHER)
 
 **When to use this tool:**
-- Getting a high-level overview of Apple Maps performance across your entire business
+- High-level overview of Apple Maps performance across entire business
 - Comparing overall performance between time periods
 - Understanding Apple ecosystem reach across all locations
 - Monthly/quarterly reporting on Apple Maps performance
-- Analyzing aggregate trends for iOS/macOS users
 
-**Workflow:**
-1. Use this tool to get aggregate metrics for all locations
-2. Use get_apple_location_insights for specific locations that need deeper analysis
-3. Combine with get_locations to map storeIds to location names
+**Workflow:** Call this tool for aggregate metrics → use pinmeto_get_apple_location_insights for specific locations needing deeper analysis → combine with pinmeto_get_locations to map storeIds to names.
 
-**vs. get_apple_location_insights:**
+**vs. pinmeto_get_apple_location_insights:**
 - Use this tool for: Overall business performance on Apple Maps, multi-location comparisons, executive summaries
-- Use single location tool for: Individual location deep-dives, specific store performance analysis
+- Use single location tool for: Individual location deep-dives, specific store analysis
 
-**Date range notes:**
-- Historical data availability depends on when Apple integration was activated
-- Use YYYY-MM-DD format (e.g., "2024-01-15")
-- ⚠️ **Data lag: Apple insights are delayed by approximately 4 days** - request dates at least 4 days in the past
-- Response includes data for all locations with active Apple Maps integrations
+**Date requirements:**
+- Format: YYYY-MM-DD (e.g., "2024-01-15")
+- Historical data depends on when Apple integration was activated
+- ⚠️ **Data lag: ~4 days** - request dates at least 4 days in the past
 
-**Example use case:**
-"Show me total Apple Maps impressions and actions for all our locations last quarter to understand our iOS/macOS customer reach"`,
+**Example:** "Show total Apple Maps impressions and actions for all locations last quarter to understand iOS/macOS customer reach"`,
     {
       from: z
         .string()

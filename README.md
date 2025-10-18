@@ -467,6 +467,274 @@ Get Apple Maps insights for all locations in your account.
 
 ---
 
+## API Reference & Best Practices
+
+### Tool Selection Guide
+
+When working with PinMeTo MCP, follow this decision tree to choose the right tool:
+
+```
+Need location data?
+├─ All locations → pinmeto_get_locations
+│  └─ Filter fields for faster responses: ['storeId', 'name', 'isActive']
+└─ Single location → pinmeto_get_location
+   └─ Verify network integrations before fetching insights
+
+Need insights data?
+├─ Comparing multiple locations → Use "all" tools
+│  ├─ pinmeto_get_all_google_insights
+│  ├─ pinmeto_get_all_facebook_insights
+│  └─ pinmeto_get_all_apple_insights
+└─ Analyzing single location → Use single location tools
+   ├─ pinmeto_get_google_location_insights
+   ├─ pinmeto_get_facebook_location_insights
+   └─ pinmeto_get_apple_location_insights
+
+Need ratings/reviews?
+├─ All locations → Use "all" ratings tools
+└─ Single location → Use single location ratings tools
+
+Need keyword data?
+├─ All locations → pinmeto_get_google_keywords
+└─ Single location → pinmeto_get_google_keywords_for_location
+```
+
+**Pro Tips:**
+- **Always start with `pinmeto_get_locations`** to discover storeIds
+- **Use field filtering** for large accounts (100+ locations)
+- **Use aggregation** to reduce context usage (default: `total`)
+- **Use markdown format** for human-readable summaries (default)
+- **Check data lag** before requesting recent dates (see table below)
+
+### Data Availability & Historical Limits
+
+| Data Source | Historical Range | Data Lag | Date Format | Update Frequency |
+|-------------|------------------|----------|-------------|------------------|
+| **Google Insights** | Sep 2021 or 18 months back* | ~10 days | YYYY-MM-DD | Daily |
+| **Google Ratings** | Indefinite | 24-48 hours | YYYY-MM-DD | Real-time |
+| **Google Keywords** | Aug 2023 or location creation* | Few days after month end | YYYY-MM | Monthly |
+| **Facebook Insights** | 2 years | ~3 days | YYYY-MM-DD | Daily |
+| **Facebook Ratings** | Indefinite | 24-48 hours | YYYY-MM-DD | Real-time |
+| **Apple Insights** | Depends on integration date | ~4 days | YYYY-MM-DD | Daily |
+
+*Whichever is more recent
+
+**Important:** Always request dates accounting for data lag:
+- Google insights: Request dates ≥10 days in the past
+- Facebook insights: Request dates ≥3 days in the past
+- Apple insights: Request dates ≥4 days in the past
+- Google keywords: Request complete months only
+
+### Detailed Field Reference
+
+#### Google Business Profile Fields
+
+**Impressions (How customers find you):**
+- `BUSINESS_IMPRESSIONS_DESKTOP_SEARCH` - Impressions on Google Search (desktop)
+- `BUSINESS_IMPRESSIONS_MOBILE_SEARCH` - Impressions on Google Search (mobile)
+- `BUSINESS_IMPRESSIONS_DESKTOP_MAPS` - Impressions on Google Maps (desktop)
+- `BUSINESS_IMPRESSIONS_MOBILE_MAPS` - Impressions on Google Maps (mobile)
+
+**Actions (What customers do):**
+- `BUSINESS_DIRECTION_REQUESTS` - Times customers requested directions
+- `CALL_CLICKS` - Times customers clicked to call
+- `WEBSITE_CLICKS` - Times customers clicked website link
+
+**Discovery:**
+- `QUERIES_DIRECT` - Searches using business name
+- `QUERIES_INDIRECT` - Searches using category/product/service
+
+**Engagement:**
+- Photo views, customer photo uploads, post impressions
+
+#### Facebook Pages Fields
+
+**Page Impressions:**
+- `page_impressions` - Total times your page was viewed
+- `page_impressions_unique` - Unique people who viewed your page
+- `page_impressions_organic` - Organic (non-paid) page views
+- `page_impressions_organic_unique` - Unique organic viewers
+- `page_impressions_paid` - Paid (sponsored) page views
+- `page_impressions_paid_unique` - Unique paid viewers
+
+**Engagement:**
+- `page_total_actions` - Total actions taken on page (clicks, likes, etc.)
+- `page_post_engagements` - Total engagement with posts
+
+**Followers:**
+- `page_fan_adds` - New page likes in period
+- `page_fan_removes` - Page unlikes in period
+- `page_fans` - Total page likes at end of period
+
+#### Apple Maps Fields
+
+**Views:**
+- `PLACECARD_VIEW` - Times your location card was viewed
+
+**Actions:**
+- `PLACECARD_TAP_CALL` - Times customers tapped to call
+- `PLACECARD_TAP_DIRECTION` - Times customers tapped for directions
+- `PLACECARD_TAP_WEBSITE` - Times customers tapped website link
+
+**Discovery:**
+- `SEARCH_LOCATION_TAP_NAME` - Found by searching business name
+- `SEARCH_LOCATION_TAP_CATEGORY` - Found by category search
+- `SEARCH_LOCATION_TAP_OTHER` - Found by other search methods
+
+### Common Workflows
+
+#### Workflow 1: Monthly Performance Report
+
+**Goal:** Generate monthly performance summary across all platforms
+
+```
+1. Get all locations (filtered for speed)
+   → pinmeto_get_locations with fields: ['storeId', 'name', 'google', 'fb']
+
+2. Get Google insights for all locations (last month)
+   → pinmeto_get_all_google_insights
+   → from: "2024-01-01", to: "2024-01-31"
+   → aggregation: "total" (default)
+
+3. Get Facebook insights for all locations
+   → pinmeto_get_all_facebook_insights (same dates)
+
+4. Get Apple insights for all locations
+   → pinmeto_get_all_apple_insights (same dates)
+
+Result: Complete multi-platform report in ~2,000 tokens (vs 50,000+ without aggregation)
+```
+
+#### Workflow 2: Location Deep-Dive
+
+**Goal:** Analyze single location performance with weekly trends
+
+```
+1. Find the location
+   → pinmeto_get_locations with fields: ['storeId', 'name']
+
+2. Get location details
+   → pinmeto_get_location with storeId
+
+3. Get Google insights with weekly breakdown
+   → pinmeto_get_google_location_insights
+   → aggregation: "weekly"
+
+4. Get customer reviews
+   → pinmeto_get_google_location_ratings (same period)
+   → pinmeto_get_facebook_location_ratings (same period)
+
+5. Understand search behavior
+   → pinmeto_get_google_keywords_for_location (month format)
+
+Result: Comprehensive single-location analysis with trend data
+```
+
+#### Workflow 3: Competitive Location Comparison
+
+**Goal:** Compare performance between multiple specific locations
+
+```
+1. Get locations list
+   → pinmeto_get_locations
+
+2. Get insights for each location separately
+   → pinmeto_get_google_location_insights for Store A
+   → pinmeto_get_google_location_insights for Store B
+   → pinmeto_get_google_location_insights for Store C
+   → Use aggregation: "monthly" for 3-month trend comparison
+
+3. Identify keyword differences
+   → pinmeto_get_google_keywords_for_location for each store
+
+Result: Side-by-side comparison with monthly trends
+```
+
+### Troubleshooting Guide
+
+#### Error: "Unable to fetch insights for storeId"
+
+**Possible causes:**
+1. **Invalid storeId** - Verify using `pinmeto_get_locations`
+2. **No network integration** - Check location has Google/Facebook/Apple connected
+3. **Date range too old** - Check historical limits (see table above)
+4. **Date format wrong** - Use YYYY-MM-DD (or YYYY-MM for keywords)
+5. **Data not yet available** - Account for data lag (10 days for Google, 3 for Facebook, 4 for Apple)
+
+**Solutions:**
+- Use `pinmeto_get_location` to verify network integrations
+- Request dates within historical range
+- Add data lag buffer to requested dates
+- For keywords, use complete month format (YYYY-MM)
+
+#### Error: "No locations found"
+
+**Possible causes:**
+1. **Incorrect PINMETO_ACCOUNT_ID** - Verify in PinMeTo account settings
+2. **No active locations** - Account has no locations configured
+3. **API credentials issue** - App ID or secret incorrect
+
+**Solutions:**
+- Double-check environment variables
+- Visit PinMeTo dashboard to confirm locations exist
+- Regenerate API credentials if needed
+
+#### Issue: Response is too large / truncated
+
+**Solutions:**
+1. **Use field filtering** - Specify only needed fields in `pinmeto_get_locations`
+   - Example: `fields: ['storeId', 'name', 'isActive']`
+2. **Use aggregation** - Default `total` reduces response by 97%
+3. **Limit pages** - Use `maxPages` parameter for large accounts
+4. **Request smaller date ranges** - Split large requests into smaller periods
+
+#### Issue: Empty insights response
+
+**Possible causes:**
+1. **Location integration not active** - Network not connected yet
+2. **New location** - Insufficient historical data
+3. **Date range before integration** - Requested dates before network was connected
+
+**Solutions:**
+- Verify location has network field populated (use `pinmeto_get_location`)
+- Try more recent date ranges
+- For new locations, wait for data to accumulate (24-72 hours)
+
+#### Issue: Keyword data not available
+
+**Special notes about Google Keywords:**
+- Only available from **August 2023** onwards
+- **Monthly aggregation only** - must use YYYY-MM format
+- Data available **few days after month ends**
+- Low-traffic locations may not have keyword data
+
+**Solutions:**
+- Use YYYY-MM format (not YYYY-MM-DD)
+- Request complete past months only
+- For current month, wait until month ends + few days
+
+### Performance Optimization Tips
+
+#### Reduce Context Usage
+1. **Use aggregation** (default `total`) - Saves 97% tokens
+2. **Use markdown format** (default) - Human-readable summaries vs raw JSON
+3. **Filter fields** in `pinmeto_get_locations` - Only request needed data
+4. **Limit pages** with `maxPages` - Prevent large account overload
+
+#### Faster Queries
+1. **Start with `pinmeto_get_locations`** - Cache storeIds locally
+2. **Request parallel data** - Get Google/Facebook/Apple insights simultaneously
+3. **Use appropriate aggregation** - `total` for summaries, `monthly` for trends
+4. **Limit date ranges** - Request only needed time periods
+
+#### Better Results
+1. **Account for data lag** - Don't request very recent dates
+2. **Use consistent date ranges** - Compare apples-to-apples across platforms
+3. **Check network integrations** - Use `pinmeto_get_location` first
+4. **Request complete periods** - Full months for cleaner comparisons
+
+---
+
 ## Aggregation Feature
 
 All insight tools support intelligent data aggregation to dramatically reduce context usage while maintaining data insights.
