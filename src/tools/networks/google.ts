@@ -491,7 +491,7 @@ Returns keyword data aggregated across all locations including:
 - Keywords use **YYYY-MM** format (month granularity only), unlike other tools
 - Example: "2024-01" for January 2024, "2024-12" for December 2024
 - Data aggregated by full calendar months
-- Historical data available from **September 2021** or 18 months back, whichever is more recent
+- Historical data available from **August 2023** or when the location was created, whichever is more recent
 - ⚠️ **Keywords are updated monthly** - data for a given month becomes available a few days after the month ends
 
 **Example use case:**
@@ -529,12 +529,12 @@ Returns keyword data aggregated across all locations including:
 2. Confirm you have locations with active Google Business Profile integrations
 3. Check date format is YYYY-MM (month only, not YYYY-MM-DD)
 4. Ensure 'from' month is before or equal to 'to' month
-5. Verify date range is after September 2021 or within last 18 months
+5. Verify date range is after August 2023 or when the location was created
 
 **Common issues:**
 - Wrong date format (must be YYYY-MM, e.g., "2024-01")
 - No locations have Google Business Profile connected
-- Date range before September 2021 or >18 months in the past
+- Date range before August 2023 or before location creation
 - Account ID is incorrect
 - Keyword data takes longer to sync (48-72 hours delay)
 
@@ -600,7 +600,7 @@ Returns keyword data for one location including:
 - Keywords use **YYYY-MM** format (month granularity only), unlike other tools
 - Example: "2024-01" for January 2024, "2024-12" for December 2024
 - Data aggregated by full calendar months
-- Historical data available from **September 2021** or 18 months back, whichever is more recent
+- Historical data available from **August 2023** or when the location was created, whichever is more recent
 - ⚠️ **Keywords are updated monthly** - data for a given month becomes available a few days after the month ends
 
 **Example use case:**
