@@ -24,6 +24,11 @@ import {
   getFacebookLocationsInsights
 } from './tools/networks/facebook';
 import { getAllAppleInsights, getAppleLocationInsights } from './tools/networks/apple';
+import {
+  getMultiPlatformInsights,
+  getYoYComparison,
+  getLocationOverview
+} from './tools/reports/composite';
 import { Configs, getConfigs } from './configs';
 import packageJson from '../package.json';
 
@@ -217,6 +222,11 @@ export function createMcpServer() {
   // Apple
   getAppleLocationInsights(mcpServer);
   getAllAppleInsights(mcpServer);
+
+  // Composite Reports
+  getMultiPlatformInsights(mcpServer);
+  getYoYComparison(mcpServer);
+  getLocationOverview(mcpServer);
 
   return mcpServer;
 }

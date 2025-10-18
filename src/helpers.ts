@@ -213,17 +213,7 @@ export function formatLocationMarkdown(location: any): string {
   let md = '# Location Details\n\n';
   md += `**Store ID:** ${location.storeId || 'N/A'}\n`;
   md += `**Name:** ${location.name || 'N/A'}\n`;
-  md += `**Status:** ${location.permanentlyClosed === false ? 'Active ✓' : 'Inactive ✗'}\n`;
-
-  // Show network integrations
-  const networks: string[] = [];
-  if (location.google) networks.push('Google');
-  if (location.fb) networks.push('Facebook');
-  if (location.apple) networks.push('Apple');
-  if (networks.length > 0) {
-    md += `**Networks:** ${networks.join(', ')}\n`;
-  }
-  md += '\n';
+  md += `**Status:** ${location.permanentlyClosed === false ? 'Active ✓' : 'Inactive ✗'}\n\n`;
 
   // Address (condensed)
   if (location.address) {
@@ -249,6 +239,45 @@ export function formatLocationMarkdown(location: any): string {
     if (contactItems.length > 0) {
       md += '## Contact\n';
       md += contactItems.join(' • ') + '\n\n';
+    }
+  }
+
+  // Network integrations with links
+  const hasNetworks = location.google || location.fb || location.apple;
+  if (hasNetworks) {
+    md += '## Network Integrations\n\n';
+
+    if (location.google) {
+      md += '**Google Business Profile**\n';
+      if (location.google.link) {
+        md += `- Profile: ${location.google.link}\n`;
+      }
+      if (location.google.placeId) {
+        md += `- Place ID: \`${location.google.placeId}\`\n`;
+      }
+      if (location.google.newReviewUrl) {
+        md += `- Leave Review: ${location.google.newReviewUrl}\n`;
+      }
+      md += '\n';
+    }
+
+    if (location.fb) {
+      md += '**Facebook**\n';
+      if (location.fb.link) {
+        md += `- Profile: ${location.fb.link}\n`;
+      }
+      if (location.fb.pageId) {
+        md += `- Page ID: \`${location.fb.pageId}\`\n`;
+      }
+      md += '\n';
+    }
+
+    if (location.apple) {
+      md += '**Apple Maps**\n';
+      if (location.apple.link) {
+        md += `- Profile: ${location.apple.link}\n`;
+      }
+      md += '\n';
     }
   }
 
