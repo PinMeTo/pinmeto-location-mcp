@@ -411,7 +411,12 @@ Returns keyword data aggregated across all locations:
 - Historical data: August 2023 or when location was created (whichever more recent)
 - ⚠️ **Updated monthly** - data for a month available a few days after month ends
 
-**Example:** "Top Google search keywords that brought customers to our locations in Q4 2024"`,
+**Limit parameter:**
+- Set limit to a number (1-500) to see top N keywords (default: 15)
+- Set limit to "all" to see all keywords returned by the API
+- Only applies to markdown format; JSON format always returns all data
+
+**Example:** "Top 100 Google search keywords that brought customers to our locations in Q4 2024"`,
     {
       from: z
         .string()
@@ -425,7 +430,15 @@ Returns keyword data aggregated across all locations:
         .enum(['json', 'markdown'])
         .optional()
         .default('markdown')
-        .describe('Response format: json (raw data) or markdown (human-readable summary)')
+        .describe('Response format: json (raw data) or markdown (human-readable summary)'),
+      limit: z
+        .union([
+          z.number().int().min(1).max(500),
+          z.literal('all')
+        ])
+        .optional()
+        .default(15)
+        .describe('Number of keywords to show in markdown format (1-500) or "all" for all keywords. Default: 15. Only applies to markdown format.')
     },
     {
       readOnlyHint: true,
@@ -433,7 +446,7 @@ Returns keyword data aggregated across all locations:
       idempotentHint: true,
       openWorldHint: true
     },
-    async ({ from, to, format }: { from: string; to: string; format?: 'json' | 'markdown' }) => {
+    async ({ from, to, format, limit }: { from: string; to: string; format?: 'json' | 'markdown'; limit?: number | 'all' }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords?from=${from}&to=${to}`;
 
@@ -458,7 +471,8 @@ Returns keyword data aggregated across all locations:
 - Keyword data takes longer to sync (48-72 hours delay)
 
 Note: Keyword data is aggregated monthly and may not be available for very recent months or very new locations.`,
-          markdownFormatter: (data) => formatKeywordsMarkdown(data)
+          markdownFormatter: (data, _agg, lim) => formatKeywordsMarkdown(data, undefined, lim),
+          limit: limit || 15
         }
       );
     }
@@ -492,7 +506,12 @@ Returns keyword data for one location:
 - Historical data: August 2023 or when location was created (whichever more recent)
 - ⚠️ **Updated monthly** - data for a month available a few days after month ends
 
-**Example:** "Search terms customers use to find our downtown location on Google in last 6 months"`,
+**Limit parameter:**
+- Set limit to a number (1-500) to see top N keywords (default: 15)
+- Set limit to "all" to see all keywords returned by the API
+- Only applies to markdown format; JSON format always returns all data
+
+**Example:** "Top 50 search terms customers use to find our downtown location on Google in last 6 months"`,
     {
       storeId: z
         .string()
@@ -510,7 +529,15 @@ Returns keyword data for one location:
         .enum(['json', 'markdown'])
         .optional()
         .default('markdown')
-        .describe('Response format: json (raw data) or markdown (human-readable summary)')
+        .describe('Response format: json (raw data) or markdown (human-readable summary)'),
+      limit: z
+        .union([
+          z.number().int().min(1).max(500),
+          z.literal('all')
+        ])
+        .optional()
+        .default(15)
+        .describe('Number of keywords to show in markdown format (1-500) or "all" for all keywords. Default: 15. Only applies to markdown format.')
     },
     {
       readOnlyHint: true,
@@ -522,12 +549,14 @@ Returns keyword data for one location:
       storeId,
       from,
       to,
-      format
+      format,
+      limit
     }: {
       storeId: string;
       from: string;
       to: string;
       format?: 'json' | 'markdown';
+      limit?: number | 'all';
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords/${storeId}?from=${from}&to=${to}`;
@@ -554,7 +583,8 @@ Returns keyword data for one location:
 - Keyword data takes 48-72 hours to sync
 
 Note: Keyword data is aggregated monthly and requires sufficient search volume. New or low-traffic locations may not have keyword data.`,
-          markdownFormatter: (data) => formatKeywordsMarkdown(data, storeId)
+          markdownFormatter: (data, _agg, lim) => formatKeywordsMarkdown(data, storeId, lim),
+          limit: limit || 15
         }
       );
     }

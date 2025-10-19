@@ -539,7 +539,7 @@ export function formatRatingsMarkdown(platform: string, ratings: any, storeId?: 
   return md;
 }
 
-export function formatKeywordsMarkdown(keywords: any, storeId?: string): string {
+export function formatKeywordsMarkdown(keywords: any, storeId?: string, limit: number | 'all' = 15): string {
   if (!keywords) return 'No keyword data available.';
 
   let md = '# Google Keywords\n\n';
@@ -559,10 +559,13 @@ export function formatKeywordsMarkdown(keywords: any, storeId?: string): string 
     md += `- **Total Keywords**: ${totalKeywords}\n`;
     md += `- **Total Impressions**: ${totalImpressions.toLocaleString()}\n\n`;
 
-    // Show top keywords (max 15)
-    md += '## Top Keywords\n\n';
+    // Determine how many keywords to show
+    const maxToShow = limit === 'all' ? totalKeywords : limit;
+
+    // Show top keywords
+    md += `## Top Keywords${limit === 'all' ? ' (All)' : maxToShow < totalKeywords ? ` (Top ${maxToShow})` : ''}\n\n`;
     const sortedKeywords = [...keywords].sort((a: any, b: any) => (b.value || 0) - (a.value || 0));
-    const topKeywords = sortedKeywords.slice(0, 15);
+    const topKeywords = sortedKeywords.slice(0, maxToShow);
 
     topKeywords.forEach((k: any, index: number) => {
       const percentage = ((k.value / totalImpressions) * 100).toFixed(1);
@@ -573,8 +576,8 @@ export function formatKeywordsMarkdown(keywords: any, storeId?: string): string 
       md += '\n';
     });
 
-    if (keywords.length > 15) {
-      md += `\n_...and ${keywords.length - 15} more keywords_\n`;
+    if (keywords.length > maxToShow) {
+      md += `\n_...and ${keywords.length - maxToShow} more keywords (use limit='all' to see all)_\n`;
     }
   } else {
     // Fallback to JSON for unknown structure
@@ -625,8 +628,9 @@ export async function handleToolResponse<T>(
   format: 'json' | 'markdown',
   options: {
     errorMessage: string;
-    markdownFormatter?: (data: T, aggregation?: AggregationLevel) => string;
+    markdownFormatter?: (data: T, aggregation?: AggregationLevel, limit?: number | 'all') => string;
     aggregation?: AggregationLevel;
+    limit?: number | 'all';
   }
 ): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
   try {
@@ -661,7 +665,7 @@ export async function handleToolResponse<T>(
           content: [
             {
               type: 'text',
-              text: options.markdownFormatter(data, options.aggregation)
+              text: options.markdownFormatter(data, options.aggregation, options.limit)
             }
           ]
         };
@@ -674,7 +678,7 @@ export async function handleToolResponse<T>(
         content: [
           {
             type: 'text',
-            text: options.markdownFormatter(data, options.aggregation)
+            text: options.markdownFormatter(data, options.aggregation, options.limit)
           }
         ]
       };

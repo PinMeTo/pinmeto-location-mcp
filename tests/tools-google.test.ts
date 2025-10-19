@@ -340,6 +340,102 @@ describe('pinmeto_get_google_keywords tool', () => {
     expect(firstKeyword.value).toBeDefined();
     expect(firstKeyword.locationCounts).toBeDefined();
   });
+
+  it('should accept custom limit parameter', async () => {
+    const server = createMcpServer();
+    const spy = vi.spyOn(server, 'makePinMeToRequest');
+    const transport = new StdioServerTransport();
+
+    await server.connect(transport);
+    transport.onmessage?.(createInitializeMessage());
+
+    transport.onmessage?.(
+      createToolCallMessage('pinmeto_get_google_keywords', {
+        from: '2024-01',
+        to: '2024-01',
+        format: 'markdown',
+        limit: 50
+      })
+    );
+
+    await waitForAsync(100);
+    await transport.close();
+
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('should accept "all" as limit parameter', async () => {
+    const server = createMcpServer();
+    const spy = vi.spyOn(server, 'makePinMeToRequest');
+    const transport = new StdioServerTransport();
+
+    await server.connect(transport);
+    transport.onmessage?.(createInitializeMessage());
+
+    transport.onmessage?.(
+      createToolCallMessage('pinmeto_get_google_keywords', {
+        from: '2024-01',
+        to: '2024-01',
+        format: 'markdown',
+        limit: 'all'
+      })
+    );
+
+    await waitForAsync(100);
+    await transport.close();
+
+    expect(spy).toHaveBeenCalled();
+  });
+});
+
+describe('pinmeto_get_google_keywords_for_location - limit parameter', () => {
+  it('should accept custom limit parameter', async () => {
+    const server = createMcpServer();
+    const spy = vi.spyOn(server, 'makePinMeToRequest');
+    const transport = new StdioServerTransport();
+
+    await server.connect(transport);
+    transport.onmessage?.(createInitializeMessage());
+
+    transport.onmessage?.(
+      createToolCallMessage('pinmeto_get_google_keywords_for_location', {
+        storeId: 'downtown-store-001',
+        from: '2024-01',
+        to: '2024-01',
+        format: 'markdown',
+        limit: 100
+      })
+    );
+
+    await waitForAsync(100);
+    await transport.close();
+
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('should accept "all" as limit parameter', async () => {
+    const server = createMcpServer();
+    const spy = vi.spyOn(server, 'makePinMeToRequest');
+    const transport = new StdioServerTransport();
+
+    await server.connect(transport);
+    transport.onmessage?.(createInitializeMessage());
+
+    transport.onmessage?.(
+      createToolCallMessage('pinmeto_get_google_keywords_for_location', {
+        storeId: 'downtown-store-001',
+        from: '2024-01',
+        to: '2024-01',
+        format: 'markdown',
+        limit: 'all'
+      })
+    );
+
+    await waitForAsync(100);
+    await transport.close();
+
+    expect(spy).toHaveBeenCalled();
+  });
 });
 
 describe('Google tools - Error handling', () => {

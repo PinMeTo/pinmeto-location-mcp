@@ -25,6 +25,25 @@ PinMeTo Location MCP is a Model Context Protocol server that integrates the PinM
 - `npm test` - Runs test suite with Vitest
 - `npm run format` - Formats code with Prettier
 
+**IMPORTANT - Running Tests:**
+- **ALWAYS use the test-runner-reporter agent** when running tests during development
+- DO NOT run `npm test` directly with the Bash tool
+- The test-runner-reporter agent provides accurate test counts, detailed analysis, and generates reports
+- Use Task tool with subagent_type="test-runner-reporter" instead of raw npm commands
+
+**Example - Correct way to run tests:**
+```
+Use Task tool:
+- subagent_type: "test-runner-reporter"
+- prompt: "Run the complete test suite to verify [changes made]. Report total tests, pass/fail status, and any issues."
+```
+
+**Why this matters:**
+- Raw npm test output is ~10,000 lines and easy to misread
+- The agent accurately counts tests (currently 193 tests)
+- The agent validates specific changes and provides context-aware analysis
+- Eliminates manual counting errors and provides professional reports
+
 ### Packaging
 - `npx @anthropic-ai/mcpb pack` - Creates .mcpb installer file for Claude Desktop (run after build)
 - `npm run pack:test` - Builds test version AND creates .mcpb installer in one command (convenience shortcut)
