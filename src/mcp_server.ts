@@ -5,7 +5,7 @@ import {
   LATEST_PROTOCOL_VERSION,
   Implementation
 } from '@modelcontextprotocol/sdk/types.js';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import os from 'os';
 import { getLocations, getLocation } from './tools/locations/locations';
 import {
@@ -24,14 +24,34 @@ import {
   getFacebookLocationsInsights
 } from './tools/networks/facebook';
 import { getAllAppleInsights, getAppleLocationInsights } from './tools/networks/apple';
-import { analyzeLocationPrompt, summarizeAllInsightsPrompt } from './prompts';
+import {
+  getMultiPlatformInsights,
+  getYoYComparison,
+  getLocationOverview
+} from './tools/reports/composite';
 import { Configs, getConfigs } from './configs';
+import packageJson from '../package.json';
 
 import { ServerOptions } from '@modelcontextprotocol/sdk/server';
 
-const PACKAGE_NAME = '@pinmeto/pinmeto-location-mcp';
-const PACKAGE_VERSION = '1.0.2';
+const PACKAGE_NAME = packageJson.name;
+const PACKAGE_VERSION = packageJson.version;
 const TOKEN_CACHE_SECONDS = 59 * 60;
+
+/**
+ * Custom error class for PinMeTo API errors
+ * Preserves HTTP status codes and error types for better error handling
+ */
+export class PinMeToApiError extends Error {
+  constructor(
+    message: string,
+    public statusCode?: number,
+    public errorType?: 'http_error' | 'timeout' | 'network_error' | 'unknown'
+  ) {
+    super(message);
+    this.name = 'PinMeToApiError';
+  }
+}
 
 export class PinMeToMcpServer extends McpServer {
   private _configs: Configs;
@@ -55,29 +75,60 @@ export class PinMeToMcpServer extends McpServer {
 
       const response = await axios.get(url, { headers, timeout: 30000 });
       return response.data;
-    } catch (e: any) {
-      console.error(`Request failed, reason: ${e}`);
-      return null;
+    } catch (error: unknown) {
+      // Enhance error handling to preserve HTTP status codes
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          const status = error.response.status;
+          console.error(`API request failed with status ${status}: ${url}`);
+          throw new PinMeToApiError(`API request failed with status ${status}`, status, 'http_error');
+        } else if (error.code === 'ECONNABORTED') {
+          console.error(`Request timeout: ${url}`);
+          throw new PinMeToApiError('Request timed out', undefined, 'timeout');
+        } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+          console.error(`Network error: ${url}`);
+          throw new PinMeToApiError('Network error - unable to reach API', undefined, 'network_error');
+        }
+      }
+      console.error(`Request failed: ${error}`);
+      throw new PinMeToApiError('Request failed', undefined, 'unknown');
     }
   }
 
-  public async makePaginatedPinMeToRequest(url: string): Promise<[any[], boolean]> {
-    const allData: any[] = [];
+  public async makePaginatedPinMeToRequest<T = unknown>(
+    url: string,
+    maxPages?: number
+  ): Promise<[T[], boolean]> {
+    const allData: T[] = [];
     let nextUrl: string | undefined = url;
     let areAllPagesFetched = true;
+    let pageCount = 0;
 
     while (nextUrl) {
-      const resp = await this.makePinMeToRequest(nextUrl);
-      if (!resp) {
-        console.warn("Couldn't fetch all pages for the request");
+      try {
+        const resp = await this.makePinMeToRequest(nextUrl);
+        const pageData: T[] = resp['data'] || [];
+        allData.push(...pageData);
+        const paging = resp['paging'] || {};
+        nextUrl = paging['nextUrl'];
+        pageCount++;
+
+        // Check if we've reached the max pages limit
+        if (maxPages && pageCount >= maxPages) {
+          // If there's still a nextUrl, we didn't fetch everything
+          if (nextUrl && pageData.length > 0) {
+            areAllPagesFetched = false;
+          }
+          break;
+        }
+
+        if (!nextUrl || pageData.length == 0) break;
+      } catch (error) {
+        // If we fail to fetch a page, return what we have so far
+        console.warn("Couldn't fetch all pages for the request:", error);
         areAllPagesFetched = false;
         break;
       }
-      const pageData: any[] = resp['data'] || [];
-      allData.push(...pageData);
-      const paging = resp['paging'] || {};
-      nextUrl = paging['nextUrl'];
-      if (!nextUrl || pageData.length == 0) break;
     }
     return [allData, areAllPagesFetched];
   }
@@ -124,7 +175,6 @@ export function createMcpServer() {
     name: 'PinMeTo Location MCP',
     version: PACKAGE_VERSION,
     capabilities: {
-      prompts: {},
       resources: {},
       tools: {}
     }
@@ -173,9 +223,10 @@ export function createMcpServer() {
   getAppleLocationInsights(mcpServer);
   getAllAppleInsights(mcpServer);
 
-  // Prompts
-  analyzeLocationPrompt(mcpServer);
-  summarizeAllInsightsPrompt(mcpServer);
+  // Composite Reports
+  getMultiPlatformInsights(mcpServer);
+  getYoYComparison(mcpServer);
+  getLocationOverview(mcpServer);
 
   return mcpServer;
 }

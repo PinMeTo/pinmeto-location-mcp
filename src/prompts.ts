@@ -1,10 +1,36 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
+// Simple zero-argument prompt for testing
+export function locationCountPrompt(server: McpServer) {
+  const prompt = server.prompt(
+    'location_count',
+    'Get a count of all locations you manage',
+    async (_extra) => {
+      return {
+        messages: [
+          {
+            role: 'user' as const,
+            content: {
+              type: 'text' as const,
+              text: `Please use the get_locations tool to retrieve all my locations, then tell me:
+1. How many total locations I manage
+2. A brief summary of the locations (e.g., by country or region if applicable)
+
+Use the get_locations tool first, then provide your analysis.`
+            }
+          }
+        ]
+      };
+    }
+  );
+  prompt.enable();
+}
+
 // Example prompts that the user can use
 export function analyzeLocationPrompt(server: McpServer) {
-  server.prompt(
-    'analyze location',
+  const prompt = server.prompt(
+    'analyze_location',
     'Analyze location data from PinMeTo API and provide business insights',
     {
       storeId: z.string().describe('The store ID to analyze'),
@@ -15,7 +41,7 @@ export function analyzeLocationPrompt(server: McpServer) {
           "Type of analysis to perform: 'summary', 'marketing', 'operational', or 'competitive'. Defaults to 'summary'"
         )
     },
-    async (args: { storeId: string; analysisType?: string }) => {
+    async (args: { storeId: string; analysisType?: string }, _extra) => {
       const { storeId, analysisType = 'summary' } = args;
       return {
         messages: [
@@ -37,16 +63,17 @@ export function analyzeLocationPrompt(server: McpServer) {
       };
     }
   );
+  prompt.enable();
 }
 
 export function summarizeAllInsightsPrompt(server: McpServer) {
-  server.prompt(
-    'summarize all insights',
-    'Summarize insights across Facebook, Google, and Apple for a location, formatted as a table.',
+  const prompt = server.prompt(
+    'summarize_all_insights',
+    'Summarize insights across Facebook, Google, and Apple for a location, formatted as a table',
     {
       storeId: z.string().describe('The store ID to summarize insights for')
     },
-    async (args: { storeId: string }) => {
+    async (args: { storeId: string }, _extra) => {
       const { storeId } = args;
       return {
         messages: [
@@ -76,4 +103,5 @@ Use the tools above to fetch the data, then present your summary and recommendat
       };
     }
   );
+  prompt.enable();
 }

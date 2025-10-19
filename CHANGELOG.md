@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.0.4 - 2025-10-18
+
+### Added
+- Smart data aggregation system with 6 levels (daily/weekly/monthly/quarterly/yearly/total) - reduces token usage by 97-99%
+- MCP tool annotations (readOnlyHint, idempotentHint, openWorldHint)
+
+### Changed
+- Default format changed from `json` to `markdown`
+- Markdown formatters completely redesigned - 40-85% token reduction
+- Insights now show categorized metrics with only non-zero values
+- Ratings display with stars, distribution bars, and recent reviews
+- Keywords show top 15 by impressions
+- Locations show condensed format with emojis and status badges
+
+## 1.0.3 - 2025-10-17
+
+### Added
+- Format parameter on all tools (`json` or `markdown`)
+- Pagination control with `maxPages` parameter on `get_locations`
+- Response truncation (100k character limit)
+- Input validation with regex for date parameters
+- Comprehensive tool descriptions with use cases and examples
+
+### Changed
+- Enhanced error messages with actionable troubleshooting steps
+
+### Fixed
+- GitHub npx installation - added `prepare` script to auto-build after install
+
 ## 1.0.0 - 2025-09-25
 
 Initial release
