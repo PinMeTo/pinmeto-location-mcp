@@ -1,5 +1,4 @@
 const { writeFileSync } = require('fs');
-const { execSync } = require('child_process');
 const { version, description, name } = require('./package.json');
 
 // Generate dynamic version postfix for test builds
@@ -10,28 +9,18 @@ function getVersionPostfix() {
 
   const basePostfix = process.env.VERSION_POSTFIX;
 
-  // Try to get git commit hash
-  let gitHash = '';
-  try {
-    gitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
-  } catch (e) {
-    // Git not available or not a git repo
-  }
-
-  // Generate timestamp-based identifier (YYYYMMDD-HHMMSS)
+  // Generate timestamp-based identifier (YYYYMMDDHHMMSS)
+  // Using dot separator for better semver compatibility
   const now = new Date();
   const timestamp = now
     .toISOString()
     .replace(/[-:]/g, '')
-    .replace(/T/, '-')
+    .replace(/T/, '')
     .replace(/\..+/, '')
-    .slice(0, 15); // YYYYMMDD-HHMMSS
+    .slice(0, 14); // YYYYMMDDHHMMSS
 
-  // Combine: test-gitHash-timestamp or test-timestamp
-  if (gitHash) {
-    return `${basePostfix}-${gitHash}-${timestamp}`;
-  }
-  return `${basePostfix}-${timestamp}`;
+  // Format: test.YYYYMMDDHHMMSS (e.g., test.20250119143022)
+  return `${basePostfix}.${timestamp}`;
 }
 
 const versionWithPostfix = process.env.VERSION_POSTFIX
