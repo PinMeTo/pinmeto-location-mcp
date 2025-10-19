@@ -7,6 +7,13 @@ import {
   formatLocationMarkdown,
   AggregationLevel
 } from '../../helpers.js';
+import type {
+  InsightsData,
+  RatingsData,
+  PlatformResult,
+  PlatformResultWithType,
+  PlatformData
+} from '../../types.js';
 
 /**
  * Helper to calculate previous year date range
@@ -28,8 +35,8 @@ function getPreviousYearDates(fromDate: string, toDate: string): { from: string;
  * Helper to format Y-o-Y comparison markdown
  */
 function formatYoYComparison(
-  currentData: any,
-  previousData: any,
+  currentData: InsightsData,
+  previousData: InsightsData,
   platform: string,
   currentPeriod: { from: string; to: string },
   previousPeriod: { from: string; to: string },
@@ -225,7 +232,7 @@ This is a high-performance composite tool that makes multiple API calls in paral
       const selectedPlatforms = platforms || ['google', 'facebook', 'apple'];
 
       // Build API requests for selected platforms
-      const requests: Promise<{ platform: string; data: any; error?: string }>[] = [];
+      const requests: Promise<PlatformResult>[] = [];
 
       if (selectedPlatforms.includes('google')) {
         requests.push(
@@ -277,16 +284,16 @@ This is a high-performance composite tool that makes multiple API calls in paral
             jsonResponse.data[result.platform.toLowerCase()] = {
               error: result.error
             };
-          } else {
+          } else if (result.data) {
             // Aggregate data if needed
             const isRawApiFormat = Array.isArray(result.data) &&
               result.data.length > 0 &&
-              result.data[0]?.metrics &&
+              'metrics' in result.data[0] &&
               Array.isArray(result.data[0].metrics);
 
             if (isRawApiFormat) {
               jsonResponse.data[result.platform.toLowerCase()] = aggregateInsightsData(
-                result.data,
+                result.data as InsightsData,
                 aggregation as AggregationLevel
               );
             } else {
@@ -311,15 +318,15 @@ This is a high-performance composite tool that makes multiple API calls in paral
       let errorCount = 0;
 
       for (const result of results) {
-        if (result.error) {
+        if (result.error || !result.data) {
           report += `## ${result.platform} ⚠️\n\n`;
-          report += `*Failed to fetch data: ${result.error}*\n\n`;
+          report += `*Failed to fetch data${result.error ? `: ${result.error}` : ''}*\n\n`;
           report += '---\n\n';
           errorCount++;
         } else {
           report += formatInsightsMarkdown(
             `${result.platform} (All Locations)`,
-            result.data,
+            result.data as InsightsData,
             undefined,
             aggregation as AggregationLevel
           );
@@ -414,13 +421,7 @@ Perfect for:
       const previousYear = getPreviousYearDates(current_from, current_to);
 
       // Build all API requests
-      const requests: Promise<{
-        platform: string;
-        type: 'insights' | 'ratings';
-        period: 'current' | 'previous';
-        data: any;
-        error?: string;
-      }>[] = [];
+      const requests: Promise<PlatformResultWithType>[] = [];
 
       // Google insights
       if (selectedPlatforms.includes('google')) {
@@ -558,16 +559,7 @@ Perfect for:
       const results = await Promise.all(requests);
 
       // Organize results by platform
-      const platformData: Record<
-        string,
-        {
-          currentInsights?: any;
-          previousInsights?: any;
-          currentRatings?: any;
-          previousRatings?: any;
-          errors: string[];
-        }
-      > = {};
+      const platformData: Record<string, PlatformData> = {};
 
       for (const result of results) {
         if (!platformData[result.platform]) {
@@ -576,18 +568,18 @@ Perfect for:
 
         if (result.error) {
           platformData[result.platform].errors.push(result.error);
-        } else {
+        } else if (result.data) {
           if (result.type === 'insights') {
             if (result.period === 'current') {
-              platformData[result.platform].currentInsights = result.data;
+              platformData[result.platform].currentInsights = result.data as InsightsData;
             } else {
-              platformData[result.platform].previousInsights = result.data;
+              platformData[result.platform].previousInsights = result.data as InsightsData;
             }
           } else if (result.type === 'ratings') {
             if (result.period === 'current') {
-              platformData[result.platform].currentRatings = result.data;
+              platformData[result.platform].currentRatings = result.data as RatingsData;
             } else {
-              platformData[result.platform].previousRatings = result.data;
+              platformData[result.platform].previousRatings = result.data as RatingsData;
             }
           }
         }
@@ -692,7 +684,7 @@ Perfect for:
 /**
  * Helper to format ratings comparison
  */
-function formatRatingsComparison(currentRatings: any[], previousRatings: any[]): string {
+function formatRatingsComparison(currentRatings: RatingsData, previousRatings: RatingsData): string {
   const currentTotal = currentRatings.length;
   const previousTotal = previousRatings.length;
 

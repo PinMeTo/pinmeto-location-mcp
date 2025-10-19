@@ -1,4 +1,14 @@
 import { PinMeToApiError } from './mcp_server.js';
+import type {
+  Location,
+  InsightsData,
+  RatingsData,
+  KeywordsData,
+  MetricData,
+  AggregatedInsights,
+  AggregationLevel,
+  PaginatedResponse
+} from './types.js';
 
 const MAX_RESPONSE_CHARS = 25000; // ~25k tokens (MCP best practice)
 
@@ -6,30 +16,8 @@ const MAX_RESPONSE_CHARS = 25000; // ~25k tokens (MCP best practice)
 // AGGREGATION TYPES & HELPERS
 // ============================================================================
 
-export type AggregationLevel = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'total';
-
-/**
- * Metric data structure from API
- */
-interface MetricData {
-  key: string; // Metric name like "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH"
-  metrics: Array<{
-    key: string; // Date like "2024-09-05"
-    value: number;
-  }>;
-}
-
-/**
- * Aggregated insights result
- */
-interface AggregatedInsights {
-  aggregation: AggregationLevel;
-  dateRange: { from: string; to: string };
-  periods: Array<{
-    period: string; // e.g., "2024-09-01 to 2024-09-07" or "Total"
-    metrics: Record<string, number>; // metric key -> total value
-  }>;
-}
+// Re-export AggregationLevel for backward compatibility
+export type { AggregationLevel } from './types.js';
 
 /**
  * Helper to get week number from date
@@ -142,8 +130,8 @@ export function aggregateInsightsData(
   };
 }
 
-export function formatListResponse(
-  response: any[],
+export function formatListResponse<T>(
+  response: T[],
   areAllPagesFetched: boolean,
   options?: {
     offset?: number;
@@ -188,7 +176,7 @@ export function formatListResponse(
   return JSON.stringify(paginatedResponse, null, 2);
 }
 
-export function truncateResponse(data: any): [string, boolean] {
+export function truncateResponse(data: unknown): [string, boolean] {
   const jsonStr = JSON.stringify(data, null, 2);
 
   // Handle when JSON.stringify returns undefined (e.g., for undefined input)
@@ -207,7 +195,7 @@ export function truncateResponse(data: any): [string, boolean] {
   return [truncated + message, true];
 }
 
-export function formatLocationMarkdown(location: any): string {
+export function formatLocationMarkdown(location: Location): string {
   if (!location) return 'No location data available.';
 
   let md = '# Location Details\n\n';
@@ -299,7 +287,7 @@ export function formatLocationMarkdown(location: any): string {
  */
 export function formatInsightsMarkdown(
   platform: string,
-  insights: any,
+  insights: InsightsData,
   storeId?: string,
   aggregation: AggregationLevel = 'total'
 ): string {
@@ -477,7 +465,7 @@ function formatMetricName(key: string): string {
     .trim();
 }
 
-export function formatRatingsMarkdown(platform: string, ratings: any, storeId?: string): string {
+export function formatRatingsMarkdown(platform: string, ratings: RatingsData, storeId?: string): string {
   if (!ratings) return `No ${platform} ratings available.`;
 
   let md = `# ${platform} Ratings\n\n`;
@@ -539,7 +527,7 @@ export function formatRatingsMarkdown(platform: string, ratings: any, storeId?: 
   return md;
 }
 
-export function formatKeywordsMarkdown(keywords: any, storeId?: string, limit: number | 'all' = 15): string {
+export function formatKeywordsMarkdown(keywords: KeywordsData, storeId?: string, limit: number | 'all' = 15): string {
   if (!keywords) return 'No keyword data available.';
 
   let md = '# Google Keywords\n\n';

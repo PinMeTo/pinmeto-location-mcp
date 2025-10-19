@@ -75,27 +75,27 @@ export class PinMeToMcpServer extends McpServer {
 
       const response = await axios.get(url, { headers, timeout: 30000 });
       return response.data;
-    } catch (e: any) {
+    } catch (error: unknown) {
       // Enhance error handling to preserve HTTP status codes
-      if (axios.isAxiosError(e)) {
-        if (e.response) {
-          const status = e.response.status;
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          const status = error.response.status;
           console.error(`API request failed with status ${status}: ${url}`);
           throw new PinMeToApiError(`API request failed with status ${status}`, status, 'http_error');
-        } else if (e.code === 'ECONNABORTED') {
+        } else if (error.code === 'ECONNABORTED') {
           console.error(`Request timeout: ${url}`);
           throw new PinMeToApiError('Request timed out', undefined, 'timeout');
-        } else if (e.code === 'ENOTFOUND' || e.code === 'ECONNREFUSED') {
+        } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
           console.error(`Network error: ${url}`);
           throw new PinMeToApiError('Network error - unable to reach API', undefined, 'network_error');
         }
       }
-      console.error(`Request failed: ${e}`);
+      console.error(`Request failed: ${error}`);
       throw new PinMeToApiError('Request failed', undefined, 'unknown');
     }
   }
 
-  public async makePaginatedPinMeToRequest<T = any>(
+  public async makePaginatedPinMeToRequest<T = unknown>(
     url: string,
     maxPages?: number
   ): Promise<[T[], boolean]> {
