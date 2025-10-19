@@ -18,10 +18,12 @@ jobs:
         run: |
           npm ci
           npm i @anthropic-ai/mcpb -g
-      - name: Build MCP Desktop Extension
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm test
+      - name: Package MCP Desktop Extension
         run: |
-          npm run build
-          npm ci --production
           rm manifest.js
           mcpb pack
       - name: Release

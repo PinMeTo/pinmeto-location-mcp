@@ -14,21 +14,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
-      - run: npm run build
       - name: Install dependencies
         run: |
-          npm install
-          npm run build
           npm ci
           npm i @anthropic-ai/mcpb -g
+      - name: Build
+        run: npm run build
       - name: Test
-        run: npm run test
-      - name: Build MCP Desktop Extension
+        run: npm test
+      - name: Package MCP Desktop Extension
         run: |
-          npm install
-          npm run build
-          npm ci --production
           rm manifest.js
           mcpb pack
       - name: Upload mcpb file
