@@ -1,0 +1,55 @@
+{
+  "paging": {},
+  "data": [
+    {
+      "description": {
+        "short": "Built for multi-location brands, PinMeTo is a location marketing tool for online presence management.",
+        "long": "PinMeTo is a leading Swedish SaaS company specialized in location management for multi-location businesses."
+      },
+      "location": {
+        "lat": 55.60738341830076,
+        "lon": 13.000980588840322
+      },
+      "name": "PinMeTo",
+      "address": {
+        "street": "Adelgatan 9",
+        "zip": "211 22",
+        "city": "Malmö",
+        "state": "Skåne County",
+        "country": "Sweden",
+        "countryAlpha2Code": "SE"
+      },
+      "contact": {
+        "email": "hello@pinmeto.com",
+        "homepage": "https://www.pinmeto.com",
+        "phone": "+46 73-142 59 13"
+      },
+      "storeId": "1337"
+    },
+    {
+      "description": {
+        "short": "Built for multi-location brands PinMeTo is a location marketing tool for online presence management.",
+        "long": "PinMeTo is a SaaS platform that connects multi-location brands with the biggest search, map, and social media platforms."
+      },
+      "location": {
+        "lat": 59.333742,
+        "lon": 18.045284
+      },
+      "name": "PinMeTo",
+      "address": {
+        "street": "Fleminggatan 18",
+        "zip": "11226",
+        "city": "Stockholm",
+        "state": "Stockholm County",
+        "country": "Sweden",
+        "countryAlpha2Code": "SE"
+      },
+      "contact": {
+        "phone": "+46 73 5087826",
+        "email": "info@pinmeto.com",
+        "homepage": "https://www.pinmeto.com"
+      },
+      "storeId": "666"
+    }
+  ]
+}
