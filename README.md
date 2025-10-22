@@ -267,3 +267,102 @@ Below are instructions on how to manually integrate the PinMeTo MCP with Cursor 
 - `Facebook Location Ratings` Get Facebook location ratings for specific location.
 - `All Apple Insights` Get all Apple location insights for site locations.
 - `Apple Location Insights` Get Apple location insights for specific location.
+
+---
+
+## Time Aggregation for Token Reduction
+
+All insights tools (Google, Facebook, and Apple) support **time aggregation** to significantly reduce token usage. **By default, all insights are aggregated to a single total value**, providing maximum token efficiency. You can optionally request different aggregation periods for more granular analysis.
+
+### Benefits
+
+- **Total** (default): Single aggregated value - maximum token reduction
+- **Daily**: Full granularity, no aggregation
+- **Weekly**: ~85% token reduction (7 days → 1 data point)
+- **Monthly**: ~96% token reduction (30 days → 1 data point)
+- **Quarterly**: ~98% token reduction (90 days → 1 data point)
+- **Half-yearly**: ~99% token reduction (180 days → 1 data point)
+- **Yearly**: ~99.7% token reduction (365 days → 1 data point)
+
+### Usage
+
+The `aggregation` parameter is optional and defaults to `"total"`:
+
+```json
+{
+  "storeId": "1337",
+  "from": "2024-01-01",
+  "to": "2024-12-31"
+}
+```
+
+**Returns a single total value by default** (maximum token reduction)
+
+To get different time periods, specify the `aggregation` parameter:
+
+```json
+{
+  "storeId": "1337",
+  "from": "2024-01-01",
+  "to": "2024-12-31",
+  "aggregation": "monthly"
+}
+```
+
+### Examples
+
+**Get total metrics (default behavior):**
+```javascript
+// Returns a single aggregated value
+{
+  "from": "2024-01-01",
+  "to": "2024-12-31"
+}
+```
+
+**Get yearly trends (monthly aggregation):**
+```javascript
+// Returns 12 data points instead of 365
+{
+  "storeId": "1337",
+  "from": "2024-01-01",
+  "to": "2024-12-31",
+  "aggregation": "monthly"
+}
+```
+
+**Get quarterly business review:**
+```javascript
+// Returns 4 data points for the year
+{
+  "from": "2024-01-01",
+  "to": "2024-12-31",
+  "aggregation": "quarterly"
+}
+```
+
+**Get daily data (full granularity):**
+```javascript
+// Returns 365 individual data points
+{
+  "from": "2024-01-01",
+  "to": "2024-12-31",
+  "aggregation": "daily"
+}
+```
+
+### Supported Tools
+
+Time aggregation works with all insights tools:
+- Google: `get_google_location_insights`, `get_all_google_insights`
+- Facebook: `get_facebook_location_insights`, `get_all_facebook_insights`, `get_all_facebook_brandpage_insights`
+- Apple: `get_apple_location_insights`, `get_all_apple_insights`
+
+### How It Works
+
+1. The MCP server fetches daily metrics from the PinMeTo API
+2. Metrics are grouped by the specified time period (week, month, etc.)
+3. Values are summed within each period
+4. Aggregated data is returned in the same format as daily data
+
+This client-side aggregation ensures compatibility with the PinMeTo API while dramatically reducing token consumption for AI interactions.

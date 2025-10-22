@@ -1,0 +1,16 @@
+[
+    {
+      "id": "AbFvOqlgffxMZMnxxgshN3NuDKS7z6berNd6qg2WSw4thFRyNem6JkcTNVBdns_L51G8hVfa1rCwHQ",
+      "date": "2025-09-30",
+      "rating": 5,
+      "hasAnswer": true,
+      "storeId": "1337"
+    },
+    {
+      "id": "AbFvOqmSZqXmPh5-hCVjAosQwmz_XrDXteh64dAOK65u2xQqNhji0slQdYwixc5x1leDj4zBujvVwg",
+      "date": "2025-09-12",
+      "rating": 5,
+      "hasAnswer": true,
+      "storeId": "171206"
+    }
+  ]

@@ -1,11 +1,15 @@
 const { writeFileSync } = require('fs');
 const { version, description, name } = require('./package.json');
 
+// Support VERSION_POSTFIX environment variable for test builds
+const versionPostfix = process.env.VERSION_POSTFIX;
+const finalVersion = versionPostfix ? `${version}-${versionPostfix}` : version;
+
 const manifest = {
   manifest_version: '0.2',
   name: name,
   display_name: description,
-  version: version,
+  version: finalVersion,
   description: 'Connect with your PinMeTo location data.',
   long_description:
     'The PinMeTo MCP Server enables seamless integration between the PinMeTo platform and AI agents such as Claude LLM, allowing users to interact with their location data and business insights through natural language. This server exposes a suite of tools that let you retrieve, analyze, and summarize data from multiple sources—including Google, Facebook, and Apple—covering metrics such as impressions, clicks, ratings, and more.',
@@ -70,3 +74,7 @@ const manifest = {
 };
 
 writeFileSync('manifest.json', JSON.stringify(manifest, null, 2));
+
+if (versionPostfix) {
+  console.log(`✓ Generated manifest.json with version: ${finalVersion}`);
+}
