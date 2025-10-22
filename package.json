@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "release": "npm publish ./build",
-    "clean": "rimraf build",
+    "clean": "node -e \"require('fs').rmSync('build', {recursive: true, force: true})\"",
     "build": "npm run clean && node manifest.js && tsc && cp package.json build/",
     "prepare": "npm run build",
     "start": "NODE_ENV=development node build/index.js",
@@ -38,7 +38,6 @@
   "devDependencies": {
     "@types/node": "^24.5.1",
     "prettier": "^3.6.2",
-    "rimraf": "^6.0.1",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }
