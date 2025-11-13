@@ -5,9 +5,11 @@
   "main": "index.js",
   "scripts": {
     "release": "npm publish ./build",
-    "build": "node manifest.js && tsc && cp package.json build/ && node update-build-version.js",
+    "build": "npm run clean && node manifest.js && tsc && cp package.json build/ && node update-build-version.js",
     "build:test": "VERSION_POSTFIX=test-$(date -u +%Y%m%dT%H%M%SZ) npm run build",
     "pack:test": "npm run build:test && npx @anthropic-ai/mcpb pack",
+    "clean": "node -e \"require('fs').rmSync('build', {recursive: true, force: true})\"",
+    "prepare": "npm run build",
     "start": "NODE_ENV=development node build/index.js",
     "format": "prettier --write \"**/*.{js,ts}\"",
     "inspector": "NODE_ENV=development npx @modelcontextprotocol/inspector",
@@ -32,8 +34,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.0",
     "axios": "^1.12.2",
-    "zod": "^3.25.76",
-    "dotenv": "^17.2.2"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^24.5.1",
