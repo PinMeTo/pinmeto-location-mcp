@@ -31,7 +31,7 @@ jobs:
         run: |
           npm install
           npm run build
-          npm ci --production
+          npm ci --production --ignore-scripts
           rm manifest.js
           mcpb pack
       - name: Upload mcpb file
