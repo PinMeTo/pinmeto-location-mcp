@@ -5,8 +5,10 @@
   "main": "index.js",
   "scripts": {
     "release": "npm publish ./build",
+    "build": "npm run clean && node manifest.js && tsc && cp package.json build/ && node update-build-version.js",
+    "build:test": "VERSION_POSTFIX=test-$(date -u +%Y%m%dT%H%M%SZ) npm run build",
+    "pack:test": "npm run build:test && npx @anthropic-ai/mcpb pack",
     "clean": "node -e \"require('fs').rmSync('build', {recursive: true, force: true})\"",
-    "build": "npm run clean && node manifest.js && tsc && cp package.json build/",
     "prepare": "npm run build",
     "start": "NODE_ENV=development node build/index.js",
     "format": "prettier --write \"**/*.{js,ts}\"",
