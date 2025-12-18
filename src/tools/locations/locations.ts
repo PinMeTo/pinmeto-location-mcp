@@ -1,15 +1,18 @@
 import { z } from 'zod';
 import { formatListResponse } from '../../helpers';
 import { PinMeToMcpServer } from '../../mcp_server';
+import { LocationOutputSchema, LocationsOutputSchema } from '../../schemas/output';
 
 export function getLocation(server: PinMeToMcpServer) {
   server.registerTool(
     'get_location',
     {
-      description: 'Get location details for a store from PinMeTo API',
+      description:
+        'Get location details for a store from PinMeTo API. Returns structured location data including address, contact info, and network connections.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up')
       },
+      outputSchema: LocationOutputSchema,
       annotations: {
         readOnlyHint: true
       }
@@ -27,7 +30,8 @@ export function getLocation(server: PinMeToMcpServer) {
               type: 'text',
               text: 'Unable to fetch location data.'
             }
-          ]
+          ],
+          structuredContent: { error: 'Unable to fetch location data.' }
         };
       }
 
@@ -37,7 +41,8 @@ export function getLocation(server: PinMeToMcpServer) {
             type: 'text',
             text: JSON.stringify(locationData)
           }
-        ]
+        ],
+        structuredContent: { data: locationData }
       };
     }
   );
@@ -79,13 +84,14 @@ export function getLocations(server: PinMeToMcpServer) {
     'get_locations',
     {
       description:
-        'Get all location details for the site from PinMeTo API. Use this to find store ids for locations.',
+        'Get all location details for the site from PinMeTo API. Use this to find store ids for locations. Returns an array of locations with pagination status.',
       inputSchema: {
         fields: z
           .array(FieldsEnum)
           .optional()
           .describe('Fields to include in the response (optional, defaults to all)')
       },
+      outputSchema: LocationsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
@@ -110,7 +116,12 @@ export function getLocations(server: PinMeToMcpServer) {
               type: 'text',
               text: 'Unable to fetch location data.'
             }
-          ]
+          ],
+          structuredContent: {
+            data: [],
+            allPagesFetched: false,
+            error: 'Unable to fetch location data.'
+          }
         };
       }
       return {
@@ -119,7 +130,8 @@ export function getLocations(server: PinMeToMcpServer) {
             type: 'text',
             text: formatListResponse(data, areAllPagesFetched)
           }
-        ]
+        ],
+        structuredContent: { data, allPagesFetched: areAllPagesFetched }
       };
     }
   );

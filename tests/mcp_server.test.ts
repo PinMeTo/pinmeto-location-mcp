@@ -239,6 +239,74 @@ describe('Tool Annotations', () => {
   });
 });
 
+describe('Output Schemas', () => {
+  it('should include outputSchema in all tool definitions', async () => {
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    // Capture responses from the server
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        const parsed = JSON.parse(chunk.toString());
+        responses.push(parsed);
+      } catch {
+        // Not JSON, ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    // Send initialize request
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Send tools/list request
+    testTransport.onmessage?.({
+      method: 'tools/list',
+      params: {},
+      jsonrpc: '2.0',
+      id: 1
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Restore stdout
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    // Find the tools/list response
+    const toolsResponse = responses.find(r => r.id === 1);
+    expect(toolsResponse).toBeDefined();
+    expect(toolsResponse.result).toBeDefined();
+    expect(toolsResponse.result.tools).toBeDefined();
+
+    const tools = toolsResponse.result.tools;
+    expect(tools.length).toBe(15);
+
+    // Verify each tool has outputSchema defined
+    for (const tool of tools) {
+      expect(tool.outputSchema).toBeDefined();
+      expect(typeof tool.outputSchema).toBe('object');
+      // Verify outputSchema has required properties
+      expect(tool.outputSchema.type).toBe('object');
+      expect(tool.outputSchema.properties).toBeDefined();
+    }
+  });
+});
+
 describe('Initialize Handler', () => {
   it('should return server capabilities, not client capabilities', async () => {
     const server = createMcpServer();

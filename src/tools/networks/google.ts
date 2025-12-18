@@ -1,13 +1,18 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
 import { aggregateMetrics, AggregationPeriod } from '../../helpers';
+import {
+  InsightsOutputSchema,
+  RatingsOutputSchema,
+  KeywordsOutputSchema
+} from '../../schemas/output';
 
 export function getGoogleLocationInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'get_google_location_insights',
     {
       description:
-        'Fetch Google metrics for a single location belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
+        'Fetch Google metrics for a single location belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         from: z.string().describe('The start date format YYYY-MM-DD'),
@@ -20,6 +25,7 @@ export function getGoogleLocationInsights(server: PinMeToMcpServer) {
             'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
           )
       },
+      outputSchema: InsightsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
@@ -47,7 +53,8 @@ export function getGoogleLocationInsights(server: PinMeToMcpServer) {
               type: 'text',
               text: 'Unable to fetch insights data.'
             }
-          ]
+          ],
+          structuredContent: { error: 'Unable to fetch insights data.' }
         };
       }
 
@@ -60,7 +67,8 @@ export function getGoogleLocationInsights(server: PinMeToMcpServer) {
             type: 'text',
             text: JSON.stringify(aggregatedData)
           }
-        ]
+        ],
+        structuredContent: { data: aggregatedData }
       };
     }
   );
@@ -71,7 +79,7 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
     'get_all_google_insights',
     {
       description:
-        'Fetch Google metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
+        'Fetch Google metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         from: z.string().describe('The start date format YYYY-MM-DD'),
         to: z.string().describe('The end date format YYYY-MM-DD'),
@@ -83,6 +91,7 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
             'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
           )
       },
+      outputSchema: InsightsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
@@ -107,7 +116,8 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
               type: 'text',
               text: 'Unable to fetch insights data.'
             }
-          ]
+          ],
+          structuredContent: { error: 'Unable to fetch insights data.' }
         };
       }
 
@@ -120,7 +130,8 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
             type: 'text',
             text: JSON.stringify(aggregatedData)
           }
-        ]
+        ],
+        structuredContent: { data: aggregatedData }
       };
     }
   );
@@ -130,11 +141,13 @@ export const getAllGoogleRatings = (server: PinMeToMcpServer) => {
   server.registerTool(
     'get_all_google_ratings',
     {
-      description: 'Fetch Google ratings for all locations belonging to a specific account.',
+      description:
+        'Fetch Google ratings for all locations belonging to a specific account. Returns structured ratings data.',
       inputSchema: {
         from: z.string().describe('The start date format YYYY-MM-DD'),
         to: z.string().describe('The end date format YYYY-MM-DD')
       },
+      outputSchema: RatingsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
@@ -143,24 +156,26 @@ export const getAllGoogleRatings = (server: PinMeToMcpServer) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const url = `${apiBaseUrl}/listings/v3/${accountId}/ratings/google?from=${from}&to=${to}`;
-      const insightsData = await server.makePinMeToRequest(url);
-      if (!insightsData) {
+      const ratingsData = await server.makePinMeToRequest(url);
+      if (!ratingsData) {
         return {
           content: [
             {
               type: 'text',
               text: 'Unable to fetch ratings data.'
             }
-          ]
+          ],
+          structuredContent: { error: 'Unable to fetch ratings data.' }
         };
       }
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(insightsData)
+            text: JSON.stringify(ratingsData)
           }
-        ]
+        ],
+        structuredContent: { data: ratingsData }
       };
     }
   );
@@ -170,12 +185,14 @@ export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
   server.registerTool(
     'get_google_location_ratings',
     {
-      description: 'Fetch Google ratings for a given location belonging to a specific account.',
+      description:
+        'Fetch Google ratings for a given location belonging to a specific account. Returns structured ratings data.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         from: z.string().describe('The start date format YYYY-MM-DD'),
         to: z.string().describe('The end date format YYYY-MM-DD')
       },
+      outputSchema: RatingsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
@@ -184,16 +201,17 @@ export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/ratings/google/${storeId}?from=${from}&to=${to}`;
-      const locationData = await server.makePinMeToRequest(locationUrl);
+      const ratingsData = await server.makePinMeToRequest(locationUrl);
 
-      if (!locationData) {
+      if (!ratingsData) {
         return {
           content: [
             {
               type: 'text',
               text: 'Unable to fetch ratings data.'
             }
-          ]
+          ],
+          structuredContent: { error: 'Unable to fetch ratings data.' }
         };
       }
 
@@ -201,9 +219,10 @@ export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(locationData)
+            text: JSON.stringify(ratingsData)
           }
-        ]
+        ],
+        structuredContent: { data: ratingsData }
       };
     }
   );
@@ -213,11 +232,13 @@ export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
   server.registerTool(
     'get_google_keywords',
     {
-      description: 'Fetch Google keywords for all locations belonging to a specific account',
+      description:
+        'Fetch Google keywords for all locations belonging to a specific account. Returns structured keywords data.',
       inputSchema: {
         from: z.string().describe('The start date format YYYY-MM'),
         to: z.string().describe('The end date format YYYY-MM')
       },
+      outputSchema: KeywordsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
@@ -226,16 +247,17 @@ export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords?from=${from}&to=${to}`;
-      const locationData = await server.makePinMeToRequest(locationUrl);
+      const keywordsData = await server.makePinMeToRequest(locationUrl);
 
-      if (!locationData) {
+      if (!keywordsData) {
         return {
           content: [
             {
               type: 'text',
               text: 'Unable to fetch keywords data.'
             }
-          ]
+          ],
+          structuredContent: { error: 'Unable to fetch keywords data.' }
         };
       }
 
@@ -243,9 +265,10 @@ export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(locationData)
+            text: JSON.stringify(keywordsData)
           }
-        ]
+        ],
+        structuredContent: { data: keywordsData }
       };
     }
   );
@@ -255,12 +278,14 @@ export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
   server.registerTool(
     'get_google_keywords_for_location',
     {
-      description: 'Fetch Google keywords for a given location belonging to a specific account.',
+      description:
+        'Fetch Google keywords for a given location belonging to a specific account. Returns structured keywords data.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         from: z.string().describe('The start date format YYYY-MM'),
         to: z.string().describe('The end date format YYYY-MM')
       },
+      outputSchema: KeywordsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
@@ -269,16 +294,17 @@ export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords/${storeId}?from=${from}&to=${to}`;
-      const locationData = await server.makePinMeToRequest(locationUrl);
+      const keywordsData = await server.makePinMeToRequest(locationUrl);
 
-      if (!locationData) {
+      if (!keywordsData) {
         return {
           content: [
             {
               type: 'text',
               text: 'Unable to fetch keywords data.'
             }
-          ]
+          ],
+          structuredContent: { error: 'Unable to fetch keywords data.' }
         };
       }
 
@@ -286,9 +312,10 @@ export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(locationData)
+            text: JSON.stringify(keywordsData)
           }
-        ]
+        ],
+        structuredContent: { data: keywordsData }
       };
     }
   );
