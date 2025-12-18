@@ -1,13 +1,14 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
 import { aggregateMetrics, AggregationPeriod } from '../../helpers';
+import { InsightsOutputSchema, RatingsOutputSchema } from '../../schemas/output';
 
 export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'get_facebook_location_insights',
     {
       description:
-        'Fetch Facebook metrics for a single location belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
+        'Fetch Facebook metrics for a single location belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         from: z.string().describe('The start date format YYYY-MM-DD'),
@@ -20,6 +21,7 @@ export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
             'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
           )
       },
+      outputSchema: InsightsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
@@ -47,7 +49,8 @@ export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
               type: 'text',
               text: 'Unable to fetch insights data.'
             }
-          ]
+          ],
+          structuredContent: { error: 'Unable to fetch insights data.' }
         };
       }
 
@@ -60,7 +63,8 @@ export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
             type: 'text',
             text: JSON.stringify(aggregatedData)
           }
-        ]
+        ],
+        structuredContent: { data: aggregatedData }
       };
     }
   );
@@ -71,7 +75,7 @@ export function getAllFacebookInsights(server: PinMeToMcpServer) {
     'get_all_facebook_insights',
     {
       description:
-        'Fetch Facebook metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
+        'Fetch Facebook metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         from: z.string().describe('The start date format YYYY-MM-DD'),
         to: z.string().describe('The end date format YYYY-MM-DD'),
@@ -83,6 +87,7 @@ export function getAllFacebookInsights(server: PinMeToMcpServer) {
             'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
           )
       },
+      outputSchema: InsightsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
@@ -107,7 +112,8 @@ export function getAllFacebookInsights(server: PinMeToMcpServer) {
               type: 'text',
               text: 'Unable to fetch insights data.'
             }
-          ]
+          ],
+          structuredContent: { error: 'Unable to fetch insights data.' }
         };
       }
 
@@ -120,7 +126,8 @@ export function getAllFacebookInsights(server: PinMeToMcpServer) {
             type: 'text',
             text: JSON.stringify(aggregatedData)
           }
-        ]
+        ],
+        structuredContent: { data: aggregatedData }
       };
     }
   );
@@ -131,7 +138,7 @@ export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
     'get_all_facebook_brandpage_insights',
     {
       description:
-        'Fetch Facebook metrics for all brand pages belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
+        'Fetch Facebook metrics for all brand pages belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         from: z.string().describe('The start date format YYYY-MM-DD'),
         to: z.string().describe('The end date format YYYY-MM-DD'),
@@ -143,6 +150,7 @@ export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
             'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
           )
       },
+      outputSchema: InsightsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
@@ -167,7 +175,8 @@ export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
               type: 'text',
               text: 'Unable to fetch insights data.'
             }
-          ]
+          ],
+          structuredContent: { error: 'Unable to fetch insights data.' }
         };
       }
 
@@ -180,7 +189,8 @@ export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
             type: 'text',
             text: JSON.stringify(aggregatedData)
           }
-        ]
+        ],
+        structuredContent: { data: aggregatedData }
       };
     }
   );
@@ -190,11 +200,13 @@ export const getAllFacebookRatings = (server: PinMeToMcpServer) => {
   server.registerTool(
     'get_all_facebook_ratings',
     {
-      description: 'Fetch Facebook ratings for all locations belonging to a specific account.',
+      description:
+        'Fetch Facebook ratings for all locations belonging to a specific account. Returns structured ratings data.',
       inputSchema: {
         from: z.string().describe('The start date format YYYY-MM-DD'),
         to: z.string().describe('The end date format YYYY-MM-DD')
       },
+      outputSchema: RatingsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
@@ -202,24 +214,26 @@ export const getAllFacebookRatings = (server: PinMeToMcpServer) => {
     async ({ from, to }: { from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const url = `${apiBaseUrl}/listings/v3/${accountId}/ratings/facebook?from=${from}&to=${to}`;
-      const insightsData = await server.makePinMeToRequest(url);
-      if (!insightsData) {
+      const ratingsData = await server.makePinMeToRequest(url);
+      if (!ratingsData) {
         return {
           content: [
             {
               type: 'text',
               text: 'Unable to fetch ratings data.'
             }
-          ]
+          ],
+          structuredContent: { error: 'Unable to fetch ratings data.' }
         };
       }
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(insightsData)
+            text: JSON.stringify(ratingsData)
           }
-        ]
+        ],
+        structuredContent: { data: ratingsData }
       };
     }
   );
@@ -229,12 +243,14 @@ export const getFacebookLocationRatings = (server: PinMeToMcpServer) => {
   server.registerTool(
     'get_facebook_location_ratings',
     {
-      description: 'Fetch Facebook ratings for a given location belonging to a specific account.',
+      description:
+        'Fetch Facebook ratings for a given location belonging to a specific account. Returns structured ratings data.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         from: z.string().describe('The start date format YYYY-MM-DD'),
         to: z.string().describe('The end date format YYYY-MM-DD')
       },
+      outputSchema: RatingsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
@@ -243,16 +259,17 @@ export const getFacebookLocationRatings = (server: PinMeToMcpServer) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/ratings/facebook/${storeId}?from=${from}&to=${to}`;
-      const locationData = await server.makePinMeToRequest(locationUrl);
+      const ratingsData = await server.makePinMeToRequest(locationUrl);
 
-      if (!locationData) {
+      if (!ratingsData) {
         return {
           content: [
             {
               type: 'text',
               text: 'Unable to fetch ratings data.'
             }
-          ]
+          ],
+          structuredContent: { error: 'Unable to fetch ratings data.' }
         };
       }
 
@@ -260,9 +277,10 @@ export const getFacebookLocationRatings = (server: PinMeToMcpServer) => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(locationData)
+            text: JSON.stringify(ratingsData)
           }
-        ]
+        ],
+        structuredContent: { data: ratingsData }
       };
     }
   );

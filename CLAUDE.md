@@ -8,7 +8,7 @@ This is an MCP (Model Context Protocol) server that provides AI agents like Clau
 
 Use mcp builders skill when developing on the MCP server. It should be used for reviewing and best practices when developing the MCP.
 
-See [AGENTS.md](AGENTS.md) for issue tracking workflow using **bd** (beads) and session completion guidelines.
+See [AGENTS.md](@AGENTS.md) for issue tracking workflow using **bd** (beads) and session completion guidelines.
 
 ## Development Commands
 
@@ -62,11 +62,18 @@ export function getLocation(server: PinMeToMcpServer) {
       inputSchema: {
         storeId: z.string().describe('The store ID to look up')
       },
+      outputSchema: LocationOutputSchema,  // Zod schema for output validation
       annotations: {
         readOnlyHint: true
       }
     },
-    async (args) => { /* handler implementation */ }
+    async (args) => {
+      const data = await server.makePinMeToRequest(url);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(data) }],
+        structuredContent: { data }  // Typed output for AI clients
+      };
+    }
   );
 }
 ```
@@ -85,6 +92,8 @@ src/
 ├── configs.ts            # Environment config validation
 ├── helpers.ts            # Time aggregation and response formatting
 ├── prompts.ts            # Prompt templates for common workflows
+├── schemas/
+│   └── output.ts         # Shared Zod output schemas for tools
 └── tools/
     ├── locations/        # Location data tools
     │   └── locations.ts
@@ -98,10 +107,12 @@ src/
 
 1. Create tool registration function in appropriate module under `src/tools/`
 2. Define Zod schema for input validation
-3. Implement handler using `server.makePinMeToRequest()` or `server.makePaginatedPinMeToRequest()`
-4. For insights tools, apply `aggregateMetrics()` before returning data
-5. Add appropriate tool annotations (see Tool Annotations section below)
-6. Register tool in `createMcpServer()` function in `src/mcp_server.ts`
+3. Define or reuse output schema from `src/schemas/output.ts`
+4. Implement handler using `server.makePinMeToRequest()` or `server.makePaginatedPinMeToRequest()`
+5. Return both `content` (text) and `structuredContent` (typed data) from handler
+6. For insights tools, apply `aggregateMetrics()` before returning data
+7. Add appropriate tool annotations (see Tool Annotations section below)
+8. Register tool in `createMcpServer()` function in `src/mcp_server.ts`
 
 ## Tool Annotations
 
@@ -144,6 +155,54 @@ server.registerTool(
 - Set `idempotentHint: true` if repeated calls with same args have no additional effect
 
 Tool annotations are defined in the [MCP specification](https://modelcontextprotocol.io/docs/concepts/tools) and help AI agents plan better by understanding tool side effects.
+
+## Output Schemas
+
+All tools define output schemas using Zod, enabling AI clients to understand and validate response structures. Tools return both text content and structured data for maximum compatibility.
+
+### Available Output Schemas (`src/schemas/output.ts`)
+
+- **InsightsOutputSchema** - For Google, Facebook, and Apple insights tools
+- **RatingsOutputSchema** - For ratings tools across all networks
+- **KeywordsOutputSchema** - For Google keywords tools
+- **LocationOutputSchema** - For single location retrieval
+- **LocationsOutputSchema** - For multiple locations with pagination status
+
+### Output Pattern
+
+All tools return both `content` (text representation) and `structuredContent` (typed data):
+
+```typescript
+// Success response
+return {
+  content: [{ type: 'text', text: JSON.stringify(data) }],
+  structuredContent: { data: aggregatedData }
+};
+
+// Error response
+return {
+  content: [{ type: 'text', text: 'Unable to fetch data.' }],
+  structuredContent: { error: 'Unable to fetch data.' }
+};
+```
+
+### Creating New Output Schemas
+
+When adding tools with new response structures:
+
+1. Define the schema in `src/schemas/output.ts` using Zod
+2. Export both the schema object and TypeScript type
+3. Include `data` wrapper for the main response and optional `error` field
+
+```typescript
+export const NewOutputSchema = {
+  data: z.array(z.object({
+    id: z.string(),
+    value: z.number()
+  })).describe('Description of the data'),
+  error: z.string().optional().describe('Error message if request failed')
+};
+```
 
 ## Testing
 
