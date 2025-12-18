@@ -1,12 +1,14 @@
 # PinMeTo Location MCP
 
+[![version](https://img.shields.io/badge/version-v1.0.2-blue)](https://github.com/PinMeTo/pinmeto-location-mcp/releases/tag/v1.0.2) [![download](https://img.shields.io/badge/download-.mcpb-green)](https://github.com/PinMeTo/pinmeto-location-mcp/releases/download/v1.0.2/pinmeto-location-mcp.mcpb) [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-007ACC?logo=visualstudiocode)](vscode:mcp/install?name=pinmeto-location-mcp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40pinmeto%2Fpinmeto-location-mcp%22%5D%2C%22env%22%3A%7B%22PINMETO_ACCOUNT_ID%22%3A%22%24%7Binput%3Apinmeto-account-id%7D%22%2C%22PINMETO_APP_ID%22%3A%22%24%7Binput%3Apinmeto-app-id%7D%22%2C%22PINMETO_APP_SECRET%22%3A%22%24%7Binput%3Apinmeto-app-secret%7D%22%7D%7D) [![Install in Cursor](https://img.shields.io/badge/Cursor-Install-000000?logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=PinMeTo&config=eyJ0eXBlIjoic3RkaW8iLCJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwaW5tZXRvL3Bpbm1ldG8tbG9jYXRpb24tbWNwIl0sImVudiI6eyJQSU5NRVRPX0FDQ09VTlRfSUQiOiIke2lucHV0OnBpbm1ldG8tYWNjb3VudC1pZH0iLCJQSU5NRVRPX0FQUF9JRCI6IiR7aW5wdXQ6cGlubWV0by1hcHAtaWR9IiwiUElOTUVUT19BUFBfU0VDUkVUIjoiJHtpbnB1dDpwaW5tZXRvLWFwcC1zZWNyZXR9In19)
+
 The [PinMeTo](https://www.pinmeto.com/) MCP Server enables seamless integration between the [PinMeTo platform](https://places.pinmeto.com/) and AI agents such as Claude LLM, allowing users to interact with their location data and business insights through natural language. This server exposes a suite of tools that let you retrieve, analyze, and summarize data from PinMeTo, through multiple sources—including Google, Facebook, and Apple—covering metrics such as impressions, clicks, ratings, and more.
 
 ---
 
 ## Installation
 
-The MCP Server can be built from this repository, or a single-click installer is available for Claude Desktop.
+The MCP Server can be installed with one click in **Claude Desktop**, **VS Code**, or **Cursor** using the badges above. Manual installation instructions are also available below.
 
 ---
 
@@ -144,129 +146,33 @@ Below are instructions on how to manually integrate the PinMeTo MCP with Claude 
 6. **Restart Claude Desktop:**
    - Ensure all permissions are granted. You should now see "PinMeTo MCP" in your MCP selection.
 
-<!-- ---
-
-## Cursor: Direct Link Installation
-
-Below are instructions on how to manually integrate the PinMeTo MCP with Cursor using a direct link:
-
-### Prerequisites (Cursor: Direct Link Installation)
-
-- **Node.js v22+** (recommended: [NVM](https://github.com/nvm-sh/nvm))
-- **npm** (included with Node.js)
-
-### Installation (Cursor: Direct Link Installation)
-
-1. **Clone the repository:**
-
-    ```zsh
-    git clone https://github.com/PinMeTo/pinmeto-location-mcp.git
-    ```
-
-2. **Open your project folder** in your text editor.
-
-    ```zsh
-    cd pinmeto-location-mcp
-    ```
-
-3. **Install dependencies and build the project:**
-
-   ```bash
-   npm install
-   npm run build
-   ```
-
-4. **Copy the link and paste it in your browser.**
-
-    ```bash
-    cursor://anysphere.cursor-deeplink/mcp/install?name=PinMeTo&config=eyJlbnYiOnsiUElOTUVUT19BUElfVVJMIjoiIiwiUElOTUVUT19BQ0NPVU5UX0lEIjoiIiwiUElOTUVUT19BUFBfSUQiOiIiLCJQSU5NRVRPX0FQUF9TRUNSRVQiOiIifSwiY29tbWFuZCI6Ii9hYnNvbHV0ZS9wYXRoL3RvL25vZGUgL2Fic29sdXRlL3BhdGgvdG8vcHJvamVjdC9idWlsZC9pbmRleC5qcyJ9
-    ```
-
-Enter your credentials.
-
-- Use absolute paths for both Node and your project:
-  - Node path: `which node`
-  - Project path: `pwd`
-
-![Cursor Configuration](img/cursor_config.png)
-
 ---
-
-## Cursor: Manual Installation
-
-Below are instructions on how to manually integrate the PinMeTo MCP with Cursor manually:
-
-### Prerequisites (Cursor: Manual Installation)
-
-- **Node.js v22+** (recommended: [NVM](https://github.com/nvm-sh/nvm))
-- **npm** (included with Node.js)
-
-### Installation (Cursor: Manual Installation)
-
-1. **Clone the repository:**
-
-    ```zsh
-    git clone https://github.com/PinMeTo/pinmeto-location-mcp.git
-    ```
-
-2. **Open your project folder** in your text editor.
-
-    ```zsh
-    cd pinmeto-location-mcp
-    ```
-
-3. **Install dependencies and build the project:**
-
-   ```bash
-   npm install
-   npm run build
-   ```
-
-4. **To add this MCP server to Cursor**:
-
-    1. Go to **Settings → Cursor Settings → MCP**.
-    2. Click **+ Add New MCP Server**. This opens an `mcp.json` file.
-    3. Add the same JSON configuration as shown in the Claude Desktop instructions.
-
-        ```json
-        {
-        "mcpServers": {
-            "PinMeTo": {
-            "command": "/absolute/path/to/node",
-            "args": ["/absolute/path/to/project/build/index.js"],
-            "env": {
-                "PINMETO_API_URL": "",
-                "PINMETO_ACCOUNT_ID": "",
-                "PINMETO_APP_ID": "",
-                "PINMETO_APP_SECRET": ""
-            }
-            }
-        }
-        }
-        ```
-
-**Tip:**
-
-- `~/.cursor/mcp.json` is your global MCP settings.
-- `.cursor/mcp.json` is project-specific. For most cases, add the server to your project-specific file.
-
---- -->
 
 ## Available Tools
 
-- `Get Location` - Get pinmeto data on single location.
-- `Get Locations` - Get all location data for site.
-- `All Google Insights` - Get all Google insights for site locations.
-- `Google Location Insights` - Get Google location insights for specific location.
-- `Google Location Ratings` - Get Google location ratings for specific location.
-- `All Google Keywords` - Get all Google keywords for your locations.
-- `Google Location Keywords` - Get Google location keywords for a specific location.
-- `All Facebook Insights` - Get all Facebook location insights for specific location.
-- `Facebook Location Insights` - Get Facebook location insights for specific location.
-- `Facebook Brandpage Insights` - Get Facebook insights for specific brandpage.
-- `Facebook Location Ratings` Get Facebook location ratings for specific location.
-- `All Apple Insights` Get all Apple location insights for site locations.
-- `Apple Location Insights` Get Apple location insights for specific location.
+### Location Tools
+- `get_location` - Get PinMeTo data for a single location
+- `get_locations` - Get all location data with pagination, filtering, and caching
+- `search_locations` - Lightweight location search for quick discovery
+
+### Google Tools
+- `get_all_google_insights` - Get Google insights for all locations
+- `get_google_location_insights` - Get Google insights for a specific location
+- `get_all_google_ratings` - Get Google ratings for all locations
+- `get_google_location_ratings` - Get Google ratings for a specific location
+- `get_google_keywords` - Get Google keywords for all locations
+- `get_google_keywords_for_location` - Get Google keywords for a specific location
+
+### Facebook Tools
+- `get_all_facebook_insights` - Get Facebook insights for all locations
+- `get_facebook_location_insights` - Get Facebook insights for a specific location
+- `get_all_facebook_brandpage_insights` - Get Facebook brandpage insights
+- `get_all_facebook_ratings` - Get Facebook ratings for all locations
+- `get_facebook_location_ratings` - Get Facebook ratings for a specific location
+
+### Apple Tools
+- `get_all_apple_insights` - Get Apple insights for all locations
+- `get_apple_location_insights` - Get Apple insights for a specific location
 
 ---
 
