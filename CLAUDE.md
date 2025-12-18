@@ -22,6 +22,7 @@ bd close bd-a1b2 "Completed authentication"
 ```
 
 Do not set a bead to closed before its PR have been approved.
+When starting on a new bead set it to in-progres and asign it to the curent git user
 
 ## Development Commands
 
