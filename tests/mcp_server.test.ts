@@ -705,6 +705,161 @@ describe('Search Locations', () => {
       'Main Headquarters'
     );
   });
+
+  it('should return error response when API request fails', async () => {
+    // Mock API failure - returns empty array with incomplete pagination
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations') && url.includes('fields=')) {
+        // Simulate network error
+        return Promise.reject(new Error('Network error'));
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        responses.push(JSON.parse(chunk.toString()));
+      } catch {
+        // ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    testTransport.onmessage?.({
+      method: 'tools/call',
+      params: {
+        name: 'search_locations',
+        arguments: { query: 'Stockholm' }
+      },
+      jsonrpc: '2.0',
+      id: 1
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    const searchResponse = responses.find(r => r.id === 1);
+    expect(searchResponse).toBeDefined();
+    expect(searchResponse.result.structuredContent.error).toBe(
+      'Unable to fetch location data for search.'
+    );
+    expect(searchResponse.result.structuredContent.data).toEqual([]);
+    expect(searchResponse.result.structuredContent.totalMatches).toBe(0);
+    expect(searchResponse.result.structuredContent.hasMore).toBe(false);
+  });
+
+  it('should handle locations with null or missing address fields gracefully', async () => {
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations') && url.includes('fields=')) {
+        return Promise.resolve({
+          data: {
+            data: [
+              // Completely missing address
+              { storeId: '1', name: 'Location No Address' },
+              // address is null
+              { storeId: '2', name: 'Location Null Address', address: null },
+              // address has null fields
+              { storeId: '3', name: 'Location Partial', address: { street: null, city: 'Oslo', country: null } },
+              // Normal location for comparison
+              { storeId: '4', name: 'Location Complete', address: { street: 'Main St', city: 'Bergen', country: 'Norway' } }
+            ],
+            paging: {}
+          }
+        });
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        responses.push(JSON.parse(chunk.toString()));
+      } catch {
+        // ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Search for "Location" to match all
+    testTransport.onmessage?.({
+      method: 'tools/call',
+      params: {
+        name: 'search_locations',
+        arguments: { query: 'Location' }
+      },
+      jsonrpc: '2.0',
+      id: 1
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    const searchResponse = responses.find(r => r.id === 1);
+    expect(searchResponse).toBeDefined();
+    expect(searchResponse.result.structuredContent.data).toHaveLength(4);
+
+    // Missing address should show "No address"
+    expect(searchResponse.result.structuredContent.data[0].addressSummary).toBe('No address');
+    // Null address should show "No address"
+    expect(searchResponse.result.structuredContent.data[1].addressSummary).toBe('No address');
+    // Partial address should only show non-null fields
+    expect(searchResponse.result.structuredContent.data[2].addressSummary).toBe('Oslo');
+    // Complete address should show all fields
+    expect(searchResponse.result.structuredContent.data[3].addressSummary).toBe('Main St, Bergen, Norway');
+  });
 });
 
 describe('Initialize Handler', () => {

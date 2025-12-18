@@ -175,7 +175,8 @@ export function searchLocations(server: PinMeToMcpServer) {
       const url = `${locationsApiBaseUrl}/v4/${accountId}/locations?pagesize=1000&${fieldsParam}`;
       const [data, areAllPagesFetched] = await server.makePaginatedPinMeToRequest(url);
 
-      if (!data) {
+      // Detect API failure: empty array + incomplete pagination = first page failed
+      if (data.length === 0 && !areAllPagesFetched) {
         return {
           content: [{ type: 'text', text: 'Unable to fetch location data for search.' }],
           structuredContent: {

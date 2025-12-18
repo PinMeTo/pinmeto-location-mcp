@@ -104,7 +104,7 @@ export const SearchResultOutputSchema = {
       })
     )
     .describe('Matching locations with minimal data for discovery'),
-  totalMatches: z.number().describe('Total number of locations matching the query'),
+  totalMatches: z.number().nonnegative().describe('Total number of locations matching the query'),
   hasMore: z.boolean().describe('Whether more results exist beyond the limit'),
   error: z.string().optional().describe('Error message if the request failed')
 };
