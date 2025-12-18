@@ -9,6 +9,19 @@ This is an MCP (Model Context Protocol) server that provides AI agents like Clau
 Use mcp builders skill when developing on the MCP server. It should be used for reviewing and best practices when developing the MCP.
 
 See [AGENTS.md](@AGENTS.md) for issue tracking workflow using **bd** (beads) and session completion guidelines.
+## Beads
+```bash
+# Create issues
+bd create "Implement user authentication" -t feature -p 1
+
+# Update issues
+bd update bd-a1b2 --status in_progress
+
+# Close issues
+bd close bd-a1b2 "Completed authentication"
+```
+
+Do not set a bead to closed before its PR have been approved.
 
 ## Development Commands
 
@@ -248,6 +261,77 @@ The search matches against these fields (case-insensitive substring):
   totalMatches: 5,   // Total matching locations
   hasMore: true      // More results exist beyond limit
 }
+```
+
+## Pagination, Filtering, and Caching
+
+`get_locations` supports pagination, filtering, and uses an in-memory cache for efficient queries on large datasets (5000+ locations).
+
+### Caching
+
+- **TTL**: 5 minutes (data refreshes automatically)
+- **forceRefresh**: Set to `true` to bypass cache
+- **cacheInfo**: Response includes cache status (cached, ageSeconds, totalCached)
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | number | 50 | Max results (max: 1000) |
+| `offset` | number | 0 | Skip N results |
+| `permanentlyClosed` | boolean | - | Filter by closure status |
+| `type` | string | - | "location" or "serviceArea" |
+| `city` | string | - | Filter by city (case-insensitive) |
+| `country` | string | - | Filter by country (case-insensitive) |
+| `forceRefresh` | boolean | false | Bypass cache TTL |
+| `fields` | array | all | Specific fields to return |
+
+### Response Structure
+
+```typescript
+{
+  data: [...],                          // Paginated location objects
+  totalCount: 150,                      // Total matching filters
+  hasMore: true,                        // More results available
+  offset: 0,                            // Current position
+  limit: 50,                            // Requested limit
+  cacheInfo: {
+    cached: true,                       // Was data from cache?
+    ageSeconds: 120,                    // Cache age in seconds
+    totalCached: 5000                   // Total locations in cache
+  }
+}
+```
+
+### Examples
+
+```typescript
+// First page (default: limit=50)
+{ }
+
+// Next page
+{ offset: 50 }
+
+// Custom page size
+{ limit: 100, offset: 200 }
+
+// Filter by city (case-insensitive)
+{ city: "Stockholm" }
+
+// Filter by country
+{ country: "Sweden" }
+
+// Only open locations
+{ permanentlyClosed: false }
+
+// Combined filters
+{ city: "Stockholm", permanentlyClosed: false, limit: 20 }
+
+// Force fresh data (bypass cache)
+{ forceRefresh: true }
+
+// Select specific fields only
+{ fields: ["storeId", "name", "address"] }
 ```
 
 ## Testing

@@ -80,12 +80,25 @@ export const LocationOutputSchema = {
 };
 
 /**
+ * Cache information schema for location queries
+ */
+export const CacheInfoSchema = z.object({
+  cached: z.boolean().describe('Whether data was served from cache'),
+  ageSeconds: z.number().optional().describe('Cache age in seconds'),
+  totalCached: z.number().optional().describe('Total locations in cache')
+});
+
+/**
  * Output schema for multiple locations retrieval
- * Returns array of locations with pagination status
+ * Returns array of locations with pagination metadata and cache info
  */
 export const LocationsOutputSchema = {
   data: z.array(z.record(z.unknown())).describe('Array of location objects'),
-  allPagesFetched: z.boolean().describe('Whether all pages were successfully retrieved'),
+  totalCount: z.number().nonnegative().describe('Total locations matching filters'),
+  hasMore: z.boolean().describe('Whether more results exist beyond offset+limit'),
+  offset: z.number().nonnegative().describe('Current offset position'),
+  limit: z.number().positive().describe('Requested limit'),
+  cacheInfo: CacheInfoSchema.optional().describe('Cache status information'),
   error: z.string().optional().describe('Error message if the request failed')
 };
 

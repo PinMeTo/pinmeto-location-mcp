@@ -101,9 +101,29 @@ describe('PinMeToMcpServer', () => {
 });
 
 describe('Locations', () => {
-  it('should call Location APIs', async () => {
+  it('should call Location APIs via cache', async () => {
+    // Mock the API response with location data
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations') && url.includes('pagesize=1000')) {
+        return Promise.resolve({
+          data: {
+            data: [
+              { _id: '123', storeId: '1', name: 'Test Location', address: { city: 'Stockholm' } }
+            ],
+            paging: {}
+          }
+        });
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
     const server = createMcpServer();
-    const spy = vi.spyOn(server, 'makePinMeToRequest');
+    const spy = vi.spyOn(server, 'makePaginatedPinMeToRequest');
 
     const testTransport = new StdioServerTransport();
 
@@ -134,8 +154,9 @@ describe('Locations', () => {
 
     await new Promise(resolve => setTimeout(resolve, 1000));
     await testTransport.close();
+    // Cache now fetches all data without field filtering at API level
     expect(spy).toHaveBeenCalledWith(
-      `${testLocationApiBaseUrl}/v4/test_account/locations?pagesize=1000&fields=_id`
+      `${testLocationApiBaseUrl}/v4/test_account/locations?pagesize=1000`
     );
   });
 });
@@ -790,9 +811,17 @@ describe('Search Locations', () => {
               // address is null
               { storeId: '2', name: 'Location Null Address', address: null },
               // address has null fields
-              { storeId: '3', name: 'Location Partial', address: { street: null, city: 'Oslo', country: null } },
+              {
+                storeId: '3',
+                name: 'Location Partial',
+                address: { street: null, city: 'Oslo', country: null }
+              },
               // Normal location for comparison
-              { storeId: '4', name: 'Location Complete', address: { street: 'Main St', city: 'Bergen', country: 'Norway' } }
+              {
+                storeId: '4',
+                name: 'Location Complete',
+                address: { street: 'Main St', city: 'Bergen', country: 'Norway' }
+              }
             ],
             paging: {}
           }
@@ -858,7 +887,9 @@ describe('Search Locations', () => {
     // Partial address should only show non-null fields
     expect(searchResponse.result.structuredContent.data[2].addressSummary).toBe('Oslo');
     // Complete address should show all fields
-    expect(searchResponse.result.structuredContent.data[3].addressSummary).toBe('Main St, Bergen, Norway');
+    expect(searchResponse.result.structuredContent.data[3].addressSummary).toBe(
+      'Main St, Bergen, Norway'
+    );
   });
 });
 
@@ -916,5 +947,342 @@ describe('Initialize Handler', () => {
     // Verify serverInfo is also returned
     expect(initResponse.result.serverInfo).toBeDefined();
     expect(initResponse.result.serverInfo.name).toBe('PinMeTo Location MCP');
+  });
+});
+
+describe('get_locations pagination', () => {
+  const setupMockLocations = (locations: any[]) => {
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations')) {
+        return Promise.resolve({
+          data: {
+            data: locations,
+            paging: {}
+          }
+        });
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+  };
+
+  const callGetLocations = async (args: any) => {
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        responses.push(JSON.parse(chunk.toString()));
+      } catch {
+        // ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    testTransport.onmessage?.({
+      method: 'tools/call',
+      params: { name: 'get_locations', arguments: args },
+      jsonrpc: '2.0',
+      id: 1
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    return responses.find(r => r.id === 1);
+  };
+
+  it('should use default pagination (limit=50, offset=0)', async () => {
+    const locations = Array.from({ length: 100 }, (_, i) => ({
+      storeId: String(i + 1),
+      name: `Location ${i + 1}`,
+      address: { city: 'Stockholm' }
+    }));
+    setupMockLocations(locations);
+
+    const response = await callGetLocations({});
+
+    expect(response.result.structuredContent.data).toHaveLength(50);
+    expect(response.result.structuredContent.totalCount).toBe(100);
+    expect(response.result.structuredContent.hasMore).toBe(true);
+    expect(response.result.structuredContent.offset).toBe(0);
+    expect(response.result.structuredContent.limit).toBe(50);
+  });
+
+  it('should respect custom limit parameter', async () => {
+    const locations = Array.from({ length: 100 }, (_, i) => ({
+      storeId: String(i + 1),
+      name: `Location ${i + 1}`,
+      address: { city: 'Stockholm' }
+    }));
+    setupMockLocations(locations);
+
+    const response = await callGetLocations({ limit: 10 });
+
+    expect(response.result.structuredContent.data).toHaveLength(10);
+    expect(response.result.structuredContent.totalCount).toBe(100);
+    expect(response.result.structuredContent.hasMore).toBe(true);
+    expect(response.result.structuredContent.limit).toBe(10);
+  });
+
+  it('should handle offset pagination', async () => {
+    const locations = Array.from({ length: 100 }, (_, i) => ({
+      storeId: String(i + 1),
+      name: `Location ${i + 1}`,
+      address: { city: 'Stockholm' }
+    }));
+    setupMockLocations(locations);
+
+    const response = await callGetLocations({ offset: 90, limit: 20 });
+
+    expect(response.result.structuredContent.data).toHaveLength(10); // Only 10 left
+    expect(response.result.structuredContent.totalCount).toBe(100);
+    expect(response.result.structuredContent.hasMore).toBe(false);
+    expect(response.result.structuredContent.offset).toBe(90);
+  });
+
+  it('should filter by permanentlyClosed', async () => {
+    setupMockLocations([
+      { storeId: '1', name: 'Open Location', permanentlyClosed: false },
+      { storeId: '2', name: 'Closed Location', permanentlyClosed: true },
+      { storeId: '3', name: 'Another Open', permanentlyClosed: false }
+    ]);
+
+    const response = await callGetLocations({ permanentlyClosed: false });
+
+    expect(response.result.structuredContent.data).toHaveLength(2);
+    expect(response.result.structuredContent.totalCount).toBe(2);
+    expect(response.result.structuredContent.data[0].name).toBe('Open Location');
+  });
+
+  it('should filter by type', async () => {
+    setupMockLocations([
+      { storeId: '1', name: 'Location 1', type: 'location' },
+      { storeId: '2', name: 'Service Area', type: 'serviceArea' },
+      { storeId: '3', name: 'Location 2', type: 'location' }
+    ]);
+
+    const response = await callGetLocations({ type: 'serviceArea' });
+
+    expect(response.result.structuredContent.data).toHaveLength(1);
+    expect(response.result.structuredContent.data[0].name).toBe('Service Area');
+  });
+
+  it('should filter by city (case-insensitive)', async () => {
+    setupMockLocations([
+      { storeId: '1', name: 'Location 1', address: { city: 'Stockholm' } },
+      { storeId: '2', name: 'Location 2', address: { city: 'STOCKHOLM' } },
+      { storeId: '3', name: 'Location 3', address: { city: 'Malmö' } }
+    ]);
+
+    const response = await callGetLocations({ city: 'stockholm' });
+
+    expect(response.result.structuredContent.data).toHaveLength(2);
+    expect(response.result.structuredContent.totalCount).toBe(2);
+  });
+
+  it('should filter by country (case-insensitive)', async () => {
+    setupMockLocations([
+      { storeId: '1', name: 'Location 1', address: { country: 'Sweden' } },
+      { storeId: '2', name: 'Location 2', address: { country: 'Norway' } },
+      { storeId: '3', name: 'Location 3', address: { country: 'sweden' } }
+    ]);
+
+    const response = await callGetLocations({ country: 'SWEDEN' });
+
+    expect(response.result.structuredContent.data).toHaveLength(2);
+    expect(response.result.structuredContent.totalCount).toBe(2);
+  });
+
+  it('should handle combined filters', async () => {
+    setupMockLocations([
+      {
+        storeId: '1',
+        name: 'Open Stockholm',
+        permanentlyClosed: false,
+        address: { city: 'Stockholm' }
+      },
+      {
+        storeId: '2',
+        name: 'Closed Stockholm',
+        permanentlyClosed: true,
+        address: { city: 'Stockholm' }
+      },
+      { storeId: '3', name: 'Open Malmö', permanentlyClosed: false, address: { city: 'Malmö' } }
+    ]);
+
+    const response = await callGetLocations({ permanentlyClosed: false, city: 'Stockholm' });
+
+    expect(response.result.structuredContent.data).toHaveLength(1);
+    expect(response.result.structuredContent.data[0].name).toBe('Open Stockholm');
+  });
+
+  it('should handle large offset beyond results', async () => {
+    setupMockLocations([
+      { storeId: '1', name: 'Location 1' },
+      { storeId: '2', name: 'Location 2' }
+    ]);
+
+    const response = await callGetLocations({ offset: 100 });
+
+    expect(response.result.structuredContent.data).toHaveLength(0);
+    expect(response.result.structuredContent.totalCount).toBe(2);
+    expect(response.result.structuredContent.hasMore).toBe(false);
+  });
+
+  it('should calculate hasMore correctly', async () => {
+    const locations = Array.from({ length: 10 }, (_, i) => ({
+      storeId: String(i + 1),
+      name: `Location ${i + 1}`
+    }));
+    setupMockLocations(locations);
+
+    // Exactly at boundary
+    const response1 = await callGetLocations({ limit: 10 });
+    expect(response1.result.structuredContent.hasMore).toBe(false);
+  });
+
+  it('should include cacheInfo in response', async () => {
+    setupMockLocations([{ storeId: '1', name: 'Test' }]);
+
+    const response = await callGetLocations({});
+
+    expect(response.result.structuredContent.cacheInfo).toBeDefined();
+    expect(response.result.structuredContent.cacheInfo.cached).toBe(true);
+    expect(typeof response.result.structuredContent.cacheInfo.ageSeconds).toBe('number');
+    expect(response.result.structuredContent.cacheInfo.totalCached).toBe(1);
+  });
+
+  it('should apply field selection', async () => {
+    setupMockLocations([
+      { storeId: '1', name: 'Test', address: { city: 'Stockholm' }, contact: { phone: '123' } }
+    ]);
+
+    const response = await callGetLocations({ fields: ['storeId', 'name'] });
+
+    expect(response.result.structuredContent.data[0]).toHaveProperty('storeId');
+    expect(response.result.structuredContent.data[0]).toHaveProperty('name');
+    expect(response.result.structuredContent.data[0]).not.toHaveProperty('address');
+    expect(response.result.structuredContent.data[0]).not.toHaveProperty('contact');
+  });
+});
+
+describe('LocationCache', () => {
+  it('should cache data and not re-fetch on repeated calls', async () => {
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations')) {
+        return Promise.resolve({
+          data: {
+            data: [{ storeId: '1', name: 'Test' }],
+            paging: {}
+          }
+        });
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+    const spy = vi.spyOn(server, 'makePaginatedPinMeToRequest');
+
+    // First call - should fetch
+    await server.locationCache.getLocations();
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    // Second call - should use cache
+    await server.locationCache.getLocations();
+    expect(spy).toHaveBeenCalledTimes(1); // Still 1, no additional fetch
+
+    // Force refresh - should fetch again
+    await server.locationCache.getLocations(true);
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it('should return correct cache info', async () => {
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations')) {
+        return Promise.resolve({
+          data: {
+            data: [{ storeId: '1' }, { storeId: '2' }, { storeId: '3' }],
+            paging: {}
+          }
+        });
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+
+    // Before fetch - cache is empty
+    const infoBeforeFetch = server.locationCache.getCacheInfo();
+    expect(infoBeforeFetch.cached).toBe(false);
+
+    // After fetch - cache is populated
+    await server.locationCache.getLocations();
+    const infoAfterFetch = server.locationCache.getCacheInfo();
+    expect(infoAfterFetch.cached).toBe(true);
+    expect(infoAfterFetch.size).toBe(3);
+    expect(typeof infoAfterFetch.age).toBe('number');
+  });
+
+  it('should invalidate cache', async () => {
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations')) {
+        return Promise.resolve({
+          data: {
+            data: [{ storeId: '1' }],
+            paging: {}
+          }
+        });
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+
+    // Populate cache
+    await server.locationCache.getLocations();
+    expect(server.locationCache.getCacheInfo().cached).toBe(true);
+
+    // Invalidate
+    server.locationCache.invalidate();
+    expect(server.locationCache.getCacheInfo().cached).toBe(false);
   });
 });
