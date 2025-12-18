@@ -20,6 +20,7 @@ export class LocationCache {
   private cache: CacheEntry | null = null;
   private ttlMs: number;
   private fetchFn: () => Promise<[any[], boolean]>;
+  private fetchPromise: Promise<[any[], boolean]> | null = null;
 
   /**
    * Creates a new LocationCache instance.
@@ -33,15 +34,55 @@ export class LocationCache {
 
   /**
    * Gets all locations from cache or fetches from API if cache is expired/empty.
+   * Uses promise deduplication to prevent concurrent fetches.
+   * On complete failure, returns stale cache if available.
    * @param forceRefresh - Bypass cache and fetch fresh data
    * @returns Tuple of [locations array, whether all pages were fetched]
    */
   async getLocations(forceRefresh = false): Promise<[any[], boolean]> {
+    // Return cached data if valid and not forcing refresh
     if (!forceRefresh && this.cache && !this.isExpired()) {
       return [this.cache.data, this.cache.allPagesFetched];
     }
 
+    // If a fetch is already in progress, wait for it (prevents race condition)
+    if (this.fetchPromise) {
+      return this.fetchPromise;
+    }
+
+    // Start fetch and store promise for deduplication
+    this.fetchPromise = this._performFetch();
+
+    try {
+      return await this.fetchPromise;
+    } finally {
+      this.fetchPromise = null;
+    }
+  }
+
+  /**
+   * Performs the actual fetch and updates cache appropriately.
+   * Only caches successful fetches or partial data.
+   * On complete failure, preserves stale cache if available.
+   */
+  private async _performFetch(): Promise<[any[], boolean]> {
     const [data, allPagesFetched] = await this.fetchFn();
+
+    // Complete failure: no data and pagination incomplete
+    if (data.length === 0 && !allPagesFetched) {
+      // If we have stale cache, return it instead of empty failure
+      if (this.cache && this.cache.data.length > 0) {
+        console.warn(
+          'Location fetch failed completely. Returning stale cache ' +
+            `(age: ${Math.floor((Date.now() - this.cache.timestamp) / 1000)}s, size: ${this.cache.data.length})`
+        );
+        return [this.cache.data, this.cache.allPagesFetched];
+      }
+      // No stale cache available, return the failure
+      return [data, allPagesFetched];
+    }
+
+    // Success or partial success: update cache
     this.cache = { data, timestamp: Date.now(), allPagesFetched };
     return [data, allPagesFetched];
   }

@@ -1285,4 +1285,129 @@ describe('LocationCache', () => {
     server.locationCache.invalidate();
     expect(server.locationCache.getCacheInfo().cached).toBe(false);
   });
+
+  it('should re-fetch when cache TTL expires', async () => {
+    vi.useFakeTimers();
+
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations')) {
+        return Promise.resolve({
+          data: {
+            data: [{ storeId: '1', name: 'Test' }],
+            paging: {}
+          }
+        });
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+    const spy = vi.spyOn(server, 'makePaginatedPinMeToRequest');
+
+    // First fetch
+    await server.locationCache.getLocations();
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    // Advance time by 4 minutes - should still use cache
+    vi.advanceTimersByTime(4 * 60 * 1000);
+    await server.locationCache.getLocations();
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    // Advance time beyond 5 minutes - should re-fetch
+    vi.advanceTimersByTime(2 * 60 * 1000);
+    await server.locationCache.getLocations();
+    expect(spy).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
+
+  it('should return stale cache on complete fetch failure', async () => {
+    let fetchCount = 0;
+
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations')) {
+        fetchCount++;
+        if (fetchCount === 1) {
+          // First fetch succeeds
+          return Promise.resolve({
+            data: {
+              data: [{ storeId: '1', name: 'Test' }],
+              paging: {}
+            }
+          });
+        } else {
+          // Subsequent fetches fail
+          return Promise.reject(new Error('Network error'));
+        }
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+
+    // First fetch - succeeds and caches
+    const [data1, complete1] = await server.locationCache.getLocations();
+    expect(data1).toHaveLength(1);
+    expect(complete1).toBe(true);
+
+    // Force refresh - fails, should return stale cache
+    const [data2, complete2] = await server.locationCache.getLocations(true);
+    expect(data2).toHaveLength(1);
+    expect(data2[0].storeId).toBe('1');
+    // Returns stale cache completeness status
+    expect(complete2).toBe(true);
+  });
+
+  it('should deduplicate concurrent requests', async () => {
+    let fetchCallCount = 0;
+
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations')) {
+        fetchCallCount++;
+        // Simulate slow API response
+        return new Promise(resolve => {
+          setTimeout(() => {
+            resolve({
+              data: {
+                data: [{ storeId: '1', name: 'Test' }],
+                paging: {}
+              }
+            });
+          }, 100);
+        });
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+
+    // Fire multiple concurrent requests
+    const promise1 = server.locationCache.getLocations();
+    const promise2 = server.locationCache.getLocations();
+    const promise3 = server.locationCache.getLocations();
+
+    // All should resolve to same data
+    const [result1, result2, result3] = await Promise.all([promise1, promise2, promise3]);
+
+    expect(result1[0]).toEqual(result2[0]);
+    expect(result2[0]).toEqual(result3[0]);
+
+    // Only one actual API call should have been made
+    expect(fetchCallCount).toBe(1);
+  });
 });

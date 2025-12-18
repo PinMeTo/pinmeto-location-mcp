@@ -151,6 +151,7 @@ export function getLocations(server: PinMeToMcpServer) {
             hasMore: false,
             offset,
             limit,
+            incomplete: true,
             error: 'Unable to fetch location data.'
           }
         };
@@ -194,6 +195,11 @@ export function getLocations(server: PinMeToMcpServer) {
       // 5. Get cache info
       const cacheInfo = server.locationCache.getCacheInfo();
 
+      // 6. Build response with optional warning for incomplete data
+      const warning = !allPagesFetched
+        ? 'Data may be incomplete due to API pagination errors. Use forceRefresh: true to retry.'
+        : undefined;
+
       return {
         content: [{ type: 'text', text: formatListResponse(paginatedData, allPagesFetched) }],
         structuredContent: {
@@ -202,6 +208,8 @@ export function getLocations(server: PinMeToMcpServer) {
           hasMore,
           offset,
           limit,
+          incomplete: !allPagesFetched,
+          warning,
           cacheInfo: {
             cached: cacheInfo.cached,
             ageSeconds: cacheInfo.age,

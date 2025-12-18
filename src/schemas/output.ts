@@ -98,6 +98,8 @@ export const LocationsOutputSchema = {
   hasMore: z.boolean().describe('Whether more results exist beyond offset+limit'),
   offset: z.number().nonnegative().describe('Current offset position'),
   limit: z.number().positive().describe('Requested limit'),
+  incomplete: z.boolean().describe('Whether data may be incomplete due to pagination errors'),
+  warning: z.string().optional().describe('Warning message if data may be incomplete'),
   cacheInfo: CacheInfoSchema.optional().describe('Cache status information'),
   error: z.string().optional().describe('Error message if the request failed')
 };
