@@ -80,7 +80,7 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
           .optional()
           .default('total')
           .describe(
-            'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregration, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
+            'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
           )
       },
       annotations: {

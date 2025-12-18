@@ -33,7 +33,7 @@ npm run clean              # Remove build directory
 
 ## Environment Configuration
 
-The server requires these environment variables (automatically loaded in development via `process.loadEnvFile()`):
+The server requires these environment variables (loaded via `--env-file=.env.local` in npm scripts):
 - `PINMETO_ACCOUNT_ID` - PinMeTo account identifier
 - `PINMETO_APP_ID` - OAuth application ID
 - `PINMETO_APP_SECRET` - OAuth application secret
