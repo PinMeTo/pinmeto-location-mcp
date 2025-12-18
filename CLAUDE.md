@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is an MCP (Model Context Protocol) server that provides AI agents like Claude with access to PinMeTo's location management platform. It exposes tools for fetching location data, insights from Google/Facebook/Apple, ratings, and keywords.
 
+Use mcp bulders skill when developing on the MCP server. It should be used for reviewing and best practices when developing the MCP.
+
 ## Development Commands
 
 ### Build and Test
