@@ -167,6 +167,7 @@ All tools define output schemas using Zod, enabling AI clients to understand and
 - **KeywordsOutputSchema** - For Google keywords tools
 - **LocationOutputSchema** - For single location retrieval
 - **LocationsOutputSchema** - For multiple locations with pagination status
+- **SearchResultOutputSchema** - For lightweight search results with pagination metadata
 
 ### Output Pattern
 
@@ -202,6 +203,51 @@ export const NewOutputSchema = {
   })).describe('Description of the data'),
   error: z.string().optional().describe('Error message if request failed')
 };
+```
+
+## Location Discovery Workflow
+
+Use `search_locations` for quick location discovery, then `get_location` for full details:
+
+### Search Examples
+
+```typescript
+// Search by name - finds "IKEA Malmö", "IKEA Stockholm", etc.
+{ query: "IKEA" }
+
+// Search by city - finds all locations in Stockholm
+{ query: "Stockholm" }
+
+// Search by storeId - exact match on store identifier
+{ query: "1337" }
+
+// Search by location descriptor
+{ query: "Headquarters" }
+
+// Limit results for large result sets
+{ query: "Sweden", limit: 10 }
+```
+
+### Search Fields
+
+The search matches against these fields (case-insensitive substring):
+- `name` - Location name
+- `storeId` - Unique store identifier
+- `locationDescriptor` - Additional location description
+- `address.street` - Street address
+- `address.city` - City name
+- `address.country` - Country name
+
+### Response Structure
+
+```typescript
+{
+  data: [
+    { storeId: "1337", name: "PinMeTo Malmö", locationDescriptor: "HQ", addressSummary: "Adelgatan 9, Malmö, Sweden" }
+  ],
+  totalMatches: 5,   // Total matching locations
+  hasMore: true      // More results exist beyond limit
+}
 ```
 
 ## Testing

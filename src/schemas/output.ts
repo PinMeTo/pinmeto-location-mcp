@@ -89,6 +89,26 @@ export const LocationsOutputSchema = {
   error: z.string().optional().describe('Error message if the request failed')
 };
 
+/**
+ * Output schema for location search results
+ * Returns lightweight location data for quick discovery
+ */
+export const SearchResultOutputSchema = {
+  data: z
+    .array(
+      z.object({
+        storeId: z.string().describe('Unique store identifier'),
+        name: z.string().describe('Location name'),
+        locationDescriptor: z.string().optional().describe('Location descriptor if available'),
+        addressSummary: z.string().describe('Formatted address: street, city, country')
+      })
+    )
+    .describe('Matching locations with minimal data for discovery'),
+  totalMatches: z.number().nonnegative().describe('Total number of locations matching the query'),
+  hasMore: z.boolean().describe('Whether more results exist beyond the limit'),
+  error: z.string().optional().describe('Error message if the request failed')
+};
+
 // ============================================================================
 // Type Exports
 // ============================================================================
