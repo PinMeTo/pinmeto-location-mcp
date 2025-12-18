@@ -25,7 +25,7 @@ interface InsightsData {
  */
 export function aggregateMetrics(
   data: InsightsData[],
-  period: AggregationPeriod = 'daily'
+  period: AggregationPeriod = 'total'
 ): InsightsData[] {
   // Return unchanged if daily or no data
   if (period === 'daily' || !data || data.length === 0) {

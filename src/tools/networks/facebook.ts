@@ -71,7 +71,7 @@ export function getAllFacebookInsights(server: PinMeToMcpServer) {
     'get_all_facebook_insights',
     {
       description:
-        'Fetch Facebook metrics for all brand pages belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
+        'Fetch Facebook metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
       inputSchema: {
         from: z.string().describe('The start date format YYYY-MM-DD'),
         to: z.string().describe('The end date format YYYY-MM-DD'),
