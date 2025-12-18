@@ -3,10 +3,6 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createMcpServer } from './mcp_server.js';
 
-if (process.env.NODE_ENV === 'development') {
-  process.loadEnvFile();
-}
-
 const server = createMcpServer();
 
 const transport = new StdioServerTransport();

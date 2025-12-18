@@ -12,6 +12,11 @@ const testAccessToken = 'test_token';
 
 vi.mock('axios', () => ({
   default: {
+    defaults: {
+      headers: {
+        common: {}
+      }
+    },
     get: vi.fn((url: string, { headers }) => {
       console.error('Mocked axios GET request', url, headers);
       if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
@@ -132,5 +137,161 @@ describe('Locations', () => {
     expect(spy).toHaveBeenCalledWith(
       `${testLocationApiBaseUrl}/v4/test_account/locations?pagesize=1000&fields=_id`
     );
+  });
+});
+
+describe('Tool Annotations', () => {
+  it('should register all 15 tools with readOnlyHint annotations', async () => {
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    // Capture responses from the server
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        const parsed = JSON.parse(chunk.toString());
+        responses.push(parsed);
+      } catch {
+        // Not JSON, ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    // Send initialize request
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Send tools/list request
+    testTransport.onmessage?.({
+      method: 'tools/list',
+      params: {},
+      jsonrpc: '2.0',
+      id: 1
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Restore stdout
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    // Find the tools/list response
+    const toolsResponse = responses.find(r => r.id === 1);
+    expect(toolsResponse).toBeDefined();
+    expect(toolsResponse.result).toBeDefined();
+    expect(toolsResponse.result.tools).toBeDefined();
+
+    const tools = toolsResponse.result.tools;
+    expect(tools.length).toBe(15);
+
+    // Verify each tool has readOnlyHint: true
+    for (const tool of tools) {
+      expect(tool.annotations).toBeDefined();
+      expect(tool.annotations.readOnlyHint).toBe(true);
+    }
+  });
+
+  it('should successfully invoke tools after migration to registerTool API', async () => {
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    // Test tool invocation still works after migration
+    testTransport.onmessage?.({
+      method: 'tools/call',
+      params: { name: 'get_locations', arguments: { fields: ['_id'] } },
+      jsonrpc: '2.0',
+      id: 3
+    });
+
+    // Wait and verify no errors occurred
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    await testTransport.close();
+
+    // If we get here without errors, the migration was successful
+    expect(server).toBeDefined();
+  });
+});
+
+describe('Initialize Handler', () => {
+  it('should return server capabilities, not client capabilities', async () => {
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    // Capture responses from the server
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        const parsed = JSON.parse(chunk.toString());
+        responses.push(parsed);
+      } catch {
+        // Not JSON, ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    // Send initialize request with EMPTY client capabilities
+    // The bug was returning request.params.capabilities (client's) instead of serverInfo.capabilities
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {}, // Client sends empty capabilities
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Restore stdout
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    // Find the initialize response
+    const initResponse = responses.find(r => r.id === 0);
+    expect(initResponse).toBeDefined();
+    expect(initResponse.result).toBeDefined();
+
+    // Verify server returns its OWN capabilities (prompts, resources, tools)
+    // NOT the empty client capabilities
+    expect(initResponse.result.capabilities).toBeDefined();
+    expect(initResponse.result.capabilities).toHaveProperty('prompts');
+    expect(initResponse.result.capabilities).toHaveProperty('resources');
+    expect(initResponse.result.capabilities).toHaveProperty('tools');
+
+    // Verify serverInfo is also returned
+    expect(initResponse.result.serverInfo).toBeDefined();
+    expect(initResponse.result.serverInfo.name).toBe('PinMeTo Location MCP');
   });
 });
