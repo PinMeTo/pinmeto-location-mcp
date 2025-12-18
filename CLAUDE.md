@@ -8,6 +8,8 @@ This is an MCP (Model Context Protocol) server that provides AI agents like Clau
 
 Use mcp builders skill when developing on the MCP server. It should be used for reviewing and best practices when developing the MCP.
 
+See [AGENTS.md](AGENTS.md) for issue tracking workflow using **bd** (beads) and session completion guidelines.
+
 ## Development Commands
 
 ### Build and Test
