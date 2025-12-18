@@ -195,7 +195,7 @@ describe('Tool Annotations', () => {
     expect(toolsResponse.result.tools).toBeDefined();
 
     const tools = toolsResponse.result.tools;
-    expect(tools.length).toBe(15);
+    expect(tools.length).toBe(16);
 
     // Verify each tool has readOnlyHint: true
     for (const tool of tools) {
@@ -294,7 +294,7 @@ describe('Output Schemas', () => {
     expect(toolsResponse.result.tools).toBeDefined();
 
     const tools = toolsResponse.result.tools;
-    expect(tools.length).toBe(15);
+    expect(tools.length).toBe(16);
 
     // Verify each tool has outputSchema defined
     for (const tool of tools) {
@@ -304,6 +304,406 @@ describe('Output Schemas', () => {
       expect(tool.outputSchema.type).toBe('object');
       expect(tool.outputSchema.properties).toBeDefined();
     }
+  });
+});
+
+describe('Search Locations', () => {
+  it('should search locations by name (case-insensitive)', async () => {
+    // Mock the API response with location data
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations') && url.includes('fields=')) {
+        return Promise.resolve({
+          data: {
+            data: [
+              {
+                storeId: '1337',
+                name: 'PinMeTo Malmö',
+                locationDescriptor: 'HQ Office',
+                address: { street: 'Adelgatan 9', city: 'Malmö', country: 'Sweden' }
+              },
+              {
+                storeId: '666',
+                name: 'PinMeTo Stockholm',
+                locationDescriptor: 'Branch Office',
+                address: { street: 'Fleminggatan 18', city: 'Stockholm', country: 'Sweden' }
+              }
+            ],
+            paging: {}
+          }
+        });
+      }
+
+      // Token request
+      if (url.includes('/oauth/token')) {
+        return Promise.resolve({ data: { access_token: testAccessToken } });
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    // Capture responses
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        const parsed = JSON.parse(chunk.toString());
+        responses.push(parsed);
+      } catch {
+        // Not JSON, ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Search for "malm" (should match "Malmö" case-insensitively)
+    testTransport.onmessage?.({
+      method: 'tools/call',
+      params: {
+        name: 'search_locations',
+        arguments: { query: 'malm' }
+      },
+      jsonrpc: '2.0',
+      id: 1
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    const searchResponse = responses.find(r => r.id === 1);
+    expect(searchResponse).toBeDefined();
+    expect(searchResponse.result).toBeDefined();
+    expect(searchResponse.result.structuredContent).toBeDefined();
+    expect(searchResponse.result.structuredContent.data).toHaveLength(1);
+    expect(searchResponse.result.structuredContent.data[0].name).toBe('PinMeTo Malmö');
+    expect(searchResponse.result.structuredContent.totalMatches).toBe(1);
+  });
+
+  it('should search locations by storeId', async () => {
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations') && url.includes('fields=')) {
+        return Promise.resolve({
+          data: {
+            data: [
+              {
+                storeId: '1337',
+                name: 'PinMeTo Malmö',
+                address: { street: 'Adelgatan 9', city: 'Malmö', country: 'Sweden' }
+              },
+              {
+                storeId: '666',
+                name: 'PinMeTo Stockholm',
+                address: { street: 'Fleminggatan 18', city: 'Stockholm', country: 'Sweden' }
+              }
+            ],
+            paging: {}
+          }
+        });
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        responses.push(JSON.parse(chunk.toString()));
+      } catch {
+        // ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    testTransport.onmessage?.({
+      method: 'tools/call',
+      params: {
+        name: 'search_locations',
+        arguments: { query: '1337' }
+      },
+      jsonrpc: '2.0',
+      id: 1
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    const searchResponse = responses.find(r => r.id === 1);
+    expect(searchResponse.result.structuredContent.data).toHaveLength(1);
+    expect(searchResponse.result.structuredContent.data[0].storeId).toBe('1337');
+  });
+
+  it('should return empty results for non-matching query', async () => {
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations') && url.includes('fields=')) {
+        return Promise.resolve({
+          data: {
+            data: [
+              {
+                storeId: '1337',
+                name: 'PinMeTo Malmö',
+                address: { street: 'Adelgatan 9', city: 'Malmö', country: 'Sweden' }
+              }
+            ],
+            paging: {}
+          }
+        });
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        responses.push(JSON.parse(chunk.toString()));
+      } catch {
+        // ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    testTransport.onmessage?.({
+      method: 'tools/call',
+      params: {
+        name: 'search_locations',
+        arguments: { query: 'nonexistent' }
+      },
+      jsonrpc: '2.0',
+      id: 1
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    const searchResponse = responses.find(r => r.id === 1);
+    expect(searchResponse.result.structuredContent.data).toHaveLength(0);
+    expect(searchResponse.result.structuredContent.totalMatches).toBe(0);
+  });
+
+  it('should respect limit parameter', async () => {
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations') && url.includes('fields=')) {
+        return Promise.resolve({
+          data: {
+            data: [
+              { storeId: '1', name: 'Location 1', address: { city: 'Stockholm' } },
+              { storeId: '2', name: 'Location 2', address: { city: 'Stockholm' } },
+              { storeId: '3', name: 'Location 3', address: { city: 'Stockholm' } }
+            ],
+            paging: {}
+          }
+        });
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        responses.push(JSON.parse(chunk.toString()));
+      } catch {
+        // ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    testTransport.onmessage?.({
+      method: 'tools/call',
+      params: {
+        name: 'search_locations',
+        arguments: { query: 'Stockholm', limit: 2 }
+      },
+      jsonrpc: '2.0',
+      id: 1
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    const searchResponse = responses.find(r => r.id === 1);
+    expect(searchResponse.result.structuredContent.data).toHaveLength(2);
+    expect(searchResponse.result.structuredContent.totalMatches).toBe(3);
+    expect(searchResponse.result.structuredContent.hasMore).toBe(true);
+  });
+
+  it('should search by locationDescriptor', async () => {
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations') && url.includes('fields=')) {
+        return Promise.resolve({
+          data: {
+            data: [
+              {
+                storeId: '1337',
+                name: 'PinMeTo',
+                locationDescriptor: 'Main Headquarters',
+                address: { city: 'Malmö' }
+              },
+              {
+                storeId: '666',
+                name: 'PinMeTo',
+                locationDescriptor: 'Regional Office',
+                address: { city: 'Stockholm' }
+              }
+            ],
+            paging: {}
+          }
+        });
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        responses.push(JSON.parse(chunk.toString()));
+      } catch {
+        // ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    testTransport.onmessage?.({
+      method: 'tools/call',
+      params: {
+        name: 'search_locations',
+        arguments: { query: 'headquarters' }
+      },
+      jsonrpc: '2.0',
+      id: 1
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    const searchResponse = responses.find(r => r.id === 1);
+    expect(searchResponse.result.structuredContent.data).toHaveLength(1);
+    expect(searchResponse.result.structuredContent.data[0].locationDescriptor).toBe(
+      'Main Headquarters'
+    );
   });
 });
 

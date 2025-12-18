@@ -7,7 +7,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import axios from 'axios';
 import os from 'os';
-import { getLocations, getLocation } from './tools/locations/locations';
+import { getLocations, getLocation, searchLocations } from './tools/locations/locations';
 import {
   getAllGoogleInsights,
   getAllGoogleKeywords,
@@ -151,6 +151,7 @@ export function createMcpServer() {
   // Locations
   getLocation(mcpServer);
   getLocations(mcpServer);
+  searchLocations(mcpServer);
 
   // Google
   getGoogleLocationInsights(mcpServer);
