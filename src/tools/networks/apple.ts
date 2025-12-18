@@ -3,20 +3,26 @@ import { PinMeToMcpServer } from '../../mcp_server';
 import { aggregateMetrics, AggregationPeriod } from '../../helpers';
 
 export function getAppleLocationInsights(server: PinMeToMcpServer) {
-  server.tool(
+  server.registerTool(
     'get_apple_location_insights',
-    'Fetch Apple metrics for a single location belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
     {
-      storeId: z.string().describe('The store ID to look up'),
-      from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('The end date format YYYY-MM-DD'),
-      aggregation: z
-        .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
-        .optional()
-        .default('total')
-        .describe(
-          'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
-        )
+      description:
+        'Fetch Apple metrics for a single location belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
+      inputSchema: {
+        storeId: z.string().describe('The store ID to look up'),
+        from: z.string().describe('The start date format YYYY-MM-DD'),
+        to: z.string().describe('The end date format YYYY-MM-DD'),
+        aggregation: z
+          .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
+          .optional()
+          .default('total')
+          .describe(
+            'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
+          )
+      },
+      annotations: {
+        readOnlyHint: true
+      }
     },
     async ({
       storeId,
@@ -61,21 +67,35 @@ export function getAppleLocationInsights(server: PinMeToMcpServer) {
 }
 
 export function getAllAppleInsights(server: PinMeToMcpServer) {
-  server.tool(
+  server.registerTool(
     'get_all_apple_insights',
-    'Fetch Apple metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
     {
-      from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('The end date format YYYY-MM-DD'),
-      aggregation: z
-        .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
-        .optional()
-        .default('total')
-        .describe(
-          'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
-        )
+      description:
+        'Fetch Apple metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
+      inputSchema: {
+        from: z.string().describe('The start date format YYYY-MM-DD'),
+        to: z.string().describe('The end date format YYYY-MM-DD'),
+        aggregation: z
+          .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
+          .optional()
+          .default('total')
+          .describe(
+            'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
+          )
+      },
+      annotations: {
+        readOnlyHint: true
+      }
     },
-    async ({ from, to, aggregation = 'total' }: { from: string; to: string; aggregation?: AggregationPeriod }) => {
+    async ({
+      from,
+      to,
+      aggregation = 'total'
+    }: {
+      from: string;
+      to: string;
+      aggregation?: AggregationPeriod;
+    }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/apple?from=${from}&to=${to}`;

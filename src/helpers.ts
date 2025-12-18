@@ -32,7 +32,7 @@ export function aggregateMetrics(
     return data;
   }
 
-  return data.map((insightData) => {
+  return data.map(insightData => {
     const aggregatedMetrics = aggregateMetricsByPeriod(insightData.metrics, period);
     return {
       key: insightData.key,
@@ -44,10 +44,7 @@ export function aggregateMetrics(
 /**
  * Aggregates an array of metric data points by the specified period
  */
-function aggregateMetricsByPeriod(
-  metrics: MetricData[],
-  period: AggregationPeriod
-): MetricData[] {
+function aggregateMetricsByPeriod(metrics: MetricData[], period: AggregationPeriod): MetricData[] {
   if (metrics.length === 0) {
     return metrics;
   }
@@ -127,7 +124,13 @@ function getISOWeek(date: Date): number {
   target.setDate(target.getDate() - dayNumber + 3); // Thursday of current week
   const firstThursday = new Date(target.getFullYear(), 0, 4); // Jan 4 is always in week 1
   const weekNumber =
-    1 + Math.round(((target.getTime() - firstThursday.getTime()) / 86400000 - 3 + ((firstThursday.getDay() + 6) % 7)) / 7);
+    1 +
+    Math.round(
+      ((target.getTime() - firstThursday.getTime()) / 86400000 -
+        3 +
+        ((firstThursday.getDay() + 6) % 7)) /
+        7
+    );
   return weekNumber;
 }
 

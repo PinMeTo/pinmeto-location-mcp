@@ -3,20 +3,26 @@ import { PinMeToMcpServer } from '../../mcp_server';
 import { aggregateMetrics, AggregationPeriod } from '../../helpers';
 
 export function getGoogleLocationInsights(server: PinMeToMcpServer) {
-  server.tool(
+  server.registerTool(
     'get_google_location_insights',
-    'Fetch Google metrics for a single location belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
     {
-      storeId: z.string().describe('The store ID to look up'),
-      from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('The end date format YYYY-MM-DD'),
-      aggregation: z
-        .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
-        .optional()
-        .default('total')
-        .describe(
-          'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
-        )
+      description:
+        'Fetch Google metrics for a single location belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
+      inputSchema: {
+        storeId: z.string().describe('The store ID to look up'),
+        from: z.string().describe('The start date format YYYY-MM-DD'),
+        to: z.string().describe('The end date format YYYY-MM-DD'),
+        aggregation: z
+          .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
+          .optional()
+          .default('total')
+          .describe(
+            'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
+          )
+      },
+      annotations: {
+        readOnlyHint: true
+      }
     },
     async ({
       storeId,
@@ -61,21 +67,35 @@ export function getGoogleLocationInsights(server: PinMeToMcpServer) {
 }
 
 export function getAllGoogleInsights(server: PinMeToMcpServer) {
-  server.tool(
+  server.registerTool(
     'get_all_google_insights',
-    'Fetch Google metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
     {
-      from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('The end date format YYYY-MM-DD'),
-      aggregation: z
-        .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
-        .optional()
-        .default('total')
-        .describe(
-          'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
-        )
+      description:
+        'Fetch Google metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total.',
+      inputSchema: {
+        from: z.string().describe('The start date format YYYY-MM-DD'),
+        to: z.string().describe('The end date format YYYY-MM-DD'),
+        aggregation: z
+          .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
+          .optional()
+          .default('total')
+          .describe(
+            'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregration, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
+          )
+      },
+      annotations: {
+        readOnlyHint: true
+      }
     },
-    async ({ from, to, aggregation = 'total' }: { from: string; to: string; aggregation?: AggregationPeriod }) => {
+    async ({
+      from,
+      to,
+      aggregation = 'total'
+    }: {
+      from: string;
+      to: string;
+      aggregation?: AggregationPeriod;
+    }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/google?from=${from}&to=${to}`;
@@ -107,12 +127,17 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
 }
 
 export const getAllGoogleRatings = (server: PinMeToMcpServer) => {
-  server.tool(
+  server.registerTool(
     'get_all_google_ratings',
-    'Fetch Google ratings for all locations belonging to a specific account.',
     {
-      from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('The end date format YYYY-MM-DD')
+      description: 'Fetch Google ratings for all locations belonging to a specific account.',
+      inputSchema: {
+        from: z.string().describe('The start date format YYYY-MM-DD'),
+        to: z.string().describe('The end date format YYYY-MM-DD')
+      },
+      annotations: {
+        readOnlyHint: true
+      }
     },
     async ({ from, to }: { from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -142,13 +167,18 @@ export const getAllGoogleRatings = (server: PinMeToMcpServer) => {
 };
 
 export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
-  server.tool(
+  server.registerTool(
     'get_google_location_ratings',
-    'Fetch Google ratings for a given location belonging to a specific account.',
     {
-      storeId: z.string().describe('The store ID to look up'),
-      from: z.string().describe('The start date format YYYY-MM-DD'),
-      to: z.string().describe('The end date format YYYY-MM-DD')
+      description: 'Fetch Google ratings for a given location belonging to a specific account.',
+      inputSchema: {
+        storeId: z.string().describe('The store ID to look up'),
+        from: z.string().describe('The start date format YYYY-MM-DD'),
+        to: z.string().describe('The end date format YYYY-MM-DD')
+      },
+      annotations: {
+        readOnlyHint: true
+      }
     },
     async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -180,12 +210,17 @@ export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
 };
 
 export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
-  server.tool(
+  server.registerTool(
     'get_google_keywords',
-    'Fetch Google keywords for all locations belonging to a specific account',
     {
-      from: z.string().describe('The start date format YYYY-MM'),
-      to: z.string().describe('The end date format YYYY-MM')
+      description: 'Fetch Google keywords for all locations belonging to a specific account',
+      inputSchema: {
+        from: z.string().describe('The start date format YYYY-MM'),
+        to: z.string().describe('The end date format YYYY-MM')
+      },
+      annotations: {
+        readOnlyHint: true
+      }
     },
     async ({ from, to }: { from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -217,13 +252,18 @@ export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
 };
 
 export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
-  server.tool(
+  server.registerTool(
     'get_google_keywords_for_location',
-    'Fetch Google keywords for a given location belonging to a specific account.',
     {
-      storeId: z.string().describe('The store ID to look up'),
-      from: z.string().describe('The start date format YYYY-MM'),
-      to: z.string().describe('The end date format YYYY-MM')
+      description: 'Fetch Google keywords for a given location belonging to a specific account.',
+      inputSchema: {
+        storeId: z.string().describe('The store ID to look up'),
+        from: z.string().describe('The start date format YYYY-MM'),
+        to: z.string().describe('The end date format YYYY-MM')
+      },
+      annotations: {
+        readOnlyHint: true
+      }
     },
     async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;

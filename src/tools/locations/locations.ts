@@ -3,11 +3,16 @@ import { formatListResponse } from '../../helpers';
 import { PinMeToMcpServer } from '../../mcp_server';
 
 export function getLocation(server: PinMeToMcpServer) {
-  server.tool(
+  server.registerTool(
     'get_location',
-    'Get location details for a store from PinMeTo API',
     {
-      storeId: z.string().describe('The store ID to look up')
+      description: 'Get location details for a store from PinMeTo API',
+      inputSchema: {
+        storeId: z.string().describe('The store ID to look up')
+      },
+      annotations: {
+        readOnlyHint: true
+      }
     },
     async ({ storeId }: { storeId: string }) => {
       const { locationsApiBaseUrl, accountId } = server.configs;
@@ -70,14 +75,20 @@ export function getLocations(server: PinMeToMcpServer) {
     'serviceAreas'
   ] as const;
   const FieldsEnum = z.enum(validFieldsList);
-  server.tool(
+  server.registerTool(
     'get_locations',
-    'Get all location details for the site from PinMeTo API. Use this to find store ids for locations.',
     {
-      fields: z
-        .array(FieldsEnum)
-        .optional()
-        .describe('Fields to include in the response (optional, defaults to all)')
+      description:
+        'Get all location details for the site from PinMeTo API. Use this to find store ids for locations.',
+      inputSchema: {
+        fields: z
+          .array(FieldsEnum)
+          .optional()
+          .describe('Fields to include in the response (optional, defaults to all)')
+      },
+      annotations: {
+        readOnlyHint: true
+      }
     },
     async ({ fields }) => {
       let fieldsParam: string;
