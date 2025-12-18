@@ -7,6 +7,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import axios from 'axios';
 import os from 'os';
+import { LocationCache } from './cache/location-cache';
 import { getLocations, getLocation, searchLocations } from './tools/locations/locations';
 import {
   getAllGoogleInsights,
@@ -35,14 +36,29 @@ const TOKEN_CACHE_SECONDS = 59 * 60;
 
 export class PinMeToMcpServer extends McpServer {
   private _configs: Configs;
+  private _locationCache: LocationCache;
 
   constructor(serverInfo: Implementation, options?: ServerOptions) {
     super(serverInfo, options);
     this._configs = getConfigs();
+    this._locationCache = new LocationCache(() => this._fetchAllLocations(), 5);
   }
 
   public get configs() {
     return this._configs;
+  }
+
+  public get locationCache() {
+    return this._locationCache;
+  }
+
+  /**
+   * Fetches all locations from the API.
+   * Used by LocationCache for cache population.
+   */
+  private async _fetchAllLocations(): Promise<[any[], boolean]> {
+    const url = `${this._configs.locationsApiBaseUrl}/v4/${this._configs.accountId}/locations?pagesize=1000`;
+    return this.makePaginatedPinMeToRequest(url);
   }
 
   public async makePinMeToRequest(url: string) {
