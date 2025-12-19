@@ -78,6 +78,7 @@ export const KeywordsOutputSchema = {
 /**
  * Output schema for single location retrieval
  * Location objects contain many optional fields from the PinMeTo API
+ * Note: data is optional to allow error-only responses
  */
 export const LocationOutputSchema = {
   data: z
@@ -95,7 +96,8 @@ export const LocationOutputSchema = {
       fb: z.unknown().optional()
     })
     .passthrough()
-    .describe('Location data from the PinMeTo API'),
+    .optional()
+    .describe('Location data from the PinMeTo API (absent on error)'),
   error: z.string().optional().describe('Error message if the request failed'),
   errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
   retryable: z.boolean().optional().describe('Whether the operation can be retried')

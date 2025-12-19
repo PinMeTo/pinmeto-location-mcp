@@ -2,6 +2,8 @@ import axios from 'axios';
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { createMcpServer } from '../src/mcp_server';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { formatErrorResponse } from '../src/helpers';
+import { ApiError } from '../src/errors';
 
 const testAccountId = 'test_account';
 const testAppId = 'test_id';
@@ -104,6 +106,106 @@ describe('PinMeToMcpServer', () => {
       null
     ]);
   });
+
+  it('should return ApiResult error on request failure', async () => {
+    // Create mock that returns error for any GET request
+    vi.mocked(axios.get).mockRejectedValueOnce(
+      Object.assign(new Error('Server Error'), {
+        isAxiosError: true,
+        response: { status: 500, data: { message: 'Internal server error' } }
+      })
+    );
+
+    const server = createMcpServer();
+    // Clear token cache to force token fetch first
+    server.configs.accessToken = testAccessToken;
+    server.configs.accessTokenTime = Date.now() / 1000;
+
+    const result = await server.makePinMeToRequest(`${testApiBaseUrl}/any-endpoint`);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe('SERVER_ERROR');
+      expect(result.error.retryable).toBe(true);
+    }
+  });
+
+  describe('Authentication error handling', () => {
+    it('should return AUTH_INVALID_CREDENTIALS on 401 during token fetch', async () => {
+      vi.mocked(axios.post).mockRejectedValueOnce(
+        Object.assign(new Error('Unauthorized'), {
+          isAxiosError: true,
+          response: { status: 401, data: { error_description: 'Bad credentials' } }
+        })
+      );
+
+      const server = createMcpServer();
+      const result = await server.makePinMeToRequest(`${testApiBaseUrl}/any-endpoint`);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('AUTH_INVALID_CREDENTIALS');
+        expect(result.error.retryable).toBe(false);
+        expect(result.error.message).toContain('Invalid credentials');
+      }
+    });
+
+    it('should return AUTH_APP_DISABLED on 403 during token fetch', async () => {
+      vi.mocked(axios.post).mockRejectedValueOnce(
+        Object.assign(new Error('Forbidden'), {
+          isAxiosError: true,
+          response: { status: 403, data: { error: 'App disabled' } }
+        })
+      );
+
+      const server = createMcpServer();
+      const result = await server.makePinMeToRequest(`${testApiBaseUrl}/any-endpoint`);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('AUTH_APP_DISABLED');
+        expect(result.error.retryable).toBe(false);
+        expect(result.error.message).toContain('disabled');
+      }
+    });
+
+    it('should return BAD_REQUEST on 400 during token fetch', async () => {
+      vi.mocked(axios.post).mockRejectedValueOnce(
+        Object.assign(new Error('Bad Request'), {
+          isAxiosError: true,
+          response: { status: 400, data: { error: 'invalid_grant' } }
+        })
+      );
+
+      const server = createMcpServer();
+      const result = await server.makePinMeToRequest(`${testApiBaseUrl}/any-endpoint`);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('BAD_REQUEST');
+        expect(result.error.retryable).toBe(false);
+      }
+    });
+
+    it('should return NETWORK_ERROR on network failure during token fetch', async () => {
+      vi.mocked(axios.post).mockRejectedValueOnce(
+        Object.assign(new Error('Network Error'), {
+          isAxiosError: true,
+          code: 'ECONNREFUSED',
+          response: undefined
+        })
+      );
+
+      const server = createMcpServer();
+      const result = await server.makePinMeToRequest(`${testApiBaseUrl}/any-endpoint`);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('NETWORK_ERROR');
+        expect(result.error.retryable).toBe(true); // Network errors are retryable
+      }
+    });
+  });
 });
 
 describe('Locations', () => {
@@ -164,6 +266,86 @@ describe('Locations', () => {
     expect(spy).toHaveBeenCalledWith(
       `${testLocationApiBaseUrl}/v4/test_account/locations?pagesize=1000`
     );
+  });
+
+  it('should return NOT_FOUND error when location does not exist', async () => {
+    // Mock 404 response for get_location
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      if (url.includes('/locations/invalid-store-id')) {
+        const error = Object.assign(new Error('Not Found'), {
+          isAxiosError: true,
+          response: {
+            status: 404,
+            data: { message: 'Location not found' }
+          }
+        });
+        return Promise.reject(error);
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+
+    // Also need to mock the token endpoint
+    vi.mocked(axios.post).mockImplementation((url: string, data, { headers }: any) => {
+      if (url.includes('/oauth/token')) {
+        return Promise.resolve({ data: { access_token: testAccessToken } });
+      }
+      return Promise.reject(new Error('Not found'));
+    });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        responses.push(JSON.parse(chunk.toString()));
+      } catch {
+        // ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    testTransport.onmessage?.({
+      method: 'tools/call',
+      params: {
+        name: 'get_location',
+        arguments: { storeId: 'invalid-store-id' }
+      },
+      jsonrpc: '2.0',
+      id: 1
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    const locationResponse = responses.find(r => r.id === 1);
+    expect(locationResponse).toBeDefined();
+    expect(locationResponse.result.structuredContent.errorCode).toBe('NOT_FOUND');
+    expect(locationResponse.result.structuredContent.retryable).toBe(false);
+    expect(locationResponse.result.structuredContent.error).toContain('not found');
   });
 });
 
@@ -1375,7 +1557,13 @@ describe('LocationCache', () => {
     // Returns stale cache with stale indicator
     expect(result2.allPagesFetched).toBe(true);
     expect(result2.stale).toBe(true);
+    // Verify error details are preserved
     expect(result2.error).not.toBeNull();
+    expect(result2.error?.code).toBeDefined();
+    expect(result2.error?.retryable).toBeDefined();
+    // Verify stale age is tracked
+    expect(result2.staleAgeSeconds).toBeDefined();
+    expect(result2.staleAgeSeconds).toBeGreaterThanOrEqual(0);
   });
 
   it('should deduplicate concurrent requests', async () => {
@@ -1451,6 +1639,77 @@ function createMockAxiosError(
   }
   return error;
 }
+
+describe('formatErrorResponse', () => {
+  it('should format ApiError with all required fields', () => {
+    const error: ApiError = {
+      code: 'NOT_FOUND',
+      message: 'Store not found. Verify the store ID exists.',
+      statusCode: 404,
+      retryable: false
+    };
+
+    const result = formatErrorResponse(error);
+
+    expect(result.content).toEqual([{ type: 'text', text: 'Store not found. Verify the store ID exists.' }]);
+    expect(result.structuredContent.error).toBe('Store not found. Verify the store ID exists.');
+    expect(result.structuredContent.errorCode).toBe('NOT_FOUND');
+    expect(result.structuredContent.retryable).toBe(false);
+  });
+
+  it('should format retryable error correctly', () => {
+    const error: ApiError = {
+      code: 'RATE_LIMITED',
+      message: 'Rate limit exceeded. Wait before retrying.',
+      statusCode: 429,
+      retryable: true
+    };
+
+    const result = formatErrorResponse(error);
+
+    expect(result.structuredContent.errorCode).toBe('RATE_LIMITED');
+    expect(result.structuredContent.retryable).toBe(true);
+  });
+
+  it('should format network error without statusCode', () => {
+    const error: ApiError = {
+      code: 'NETWORK_ERROR',
+      message: 'Network error: ECONNREFUSED. Check internet connection.',
+      retryable: true
+    };
+
+    const result = formatErrorResponse(error);
+
+    expect(result.content[0].type).toBe('text');
+    expect(result.content[0].text).toContain('ECONNREFUSED');
+    expect(result.structuredContent.errorCode).toBe('NETWORK_ERROR');
+    expect(result.structuredContent.retryable).toBe(true);
+  });
+
+  it('should handle all error codes', () => {
+    const errorCodes = [
+      'AUTH_INVALID_CREDENTIALS',
+      'AUTH_APP_DISABLED',
+      'BAD_REQUEST',
+      'NOT_FOUND',
+      'RATE_LIMITED',
+      'SERVER_ERROR',
+      'NETWORK_ERROR',
+      'UNKNOWN_ERROR'
+    ] as const;
+
+    for (const code of errorCodes) {
+      const error: ApiError = {
+        code,
+        message: `Test message for ${code}`,
+        retryable: false
+      };
+
+      const result = formatErrorResponse(error);
+      expect(result.structuredContent.errorCode).toBe(code);
+    }
+  });
+});
 
 describe('mapAxiosErrorToApiError', () => {
   describe('HTTP Status Code Mapping', () => {
@@ -1648,13 +1907,13 @@ describe('mapAxiosErrorToApiError', () => {
       expect(result.retryable).toBe(false);
     });
 
-    it('should map AuthError with NETWORK_ERROR code', () => {
+    it('should map AuthError with NETWORK_ERROR code as retryable', () => {
       const authError = new AuthError('NETWORK_ERROR', 'Authentication failed: timeout');
       const result = mapAxiosErrorToApiError(authError);
 
       expect(result.code).toBe('NETWORK_ERROR');
       expect(result.message).toBe('Authentication failed: timeout');
-      expect(result.retryable).toBe(false); // AuthErrors are not retryable
+      expect(result.retryable).toBe(true); // Network errors are retryable even during auth
     });
   });
 

@@ -75,7 +75,7 @@ export class PinMeToMcpServer extends McpServer {
       return { ok: true, data: response.data };
     } catch (e: unknown) {
       const error = mapAxiosErrorToApiError(e);
-      console.error(`Request failed: ${error.code} - ${error.message}`);
+      console.error(`Request failed [${url}]: ${error.code} - ${error.message}`);
       return { ok: false, error };
     }
   }
@@ -93,7 +93,11 @@ export class PinMeToMcpServer extends McpServer {
       const result: ApiResult<PaginatedResponse> =
         await this.makePinMeToRequest<PaginatedResponse>(nextUrl);
       if (!result.ok) {
-        console.warn(`Couldn't fetch page: ${result.error.code} - ${result.error.message}`);
+        const pageContext =
+          allData.length > 0 ? `after ${allData.length} records` : '(first page)';
+        console.warn(
+          `Couldn't fetch page ${pageContext}: ${result.error.code} - ${result.error.message}`
+        );
         areAllPagesFetched = false;
         lastError = result.error;
         break;
@@ -155,18 +159,21 @@ export class PinMeToMcpServer extends McpServer {
       if (isAxiosError(e)) {
         const status = e.response?.status;
         if (status === 401) {
+          console.error('Authentication failed: Invalid credentials (401)');
           throw new AuthError(
             'AUTH_INVALID_CREDENTIALS',
             'Invalid credentials. Verify PINMETO_APP_ID and PINMETO_APP_SECRET are correct.'
           );
         }
         if (status === 403) {
+          console.error('Authentication failed: OAuth app disabled (403)');
           throw new AuthError(
             'AUTH_APP_DISABLED',
             'OAuth application is disabled or revoked. Contact PinMeTo support to re-enable.'
           );
         }
         if (status === 400) {
+          console.error('Authentication failed: Bad request (400)');
           throw new AuthError(
             'BAD_REQUEST',
             'Malformed authentication request. Check OAuth configuration.'
@@ -175,15 +182,15 @@ export class PinMeToMcpServer extends McpServer {
         // Network errors during auth
         if (!e.response) {
           const detail = e.code || e.message || 'Unknown network error';
+          console.error(`Authentication failed: Network error - ${detail}`);
           throw new AuthError('NETWORK_ERROR', `Authentication failed: ${detail}`);
         }
       }
 
       // Fallback for unknown errors
-      throw new AuthError(
-        'UNKNOWN_ERROR',
-        `Authentication failed: ${e instanceof Error ? e.message : 'Unknown error'}`
-      );
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+      console.error(`Authentication failed: ${errorMessage}`);
+      throw new AuthError('UNKNOWN_ERROR', `Authentication failed: ${errorMessage}`);
     }
   }
 }

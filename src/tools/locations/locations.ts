@@ -200,9 +200,8 @@ export function getLocations(server: PinMeToMcpServer) {
           limit,
           incomplete: !allPagesFetched,
           warning,
-          ...(stale && error
-            ? { errorCode: error.code, retryable: error.retryable }
-            : {}),
+          // Include error info whenever there's an error (stale cache OR partial pagination failure)
+          ...(error ? { errorCode: error.code, retryable: error.retryable } : {}),
           cacheInfo: {
             cached: cacheInfo.cached,
             ageSeconds: cacheInfo.age,
@@ -244,7 +243,12 @@ export function searchLocations(server: PinMeToMcpServer) {
     async ({ query, limit = 20 }: { query: string; limit?: number }) => {
       const { locationsApiBaseUrl, accountId } = server.configs;
 
-      // Fetch only the fields we need for searching and display
+      // NOTE: search_locations intentionally bypasses LocationCache and fetches directly.
+      // Rationale:
+      // 1. Search only needs minimal fields (storeId, name, address) - cache stores full objects
+      // 2. Search is a discovery tool - users expect fresh results to find new locations
+      // 3. Search doesn't have stale-cache fallback - this is intentional to ensure accurate results
+      // For bulk operations with resilience, use get_locations which uses the cached data.
       const fieldsParam = 'fields=storeId,name,locationDescriptor,address';
       const url = `${locationsApiBaseUrl}/v4/${accountId}/locations?pagesize=1000&${fieldsParam}`;
       const [data, areAllPagesFetched, lastError] = await server.makePaginatedPinMeToRequest(url);

@@ -84,7 +84,8 @@ export function mapAxiosErrorToApiError(e: unknown): ApiError {
     return {
       code: e.code,
       message: e.message,
-      retryable: false
+      // Network errors during auth are retryable; credential errors are not
+      retryable: e.code === 'NETWORK_ERROR'
     };
   }
 
@@ -149,21 +150,24 @@ export function mapAxiosErrorToApiError(e: unknown): ApiError {
           statusCode: status,
           retryable: true
         };
-      default:
+      default: {
         // Unhandled HTTP status code - provide informative message
-        if (status !== undefined) {
-          const is5xx = status >= 500 && status < 600;
-          return {
-            code: is5xx ? 'SERVER_ERROR' : 'UNKNOWN_ERROR',
-            message: apiMessage || `API returned unexpected status ${status}.`,
-            statusCode: status,
-            retryable: is5xx
-          };
-        }
+        const is5xx = status !== undefined && status >= 500 && status < 600;
+        return {
+          code: is5xx ? 'SERVER_ERROR' : 'UNKNOWN_ERROR',
+          message:
+            apiMessage ||
+            (status !== undefined
+              ? `API returned unexpected status ${status}.`
+              : 'API returned response with no status code.'),
+          statusCode: status,
+          retryable: is5xx
+        };
+      }
     }
   }
 
-  // Fallback for unknown errors
+  // Fallback for unknown errors (non-Axios errors)
   return {
     code: 'UNKNOWN_ERROR',
     message: e instanceof Error ? e.message : 'An unknown error occurred',
