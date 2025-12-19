@@ -43,7 +43,7 @@ export function getAppleLocationInsights(server: PinMeToMcpServer) {
       const result = await server.makePinMeToRequest(locationUrl);
 
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `storeId '${storeId}'`);
       }
 
       // Apply aggregation
@@ -98,7 +98,7 @@ export function getAllAppleInsights(server: PinMeToMcpServer) {
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/apple?from=${from}&to=${to}`;
       const result = await server.makePinMeToRequest(url);
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `all Apple insights (${from} to ${to})`);
       }
 
       // Apply aggregation

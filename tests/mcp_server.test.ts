@@ -976,8 +976,10 @@ describe('Search Locations', () => {
 
     const searchResponse = responses.find(r => r.id === 1);
     expect(searchResponse).toBeDefined();
-    // With structured errors, we now get the actual error message from the ApiError
-    expect(searchResponse.result.structuredContent.error).toBe('Network error');
+    // With structured errors, we now get the actual error message with context
+    expect(searchResponse.result.structuredContent.error).toBe(
+      "Failed for search query 'Stockholm': Network error"
+    );
     expect(searchResponse.result.structuredContent.errorCode).toBe('UNKNOWN_ERROR');
     expect(searchResponse.result.structuredContent.retryable).toBe(false);
     expect(searchResponse.result.structuredContent.data).toEqual([]);

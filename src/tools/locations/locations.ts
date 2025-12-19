@@ -28,7 +28,7 @@ export function getLocation(server: PinMeToMcpServer) {
       const result = await server.makePinMeToRequest(locationUrl);
 
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `storeId '${storeId}'`);
       }
 
       return {
@@ -136,7 +136,7 @@ export function getLocations(server: PinMeToMcpServer) {
 
       // Handle complete API failure (no data and no stale cache)
       if (allData.length === 0 && !allPagesFetched && error) {
-        return formatErrorResponse(error);
+        return formatErrorResponse(error, 'get_locations');
       }
 
       // 2. Apply filters
@@ -255,13 +255,14 @@ export function searchLocations(server: PinMeToMcpServer) {
 
       // Detect API failure: empty array + incomplete pagination = first page failed
       if (data.length === 0 && !areAllPagesFetched && lastError) {
+        const errorMessage = `Failed for search query '${query}': ${lastError.message}`;
         return {
-          content: [{ type: 'text', text: lastError.message }],
+          content: [{ type: 'text', text: errorMessage }],
           structuredContent: {
             data: [],
             totalMatches: 0,
             hasMore: false,
-            error: lastError.message,
+            error: errorMessage,
             errorCode: lastError.code,
             retryable: lastError.retryable
           }

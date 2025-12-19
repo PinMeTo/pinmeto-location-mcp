@@ -47,7 +47,7 @@ export function getGoogleLocationInsights(server: PinMeToMcpServer) {
       const result = await server.makePinMeToRequest(locationUrl);
 
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `storeId '${storeId}'`);
       }
 
       // Apply aggregation
@@ -102,7 +102,7 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/google?from=${from}&to=${to}`;
       const result = await server.makePinMeToRequest(url);
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `all Google insights (${from} to ${to})`);
       }
 
       // Apply aggregation
@@ -142,7 +142,7 @@ export const getAllGoogleRatings = (server: PinMeToMcpServer) => {
       const url = `${apiBaseUrl}/listings/v3/${accountId}/ratings/google?from=${from}&to=${to}`;
       const result = await server.makePinMeToRequest(url);
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `all Google ratings (${from} to ${to})`);
       }
       return {
         content: [
@@ -180,7 +180,7 @@ export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
       const result = await server.makePinMeToRequest(locationUrl);
 
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `storeId '${storeId}'`);
       }
 
       return {
@@ -218,7 +218,7 @@ export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
       const result = await server.makePinMeToRequest(locationUrl);
 
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `all Google keywords (${from} to ${to})`);
       }
 
       return {
@@ -257,7 +257,7 @@ export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
       const result = await server.makePinMeToRequest(locationUrl);
 
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `storeId '${storeId}'`);
       }
 
       return {

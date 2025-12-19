@@ -43,7 +43,7 @@ export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
       const result = await server.makePinMeToRequest(locationUrl);
 
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `storeId '${storeId}'`);
       }
 
       // Apply aggregation
@@ -98,7 +98,7 @@ export function getAllFacebookInsights(server: PinMeToMcpServer) {
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/facebook?from=${from}&to=${to}`;
       const result = await server.makePinMeToRequest(url);
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `all Facebook insights (${from} to ${to})`);
       }
 
       // Apply aggregation
@@ -153,7 +153,7 @@ export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
       const url = `${apiBaseUrl}/listings/v4/${accountId}/brand-page/insights/facebook?from=${from}&to=${to}`;
       const result = await server.makePinMeToRequest(url);
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `all Facebook brand page insights (${from} to ${to})`);
       }
 
       // Apply aggregation
@@ -192,7 +192,7 @@ export const getAllFacebookRatings = (server: PinMeToMcpServer) => {
       const url = `${apiBaseUrl}/listings/v3/${accountId}/ratings/facebook?from=${from}&to=${to}`;
       const result = await server.makePinMeToRequest(url);
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `all Facebook ratings (${from} to ${to})`);
       }
       return {
         content: [
@@ -230,7 +230,7 @@ export const getFacebookLocationRatings = (server: PinMeToMcpServer) => {
       const result = await server.makePinMeToRequest(locationUrl);
 
       if (!result.ok) {
-        return formatErrorResponse(result.error);
+        return formatErrorResponse(result.error, `storeId '${storeId}'`);
       }
 
       return {
