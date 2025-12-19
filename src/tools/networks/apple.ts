@@ -3,6 +3,11 @@ import { PinMeToMcpServer } from '../../mcp_server';
 import { aggregateMetrics, AggregationPeriod, formatErrorResponse } from '../../helpers';
 import { InsightsOutputSchema } from '../../schemas/output';
 
+// Shared date validation schema
+const DateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format (e.g., 2024-01-15)');
+
 export function getAppleLocationInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'get_apple_location_insights',
@@ -11,8 +16,8 @@ export function getAppleLocationInsights(server: PinMeToMcpServer) {
         'Fetch Apple metrics for a single location belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
-        from: z.string().describe('The start date format YYYY-MM-DD'),
-        to: z.string().describe('The end date format YYYY-MM-DD'),
+        from: DateSchema.describe('The start date (YYYY-MM-DD)'),
+        to: DateSchema.describe('The end date (YYYY-MM-DD)'),
         aggregation: z
           .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
           .optional()
@@ -69,8 +74,8 @@ export function getAllAppleInsights(server: PinMeToMcpServer) {
       description:
         'Fetch Apple metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
-        from: z.string().describe('The start date format YYYY-MM-DD'),
-        to: z.string().describe('The end date format YYYY-MM-DD'),
+        from: DateSchema.describe('The start date (YYYY-MM-DD)'),
+        to: DateSchema.describe('The end date (YYYY-MM-DD)'),
         aggregation: z
           .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
           .optional()

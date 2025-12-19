@@ -179,6 +179,13 @@ export class PinMeToMcpServer extends McpServer {
             'Malformed authentication request. Check OAuth configuration.'
           );
         }
+        if (status === 429) {
+          console.error('Authentication failed: Rate limited (429)');
+          throw new AuthError(
+            'RATE_LIMITED',
+            'Authentication rate limited. Wait before retrying.'
+          );
+        }
         // Network errors during auth
         if (!e.response) {
           const detail = e.code || e.message || 'Unknown network error';

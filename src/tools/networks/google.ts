@@ -7,6 +7,15 @@ import {
   KeywordsOutputSchema
 } from '../../schemas/output';
 
+// Shared date validation schemas
+const DateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format (e.g., 2024-01-15)');
+
+const MonthSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}$/, 'Date must be in YYYY-MM format (e.g., 2024-01)');
+
 export function getGoogleLocationInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'get_google_location_insights',
@@ -15,8 +24,8 @@ export function getGoogleLocationInsights(server: PinMeToMcpServer) {
         'Fetch Google metrics for a single location belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
-        from: z.string().describe('The start date format YYYY-MM-DD'),
-        to: z.string().describe('The end date format YYYY-MM-DD'),
+        from: DateSchema.describe('The start date (YYYY-MM-DD)'),
+        to: DateSchema.describe('The end date (YYYY-MM-DD)'),
         aggregation: z
           .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
           .optional()
@@ -73,8 +82,8 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
       description:
         'Fetch Google metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
-        from: z.string().describe('The start date format YYYY-MM-DD'),
-        to: z.string().describe('The end date format YYYY-MM-DD'),
+        from: DateSchema.describe('The start date (YYYY-MM-DD)'),
+        to: DateSchema.describe('The end date (YYYY-MM-DD)'),
         aggregation: z
           .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
           .optional()
@@ -128,8 +137,8 @@ export const getAllGoogleRatings = (server: PinMeToMcpServer) => {
       description:
         'Fetch Google ratings for all locations belonging to a specific account. Returns structured ratings data.',
       inputSchema: {
-        from: z.string().describe('The start date format YYYY-MM-DD'),
-        to: z.string().describe('The end date format YYYY-MM-DD')
+        from: DateSchema.describe('The start date (YYYY-MM-DD)'),
+        to: DateSchema.describe('The end date (YYYY-MM-DD)')
       },
       outputSchema: RatingsOutputSchema,
       annotations: {
@@ -165,8 +174,8 @@ export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
         'Fetch Google ratings for a given location belonging to a specific account. Returns structured ratings data.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
-        from: z.string().describe('The start date format YYYY-MM-DD'),
-        to: z.string().describe('The end date format YYYY-MM-DD')
+        from: DateSchema.describe('The start date (YYYY-MM-DD)'),
+        to: DateSchema.describe('The end date (YYYY-MM-DD)')
       },
       outputSchema: RatingsOutputSchema,
       annotations: {
@@ -203,8 +212,8 @@ export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
       description:
         'Fetch Google keywords for all locations belonging to a specific account. Returns structured keywords data.',
       inputSchema: {
-        from: z.string().describe('The start date format YYYY-MM'),
-        to: z.string().describe('The end date format YYYY-MM')
+        from: MonthSchema.describe('The start month (YYYY-MM)'),
+        to: MonthSchema.describe('The end month (YYYY-MM)')
       },
       outputSchema: KeywordsOutputSchema,
       annotations: {
@@ -242,8 +251,8 @@ export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
         'Fetch Google keywords for a given location belonging to a specific account. Returns structured keywords data.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
-        from: z.string().describe('The start date format YYYY-MM'),
-        to: z.string().describe('The end date format YYYY-MM')
+        from: MonthSchema.describe('The start month (YYYY-MM)'),
+        to: MonthSchema.describe('The end month (YYYY-MM)')
       },
       outputSchema: KeywordsOutputSchema,
       annotations: {

@@ -205,6 +205,42 @@ describe('PinMeToMcpServer', () => {
         expect(result.error.retryable).toBe(true); // Network errors are retryable
       }
     });
+
+    it('should return RATE_LIMITED on 429 during token fetch', async () => {
+      vi.mocked(axios.post).mockRejectedValueOnce(
+        Object.assign(new Error('Too Many Requests'), {
+          isAxiosError: true,
+          response: { status: 429, data: { error: 'rate_limit_exceeded' } }
+        })
+      );
+
+      const server = createMcpServer();
+      const result = await server.makePinMeToRequest(`${testApiBaseUrl}/any-endpoint`);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('RATE_LIMITED');
+        expect(result.error.retryable).toBe(true);
+        expect(result.error.message).toContain('rate limited');
+      }
+    });
+
+    it('should return AUTH_INVALID_CREDENTIALS when OAuth response lacks access_token', async () => {
+      // OAuth returns 200 OK but with empty/malformed response (no access_token)
+      vi.mocked(axios.post).mockResolvedValueOnce({
+        data: { token_type: 'Bearer' } // Missing access_token field
+      });
+
+      const server = createMcpServer();
+      const result = await server.makePinMeToRequest(`${testApiBaseUrl}/any-endpoint`);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('AUTH_INVALID_CREDENTIALS');
+        expect(result.error.message).toContain('No access_token');
+        expect(result.error.retryable).toBe(false);
+      }
+    });
   });
 });
 
@@ -1686,6 +1722,22 @@ describe('formatErrorResponse', () => {
     expect(result.content[0].text).toContain('ECONNREFUSED');
     expect(result.structuredContent.errorCode).toBe('NETWORK_ERROR');
     expect(result.structuredContent.retryable).toBe(true);
+  });
+
+  it('should prepend context to error message when provided', () => {
+    const error: ApiError = {
+      code: 'NOT_FOUND',
+      message: 'Resource not found. Verify the ID exists.',
+      statusCode: 404,
+      retryable: false
+    };
+
+    const result = formatErrorResponse(error, "storeId '12345'");
+
+    expect(result.content[0].text).toBe("Failed for storeId '12345': Resource not found. Verify the ID exists.");
+    expect(result.structuredContent.error).toBe("Failed for storeId '12345': Resource not found. Verify the ID exists.");
+    expect(result.structuredContent.errorCode).toBe('NOT_FOUND');
+    expect(result.structuredContent.retryable).toBe(false);
   });
 
   it('should handle all error codes', () => {

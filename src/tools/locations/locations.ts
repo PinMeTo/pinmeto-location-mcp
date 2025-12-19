@@ -179,8 +179,14 @@ export function getLocations(server: PinMeToMcpServer) {
 
       // 6. Build warning message based on data freshness and completeness
       let warning: string | undefined;
-      if (stale && staleAgeSeconds !== undefined) {
+      let errorMessage: string | undefined;
+      if (stale && staleAgeSeconds !== undefined && error) {
         warning = `CAUTION: Returning stale cached data (${staleAgeSeconds}s old) due to API failure. Use forceRefresh: true to retry.`;
+        // Set error field explicitly so AI agents can detect staleness programmatically
+        errorMessage = `Data is stale due to API failure: ${error.code} - ${error.message}`;
+      } else if (!allPagesFetched && error) {
+        // Include specific error details in pagination warning
+        warning = `Data may be incomplete (${error.code}: ${error.message}). Use forceRefresh: true to retry.`;
       } else if (!allPagesFetched) {
         warning = 'Data may be incomplete due to API pagination errors. Use forceRefresh: true to retry.';
       }
@@ -201,6 +207,8 @@ export function getLocations(server: PinMeToMcpServer) {
           incomplete: !allPagesFetched,
           warning,
           // Include error info whenever there's an error (stale cache OR partial pagination failure)
+          // errorMessage is set explicitly when returning stale data so AI agents can detect it
+          ...(errorMessage ? { error: errorMessage } : {}),
           ...(error ? { errorCode: error.code, retryable: error.retryable } : {}),
           cacheInfo: {
             cached: cacheInfo.cached,

@@ -84,8 +84,8 @@ export function mapAxiosErrorToApiError(e: unknown): ApiError {
     return {
       code: e.code,
       message: e.message,
-      // Network errors during auth are retryable; credential errors are not
-      retryable: e.code === 'NETWORK_ERROR'
+      // Network errors and rate limiting during auth are retryable; credential errors are not
+      retryable: e.code === 'NETWORK_ERROR' || e.code === 'RATE_LIMITED'
     };
   }
 
