@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { formatListResponse } from '../../helpers';
+import { formatErrorResponse, formatListResponse } from '../../helpers';
 import { PinMeToMcpServer } from '../../mcp_server';
 import {
   LocationOutputSchema,
@@ -25,28 +25,20 @@ export function getLocation(server: PinMeToMcpServer) {
       const { locationsApiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${locationsApiBaseUrl}/v4/${accountId}/locations/${storeId}`;
-      const locationData = await server.makePinMeToRequest(locationUrl);
+      const result = await server.makePinMeToRequest(locationUrl);
 
-      if (!locationData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch location data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch location data.' }
-        };
+      if (!result.ok) {
+        return formatErrorResponse(result.error, `storeId '${storeId}'`);
       }
 
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(locationData)
+            text: JSON.stringify(result.data)
           }
         ],
-        structuredContent: { data: locationData }
+        structuredContent: { data: result.data }
       };
     }
   );
@@ -139,22 +131,12 @@ export function getLocations(server: PinMeToMcpServer) {
       const forceRefresh = args.forceRefresh ?? false;
 
       // 1. Get data from cache (or fetch if expired/forced)
-      const [allData, allPagesFetched] = await server.locationCache.getLocations(forceRefresh);
+      const cacheResult = await server.locationCache.getLocations(forceRefresh);
+      const { data: allData, allPagesFetched, error, stale, staleAgeSeconds } = cacheResult;
 
-      // Handle API failure
-      if (allData.length === 0 && !allPagesFetched) {
-        return {
-          content: [{ type: 'text', text: 'Unable to fetch location data.' }],
-          structuredContent: {
-            data: [],
-            totalCount: 0,
-            hasMore: false,
-            offset,
-            limit,
-            incomplete: true,
-            error: 'Unable to fetch location data.'
-          }
-        };
+      // Handle complete API failure (no data and no stale cache)
+      if (allData.length === 0 && !allPagesFetched && error) {
+        return formatErrorResponse(error, 'get_locations');
       }
 
       // 2. Apply filters
@@ -195,13 +177,27 @@ export function getLocations(server: PinMeToMcpServer) {
       // 5. Get cache info
       const cacheInfo = server.locationCache.getCacheInfo();
 
-      // 6. Build response with optional warning for incomplete data
-      const warning = !allPagesFetched
-        ? 'Data may be incomplete due to API pagination errors. Use forceRefresh: true to retry.'
-        : undefined;
+      // 6. Build warning message based on data freshness and completeness
+      let warning: string | undefined;
+      let errorMessage: string | undefined;
+      if (stale && staleAgeSeconds !== undefined && error) {
+        warning = `CAUTION: Returning stale cached data (${staleAgeSeconds}s old) due to API failure. Use forceRefresh: true to retry.`;
+        // Set error field explicitly so AI agents can detect staleness programmatically
+        errorMessage = `Data is stale due to API failure: ${error.code} - ${error.message}`;
+      } else if (!allPagesFetched && error) {
+        // Include specific error details in pagination warning
+        warning = `Data may be incomplete (${error.code}: ${error.message}). Use forceRefresh: true to retry.`;
+      } else if (!allPagesFetched) {
+        warning = 'Data may be incomplete due to API pagination errors. Use forceRefresh: true to retry.';
+      }
+
+      // Include error info if we're returning stale data
+      const responseText = stale
+        ? `${formatListResponse(paginatedData, allPagesFetched)}\n\nWARNING: ${warning}`
+        : formatListResponse(paginatedData, allPagesFetched);
 
       return {
-        content: [{ type: 'text', text: formatListResponse(paginatedData, allPagesFetched) }],
+        content: [{ type: 'text', text: responseText }],
         structuredContent: {
           data: paginatedData,
           totalCount,
@@ -210,10 +206,15 @@ export function getLocations(server: PinMeToMcpServer) {
           limit,
           incomplete: !allPagesFetched,
           warning,
+          // Include error info whenever there's an error (stale cache OR partial pagination failure)
+          // errorMessage is set explicitly when returning stale data so AI agents can detect it
+          ...(errorMessage ? { error: errorMessage } : {}),
+          ...(error ? { errorCode: error.code, retryable: error.retryable } : {}),
           cacheInfo: {
             cached: cacheInfo.cached,
             ageSeconds: cacheInfo.age,
-            totalCached: cacheInfo.size
+            totalCached: cacheInfo.size,
+            stale
           }
         }
       };
@@ -250,20 +251,28 @@ export function searchLocations(server: PinMeToMcpServer) {
     async ({ query, limit = 20 }: { query: string; limit?: number }) => {
       const { locationsApiBaseUrl, accountId } = server.configs;
 
-      // Fetch only the fields we need for searching and display
+      // NOTE: search_locations intentionally bypasses LocationCache and fetches directly.
+      // Rationale:
+      // 1. Search only needs minimal fields (storeId, name, address) - cache stores full objects
+      // 2. Search is a discovery tool - users expect fresh results to find new locations
+      // 3. Search doesn't have stale-cache fallback - this is intentional to ensure accurate results
+      // For bulk operations with resilience, use get_locations which uses the cached data.
       const fieldsParam = 'fields=storeId,name,locationDescriptor,address';
       const url = `${locationsApiBaseUrl}/v4/${accountId}/locations?pagesize=1000&${fieldsParam}`;
-      const [data, areAllPagesFetched] = await server.makePaginatedPinMeToRequest(url);
+      const [data, areAllPagesFetched, lastError] = await server.makePaginatedPinMeToRequest(url);
 
       // Detect API failure: empty array + incomplete pagination = first page failed
-      if (data.length === 0 && !areAllPagesFetched) {
+      if (data.length === 0 && !areAllPagesFetched && lastError) {
+        const errorMessage = `Failed for search query '${query}': ${lastError.message}`;
         return {
-          content: [{ type: 'text', text: 'Unable to fetch location data for search.' }],
+          content: [{ type: 'text', text: errorMessage }],
           structuredContent: {
             data: [],
             totalMatches: 0,
             hasMore: false,
-            error: 'Unable to fetch location data for search.'
+            error: errorMessage,
+            errorCode: lastError.code,
+            retryable: lastError.retryable
           }
         };
       }

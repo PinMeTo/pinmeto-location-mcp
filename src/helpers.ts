@@ -1,4 +1,5 @@
 import { MetricData, InsightsData } from './schemas/output';
+import { ApiError } from './errors';
 
 export type AggregationPeriod =
   | 'daily'
@@ -139,4 +140,24 @@ export function formatListResponse(response: any[], areAllPagesFetched: boolean)
     formattedMessage += '\n' + JSON.stringify(result, null, 2) + '\n' + '-'.repeat(20);
   }
   return formattedMessage;
+}
+
+/**
+ * Formats an ApiError into a standard tool response.
+ * Provides consistent error formatting across all tools.
+ *
+ * @param error The ApiError to format
+ * @param context Optional context string to identify which resource/operation failed
+ *                (e.g., "storeId '1234'" or "location 'Main Street Store'")
+ */
+export function formatErrorResponse(error: ApiError, context?: string) {
+  const message = context ? `Failed for ${context}: ${error.message}` : error.message;
+  return {
+    content: [{ type: 'text' as const, text: message }],
+    structuredContent: {
+      error: message,
+      errorCode: error.code,
+      retryable: error.retryable
+    }
+  };
 }
