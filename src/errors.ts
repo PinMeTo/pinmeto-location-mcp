@@ -3,16 +3,26 @@ import { isAxiosError } from 'axios';
 /**
  * Error codes that categorize API failures.
  * These codes enable programmatic error handling by AI clients.
+ *
+ * This array is the single source of truth - both the TypeScript type
+ * and Zod schema are derived from it to ensure consistency.
  */
-export type ApiErrorCode =
-  | 'AUTH_INVALID_CREDENTIALS' // 401 - wrong app ID/secret
-  | 'AUTH_APP_DISABLED' // 403 - OAuth app revoked
-  | 'BAD_REQUEST' // 400 - malformed request
-  | 'NOT_FOUND' // 404 - resource not found
-  | 'RATE_LIMITED' // 429 - too many requests
-  | 'SERVER_ERROR' // 500/503 - server issues
-  | 'NETWORK_ERROR' // timeout, DNS, connection refused
-  | 'UNKNOWN_ERROR'; // fallback
+export const API_ERROR_CODES = [
+  'AUTH_INVALID_CREDENTIALS', // 401 - wrong app ID/secret
+  'AUTH_APP_DISABLED', // 403 - OAuth app revoked
+  'BAD_REQUEST', // 400 - malformed request
+  'NOT_FOUND', // 404 - resource not found
+  'RATE_LIMITED', // 429 - too many requests
+  'SERVER_ERROR', // 500/503 - server issues
+  'NETWORK_ERROR', // timeout, DNS, connection refused
+  'UNKNOWN_ERROR' // fallback
+] as const;
+
+/**
+ * Union type of all possible API error codes.
+ * Derived from API_ERROR_CODES array for type safety.
+ */
+export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 
 /**
  * Structured error with actionable information.
@@ -46,8 +56,27 @@ export class AuthError extends Error {
 }
 
 /**
+ * Extracts error message from API response body.
+ * Handles common API error response formats.
+ */
+function extractApiErrorMessage(responseData: unknown): string | undefined {
+  if (!responseData || typeof responseData !== 'object') {
+    return undefined;
+  }
+  const data = responseData as Record<string, unknown>;
+  // Common API error message fields
+  return (
+    (typeof data.message === 'string' && data.message) ||
+    (typeof data.error === 'string' && data.error) ||
+    (typeof data.error_description === 'string' && data.error_description) ||
+    undefined
+  );
+}
+
+/**
  * Maps an unknown error to a structured ApiError.
  * Handles Axios errors, AuthErrors, and unknown errors.
+ * Preserves API response details when available.
  */
 export function mapAxiosErrorToApiError(e: unknown): ApiError {
   // Handle AuthError (from token fetch)
@@ -62,40 +91,51 @@ export function mapAxiosErrorToApiError(e: unknown): ApiError {
   // Handle Axios errors
   if (isAxiosError(e)) {
     const status = e.response?.status;
+    const apiMessage = extractApiErrorMessage(e.response?.data);
+
+    // No response - network error (check first to handle undefined status)
+    if (!e.response) {
+      const detail = e.code || e.message || 'Unknown network error';
+      return {
+        code: 'NETWORK_ERROR',
+        message: `Network error: ${detail}. Check internet connection.`,
+        retryable: true
+      };
+    }
 
     switch (status) {
       case 400:
         return {
           code: 'BAD_REQUEST',
-          message: 'Invalid request parameters. Check date formats and store IDs.',
+          message: apiMessage || 'Invalid request parameters. Check date formats and store IDs.',
           statusCode: 400,
           retryable: false
         };
       case 401:
         return {
           code: 'AUTH_INVALID_CREDENTIALS',
-          message: 'Authentication failed. Check PINMETO_APP_ID and PINMETO_APP_SECRET.',
+          message: apiMessage || 'Authentication failed. Check PINMETO_APP_ID and PINMETO_APP_SECRET.',
           statusCode: 401,
           retryable: false
         };
       case 403:
         return {
           code: 'AUTH_APP_DISABLED',
-          message: 'OAuth application is disabled or revoked. Contact PinMeTo support.',
+          message: apiMessage || 'OAuth application is disabled or revoked. Contact PinMeTo support.',
           statusCode: 403,
           retryable: false
         };
       case 404:
         return {
           code: 'NOT_FOUND',
-          message: 'Resource not found. Verify the store ID exists.',
+          message: apiMessage || 'Resource not found. Verify the store ID exists.',
           statusCode: 404,
           retryable: false
         };
       case 429:
         return {
           code: 'RATE_LIMITED',
-          message: 'Rate limit exceeded. Wait before retrying.',
+          message: apiMessage || 'Rate limit exceeded. Wait before retrying.',
           statusCode: 429,
           retryable: true
         };
@@ -105,18 +145,19 @@ export function mapAxiosErrorToApiError(e: unknown): ApiError {
       case 504:
         return {
           code: 'SERVER_ERROR',
-          message: 'PinMeTo API server error. Try again later.',
+          message: apiMessage || 'PinMeTo API server error. Try again later.',
           statusCode: status,
           retryable: true
         };
       default:
-        // No response - network error
-        if (!e.response) {
-          const detail = e.code || e.message || 'Unknown network error';
+        // Unhandled HTTP status code - provide informative message
+        if (status !== undefined) {
+          const is5xx = status >= 500 && status < 600;
           return {
-            code: 'NETWORK_ERROR',
-            message: `Network error: ${detail}. Check internet connection.`,
-            retryable: true
+            code: is5xx ? 'SERVER_ERROR' : 'UNKNOWN_ERROR',
+            message: apiMessage || `API returned unexpected status ${status}.`,
+            statusCode: status,
+            retryable: is5xx
           };
         }
     }

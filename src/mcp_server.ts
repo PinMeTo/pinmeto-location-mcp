@@ -56,11 +56,11 @@ export class PinMeToMcpServer extends McpServer {
   /**
    * Fetches all locations from the API.
    * Used by LocationCache for cache population.
+   * Returns [data, allPagesFetched, error] to propagate error info to cache.
    */
-  private async _fetchAllLocations(): Promise<[any[], boolean]> {
+  private async _fetchAllLocations(): Promise<[any[], boolean, ApiError | null]> {
     const url = `${this._configs.locationsApiBaseUrl}/v4/${this._configs.accountId}/locations?pagesize=1000`;
-    const [data, allPagesFetched] = await this.makePaginatedPinMeToRequest(url);
-    return [data, allPagesFetched];
+    return await this.makePaginatedPinMeToRequest(url);
   }
 
   public async makePinMeToRequest<T = any>(url: string): Promise<ApiResult<T>> {

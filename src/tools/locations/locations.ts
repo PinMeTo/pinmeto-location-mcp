@@ -131,22 +131,12 @@ export function getLocations(server: PinMeToMcpServer) {
       const forceRefresh = args.forceRefresh ?? false;
 
       // 1. Get data from cache (or fetch if expired/forced)
-      const [allData, allPagesFetched] = await server.locationCache.getLocations(forceRefresh);
+      const cacheResult = await server.locationCache.getLocations(forceRefresh);
+      const { data: allData, allPagesFetched, error, stale, staleAgeSeconds } = cacheResult;
 
-      // Handle API failure
-      if (allData.length === 0 && !allPagesFetched) {
-        return {
-          content: [{ type: 'text', text: 'Unable to fetch location data.' }],
-          structuredContent: {
-            data: [],
-            totalCount: 0,
-            hasMore: false,
-            offset,
-            limit,
-            incomplete: true,
-            error: 'Unable to fetch location data.'
-          }
-        };
+      // Handle complete API failure (no data and no stale cache)
+      if (allData.length === 0 && !allPagesFetched && error) {
+        return formatErrorResponse(error);
       }
 
       // 2. Apply filters
@@ -187,13 +177,21 @@ export function getLocations(server: PinMeToMcpServer) {
       // 5. Get cache info
       const cacheInfo = server.locationCache.getCacheInfo();
 
-      // 6. Build response with optional warning for incomplete data
-      const warning = !allPagesFetched
-        ? 'Data may be incomplete due to API pagination errors. Use forceRefresh: true to retry.'
-        : undefined;
+      // 6. Build warning message based on data freshness and completeness
+      let warning: string | undefined;
+      if (stale && staleAgeSeconds !== undefined) {
+        warning = `CAUTION: Returning stale cached data (${staleAgeSeconds}s old) due to API failure. Use forceRefresh: true to retry.`;
+      } else if (!allPagesFetched) {
+        warning = 'Data may be incomplete due to API pagination errors. Use forceRefresh: true to retry.';
+      }
+
+      // Include error info if we're returning stale data
+      const responseText = stale
+        ? `${formatListResponse(paginatedData, allPagesFetched)}\n\nWARNING: ${warning}`
+        : formatListResponse(paginatedData, allPagesFetched);
 
       return {
-        content: [{ type: 'text', text: formatListResponse(paginatedData, allPagesFetched) }],
+        content: [{ type: 'text', text: responseText }],
         structuredContent: {
           data: paginatedData,
           totalCount,
@@ -202,10 +200,14 @@ export function getLocations(server: PinMeToMcpServer) {
           limit,
           incomplete: !allPagesFetched,
           warning,
+          ...(stale && error
+            ? { errorCode: error.code, retryable: error.retryable }
+            : {}),
           cacheInfo: {
             cached: cacheInfo.cached,
             ageSeconds: cacheInfo.age,
-            totalCached: cacheInfo.size
+            totalCached: cacheInfo.size,
+            stale
           }
         }
       };

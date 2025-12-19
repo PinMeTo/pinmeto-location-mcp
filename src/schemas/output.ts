@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { API_ERROR_CODES } from '../errors';
 
 // ============================================================================
 // Error Schema
@@ -7,17 +8,11 @@ import { z } from 'zod';
 /**
  * Standard error fields for all tool outputs.
  * Enables programmatic error handling by AI clients.
+ *
+ * Derived from API_ERROR_CODES in errors.ts to ensure consistency
+ * between TypeScript types and Zod validation.
  */
-export const ApiErrorCodeSchema = z.enum([
-  'AUTH_INVALID_CREDENTIALS',
-  'AUTH_APP_DISABLED',
-  'BAD_REQUEST',
-  'NOT_FOUND',
-  'RATE_LIMITED',
-  'SERVER_ERROR',
-  'NETWORK_ERROR',
-  'UNKNOWN_ERROR'
-]);
+export const ApiErrorCodeSchema = z.enum(API_ERROR_CODES);
 
 // ============================================================================
 // Base Schemas
