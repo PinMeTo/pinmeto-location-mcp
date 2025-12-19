@@ -1,3 +1,5 @@
+import { MetricData, InsightsData } from './schemas/output';
+
 export type AggregationPeriod =
   | 'daily'
   | 'weekly'
@@ -6,16 +8,6 @@ export type AggregationPeriod =
   | 'half-yearly'
   | 'yearly'
   | 'total';
-
-interface MetricData {
-  key: string;
-  value: number;
-}
-
-interface InsightsData {
-  key: string;
-  metrics: MetricData[];
-}
 
 /**
  * Aggregates metrics data by the specified time period
