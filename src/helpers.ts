@@ -1,4 +1,5 @@
 import { MetricData, InsightsData } from './schemas/output';
+import { ApiError } from './errors';
 
 export type AggregationPeriod =
   | 'daily'
@@ -139,4 +140,19 @@ export function formatListResponse(response: any[], areAllPagesFetched: boolean)
     formattedMessage += '\n' + JSON.stringify(result, null, 2) + '\n' + '-'.repeat(20);
   }
   return formattedMessage;
+}
+
+/**
+ * Formats an ApiError into a standard tool response.
+ * Provides consistent error formatting across all tools.
+ */
+export function formatErrorResponse(error: ApiError) {
+  return {
+    content: [{ type: 'text' as const, text: error.message }],
+    structuredContent: {
+      error: error.message,
+      errorCode: error.code,
+      retryable: error.retryable
+    }
+  };
 }

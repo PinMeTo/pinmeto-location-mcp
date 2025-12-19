@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
-import { aggregateMetrics, AggregationPeriod } from '../../helpers';
+import { aggregateMetrics, AggregationPeriod, formatErrorResponse } from '../../helpers';
 import {
   InsightsOutputSchema,
   RatingsOutputSchema,
@@ -44,22 +44,14 @@ export function getGoogleLocationInsights(server: PinMeToMcpServer) {
       const { apiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/google?from=${from}&to=${to}`;
-      const locationData = await server.makePinMeToRequest(locationUrl);
+      const result = await server.makePinMeToRequest(locationUrl);
 
-      if (!locationData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch insights data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch insights data.' }
-        };
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
 
       // Apply aggregation
-      const aggregatedData = aggregateMetrics(locationData, aggregation);
+      const aggregatedData = aggregateMetrics(result.data, aggregation);
 
       return {
         content: [
@@ -108,21 +100,13 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
       const { apiBaseUrl, accountId } = server.configs;
 
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/google?from=${from}&to=${to}`;
-      const insightsData = await server.makePinMeToRequest(url);
-      if (!insightsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch insights data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch insights data.' }
-        };
+      const result = await server.makePinMeToRequest(url);
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
 
       // Apply aggregation
-      const aggregatedData = aggregateMetrics(insightsData, aggregation);
+      const aggregatedData = aggregateMetrics(result.data, aggregation);
 
       return {
         content: [
@@ -156,26 +140,18 @@ export const getAllGoogleRatings = (server: PinMeToMcpServer) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const url = `${apiBaseUrl}/listings/v3/${accountId}/ratings/google?from=${from}&to=${to}`;
-      const ratingsData = await server.makePinMeToRequest(url);
-      if (!ratingsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch ratings data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch ratings data.' }
-        };
+      const result = await server.makePinMeToRequest(url);
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(ratingsData)
+            text: JSON.stringify(result.data)
           }
         ],
-        structuredContent: { data: ratingsData }
+        structuredContent: { data: result.data }
       };
     }
   );
@@ -201,28 +177,20 @@ export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/ratings/google/${storeId}?from=${from}&to=${to}`;
-      const ratingsData = await server.makePinMeToRequest(locationUrl);
+      const result = await server.makePinMeToRequest(locationUrl);
 
-      if (!ratingsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch ratings data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch ratings data.' }
-        };
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
 
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(ratingsData)
+            text: JSON.stringify(result.data)
           }
         ],
-        structuredContent: { data: ratingsData }
+        structuredContent: { data: result.data }
       };
     }
   );
@@ -247,28 +215,20 @@ export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords?from=${from}&to=${to}`;
-      const keywordsData = await server.makePinMeToRequest(locationUrl);
+      const result = await server.makePinMeToRequest(locationUrl);
 
-      if (!keywordsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch keywords data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch keywords data.' }
-        };
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
 
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(keywordsData)
+            text: JSON.stringify(result.data)
           }
         ],
-        structuredContent: { data: keywordsData }
+        structuredContent: { data: result.data }
       };
     }
   );
@@ -294,28 +254,20 @@ export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords/${storeId}?from=${from}&to=${to}`;
-      const keywordsData = await server.makePinMeToRequest(locationUrl);
+      const result = await server.makePinMeToRequest(locationUrl);
 
-      if (!keywordsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch keywords data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch keywords data.' }
-        };
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
 
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(keywordsData)
+            text: JSON.stringify(result.data)
           }
         ],
-        structuredContent: { data: keywordsData }
+        structuredContent: { data: result.data }
       };
     }
   );

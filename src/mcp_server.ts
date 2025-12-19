@@ -5,8 +5,9 @@ import {
   LATEST_PROTOCOL_VERSION,
   Implementation
 } from '@modelcontextprotocol/sdk/types.js';
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import os from 'os';
+import { ApiResult, ApiError, AuthError, mapAxiosErrorToApiError } from './errors';
 import { LocationCache } from './cache/location-cache';
 import { getLocations, getLocation, searchLocations } from './tools/locations/locations';
 import {
@@ -58,10 +59,11 @@ export class PinMeToMcpServer extends McpServer {
    */
   private async _fetchAllLocations(): Promise<[any[], boolean]> {
     const url = `${this._configs.locationsApiBaseUrl}/v4/${this._configs.accountId}/locations?pagesize=1000`;
-    return this.makePaginatedPinMeToRequest(url);
+    const [data, allPagesFetched] = await this.makePaginatedPinMeToRequest(url);
+    return [data, allPagesFetched];
   }
 
-  public async makePinMeToRequest(url: string) {
+  public async makePinMeToRequest<T = any>(url: string): Promise<ApiResult<T>> {
     try {
       const token = await this._getPinMeToAccessToken();
       const headers = {
@@ -70,32 +72,39 @@ export class PinMeToMcpServer extends McpServer {
       };
 
       const response = await axios.get(url, { headers, timeout: 30000 });
-      return response.data;
-    } catch (e: any) {
-      console.error(`Request failed, reason: ${e}`);
-      return null;
+      return { ok: true, data: response.data };
+    } catch (e: unknown) {
+      const error = mapAxiosErrorToApiError(e);
+      console.error(`Request failed: ${error.code} - ${error.message}`);
+      return { ok: false, error };
     }
   }
 
-  public async makePaginatedPinMeToRequest(url: string): Promise<[any[], boolean]> {
+  public async makePaginatedPinMeToRequest(
+    url: string
+  ): Promise<[any[], boolean, ApiError | null]> {
+    type PaginatedResponse = { data?: any[]; paging?: { nextUrl?: string } };
     const allData: any[] = [];
     let nextUrl: string | undefined = url;
     let areAllPagesFetched = true;
+    let lastError: ApiError | null = null;
 
     while (nextUrl) {
-      const resp = await this.makePinMeToRequest(nextUrl);
-      if (!resp) {
-        console.warn("Couldn't fetch all pages for the request");
+      const result: ApiResult<PaginatedResponse> =
+        await this.makePinMeToRequest<PaginatedResponse>(nextUrl);
+      if (!result.ok) {
+        console.warn(`Couldn't fetch page: ${result.error.code} - ${result.error.message}`);
         areAllPagesFetched = false;
+        lastError = result.error;
         break;
       }
-      const pageData: any[] = resp['data'] || [];
+      const pageData: any[] = result.data.data || [];
       allData.push(...pageData);
-      const paging = resp['paging'] || {};
-      nextUrl = paging['nextUrl'];
+      const paging: { nextUrl?: string } = result.data.paging || {};
+      nextUrl = paging.nextUrl;
       if (!nextUrl || pageData.length == 0) break;
     }
-    return [allData, areAllPagesFetched];
+    return [allData, areAllPagesFetched, lastError];
   }
 
   private async _getPinMeToAccessToken(): Promise<string> {
@@ -122,16 +131,60 @@ export class PinMeToMcpServer extends McpServer {
     };
     const data = new URLSearchParams({ grant_type: 'client_credentials' });
 
-    const response = await axios.post(tokenUrl, data, {
-      headers,
-      timeout: 30000
-    });
-    const respData = response.data;
-    const token = respData['access_token'];
-    if (!token) {
-      throw new Error('No access_token in response.');
+    try {
+      const response = await axios.post(tokenUrl, data, {
+        headers,
+        timeout: 30000
+      });
+      const respData = response.data;
+      const token = respData['access_token'];
+      if (!token) {
+        throw new AuthError(
+          'AUTH_INVALID_CREDENTIALS',
+          'No access_token in response. Check PINMETO_APP_ID and PINMETO_APP_SECRET.'
+        );
+      }
+      return token;
+    } catch (e: unknown) {
+      // Re-throw AuthErrors as-is
+      if (e instanceof AuthError) {
+        throw e;
+      }
+
+      // Handle Axios errors with specific auth messages
+      if (isAxiosError(e)) {
+        const status = e.response?.status;
+        if (status === 401) {
+          throw new AuthError(
+            'AUTH_INVALID_CREDENTIALS',
+            'Invalid credentials. Verify PINMETO_APP_ID and PINMETO_APP_SECRET are correct.'
+          );
+        }
+        if (status === 403) {
+          throw new AuthError(
+            'AUTH_APP_DISABLED',
+            'OAuth application is disabled or revoked. Contact PinMeTo support to re-enable.'
+          );
+        }
+        if (status === 400) {
+          throw new AuthError(
+            'BAD_REQUEST',
+            'Malformed authentication request. Check OAuth configuration.'
+          );
+        }
+        // Network errors during auth
+        if (!e.response) {
+          const detail = e.code || e.message || 'Unknown network error';
+          throw new AuthError('NETWORK_ERROR', `Authentication failed: ${detail}`);
+        }
+      }
+
+      // Fallback for unknown errors
+      throw new AuthError(
+        'UNKNOWN_ERROR',
+        `Authentication failed: ${e instanceof Error ? e.message : 'Unknown error'}`
+      );
     }
-    return token;
   }
 }
 

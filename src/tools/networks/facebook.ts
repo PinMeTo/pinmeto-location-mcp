@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
-import { aggregateMetrics, AggregationPeriod } from '../../helpers';
+import { aggregateMetrics, AggregationPeriod, formatErrorResponse } from '../../helpers';
 import { InsightsOutputSchema, RatingsOutputSchema } from '../../schemas/output';
 
 export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
@@ -40,22 +40,14 @@ export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
       const { apiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/facebook?from=${from}&to=${to}`;
-      const locationData = await server.makePinMeToRequest(locationUrl);
+      const result = await server.makePinMeToRequest(locationUrl);
 
-      if (!locationData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch insights data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch insights data.' }
-        };
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
 
       // Apply aggregation
-      const aggregatedData = aggregateMetrics(locationData, aggregation);
+      const aggregatedData = aggregateMetrics(result.data, aggregation);
 
       return {
         content: [
@@ -104,21 +96,13 @@ export function getAllFacebookInsights(server: PinMeToMcpServer) {
       const { apiBaseUrl, accountId } = server.configs;
 
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/facebook?from=${from}&to=${to}`;
-      const insightsData = await server.makePinMeToRequest(url);
-      if (!insightsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch insights data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch insights data.' }
-        };
+      const result = await server.makePinMeToRequest(url);
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
 
       // Apply aggregation
-      const aggregatedData = aggregateMetrics(insightsData, aggregation);
+      const aggregatedData = aggregateMetrics(result.data, aggregation);
 
       return {
         content: [
@@ -167,21 +151,13 @@ export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const url = `${apiBaseUrl}/listings/v4/${accountId}/brand-page/insights/facebook?from=${from}&to=${to}`;
-      const insightsData = await server.makePinMeToRequest(url);
-      if (!insightsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch insights data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch insights data.' }
-        };
+      const result = await server.makePinMeToRequest(url);
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
 
       // Apply aggregation
-      const aggregatedData = aggregateMetrics(insightsData, aggregation);
+      const aggregatedData = aggregateMetrics(result.data, aggregation);
 
       return {
         content: [
@@ -214,26 +190,18 @@ export const getAllFacebookRatings = (server: PinMeToMcpServer) => {
     async ({ from, to }: { from: string; to: string }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const url = `${apiBaseUrl}/listings/v3/${accountId}/ratings/facebook?from=${from}&to=${to}`;
-      const ratingsData = await server.makePinMeToRequest(url);
-      if (!ratingsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch ratings data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch ratings data.' }
-        };
+      const result = await server.makePinMeToRequest(url);
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(ratingsData)
+            text: JSON.stringify(result.data)
           }
         ],
-        structuredContent: { data: ratingsData }
+        structuredContent: { data: result.data }
       };
     }
   );
@@ -259,28 +227,20 @@ export const getFacebookLocationRatings = (server: PinMeToMcpServer) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/ratings/facebook/${storeId}?from=${from}&to=${to}`;
-      const ratingsData = await server.makePinMeToRequest(locationUrl);
+      const result = await server.makePinMeToRequest(locationUrl);
 
-      if (!ratingsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch ratings data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch ratings data.' }
-        };
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
 
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(ratingsData)
+            text: JSON.stringify(result.data)
           }
         ],
-        structuredContent: { data: ratingsData }
+        structuredContent: { data: result.data }
       };
     }
   );

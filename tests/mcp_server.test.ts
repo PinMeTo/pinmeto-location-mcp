@@ -10,59 +10,63 @@ const testApiBaseUrl = 'https://api.example.com';
 const testLocationApiBaseUrl = 'https://locations.api.example.com';
 const testAccessToken = 'test_token';
 
-vi.mock('axios', () => ({
-  default: {
-    defaults: {
-      headers: {
-        common: {}
-      }
-    },
-    get: vi.fn((url: string, { headers }) => {
-      console.error('Mocked axios GET request', url, headers);
-      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
-        return Promise.reject(new Error('Unauthorized'));
-      }
-
-      if (url === `${testApiBaseUrl}/locations`) {
-        return Promise.resolve({ data: { data: [{ id: 1 }] } });
-      }
-
-      if (url === `${testApiBaseUrl}/page1`) {
-        return Promise.resolve({
-          data: {
-            data: [{ id: 1 }, { id: 2 }],
-            paging: { nextUrl: `${testApiBaseUrl}/page2` }
-          }
-        });
-      }
-
-      if (url === `${testApiBaseUrl}/page2`) {
-        return Promise.resolve({
-          data: {
-            data: [{ id: 3 }],
-            paging: {}
-          }
-        });
-      }
-
-      return Promise.reject(new Error('Not found'));
-    }),
-    post: vi.fn((url: string, data, { headers }) => {
-      console.error('Mocked axios POST request', url, data);
-
-      if (url === `${testApiBaseUrl}/oauth/token`) {
-        if (
-          headers['Authorization'] == 'Basic dGVzdF9pZDp0ZXN0X3NlY3JldA==' &&
-          headers['Content-Type'] == 'application/x-www-form-urlencoded'
-        ) {
-          return Promise.resolve({ data: { access_token: testAccessToken } });
+vi.mock('axios', async importOriginal => {
+  const actual = (await importOriginal()) as any;
+  return {
+    default: {
+      defaults: {
+        headers: {
+          common: {}
         }
-      }
+      },
+      get: vi.fn((url: string, { headers }) => {
+        console.error('Mocked axios GET request', url, headers);
+        if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+          return Promise.reject(new Error('Unauthorized'));
+        }
 
-      return Promise.reject(new Error('Not found'));
-    })
-  }
-}));
+        if (url === `${testApiBaseUrl}/locations`) {
+          return Promise.resolve({ data: { data: [{ id: 1 }] } });
+        }
+
+        if (url === `${testApiBaseUrl}/page1`) {
+          return Promise.resolve({
+            data: {
+              data: [{ id: 1 }, { id: 2 }],
+              paging: { nextUrl: `${testApiBaseUrl}/page2` }
+            }
+          });
+        }
+
+        if (url === `${testApiBaseUrl}/page2`) {
+          return Promise.resolve({
+            data: {
+              data: [{ id: 3 }],
+              paging: {}
+            }
+          });
+        }
+
+        return Promise.reject(new Error('Not found'));
+      }),
+      post: vi.fn((url: string, data, { headers }) => {
+        console.error('Mocked axios POST request', url, data);
+
+        if (url === `${testApiBaseUrl}/oauth/token`) {
+          if (
+            headers['Authorization'] == 'Basic dGVzdF9pZDp0ZXN0X3NlY3JldA==' &&
+            headers['Content-Type'] == 'application/x-www-form-urlencoded'
+          ) {
+            return Promise.resolve({ data: { access_token: testAccessToken } });
+          }
+        }
+
+        return Promise.reject(new Error('Not found'));
+      })
+    },
+    isAxiosError: actual.isAxiosError
+  };
+});
 
 beforeAll(() => {
   process.env.NODE_ENV = 'development';
@@ -86,7 +90,8 @@ describe('PinMeToMcpServer', () => {
   it('PinMeToRequest should return correct data', async () => {
     const server = createMcpServer();
     await expect(server.makePinMeToRequest(`${testApiBaseUrl}/locations`)).resolves.toEqual({
-      data: [{ id: 1 }]
+      ok: true,
+      data: { data: [{ id: 1 }] }
     });
     expect(server.configs.accessToken).toBe(testAccessToken);
   });
@@ -95,7 +100,8 @@ describe('PinMeToMcpServer', () => {
     const server = createMcpServer();
     await expect(server.makePaginatedPinMeToRequest(`${testApiBaseUrl}/page1`)).resolves.toEqual([
       [{ id: 1 }, { id: 2 }, { id: 3 }],
-      true
+      true,
+      null
     ]);
   });
 });
@@ -788,9 +794,10 @@ describe('Search Locations', () => {
 
     const searchResponse = responses.find(r => r.id === 1);
     expect(searchResponse).toBeDefined();
-    expect(searchResponse.result.structuredContent.error).toBe(
-      'Unable to fetch location data for search.'
-    );
+    // With structured errors, we now get the actual error message from the ApiError
+    expect(searchResponse.result.structuredContent.error).toBe('Network error');
+    expect(searchResponse.result.structuredContent.errorCode).toBe('UNKNOWN_ERROR');
+    expect(searchResponse.result.structuredContent.retryable).toBe(false);
     expect(searchResponse.result.structuredContent.data).toEqual([]);
     expect(searchResponse.result.structuredContent.totalMatches).toBe(0);
     expect(searchResponse.result.structuredContent.hasMore).toBe(false);

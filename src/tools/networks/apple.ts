@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
-import { aggregateMetrics, AggregationPeriod } from '../../helpers';
+import { aggregateMetrics, AggregationPeriod, formatErrorResponse } from '../../helpers';
 import { InsightsOutputSchema } from '../../schemas/output';
 
 export function getAppleLocationInsights(server: PinMeToMcpServer) {
@@ -40,22 +40,14 @@ export function getAppleLocationInsights(server: PinMeToMcpServer) {
       const { apiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/apple?from=${from}&to=${to}`;
-      const locationData = await server.makePinMeToRequest(locationUrl);
+      const result = await server.makePinMeToRequest(locationUrl);
 
-      if (!locationData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch insights data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch insights data.' }
-        };
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
 
       // Apply aggregation
-      const aggregatedData = aggregateMetrics(locationData, aggregation);
+      const aggregatedData = aggregateMetrics(result.data, aggregation);
 
       return {
         content: [
@@ -104,21 +96,13 @@ export function getAllAppleInsights(server: PinMeToMcpServer) {
       const { apiBaseUrl, accountId } = server.configs;
 
       const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/apple?from=${from}&to=${to}`;
-      const insightsData = await server.makePinMeToRequest(url);
-      if (!insightsData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch insights data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch insights data.' }
-        };
+      const result = await server.makePinMeToRequest(url);
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
 
       // Apply aggregation
-      const aggregatedData = aggregateMetrics(insightsData, aggregation);
+      const aggregatedData = aggregateMetrics(result.data, aggregation);
 
       return {
         content: [

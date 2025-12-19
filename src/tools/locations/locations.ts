@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { formatListResponse } from '../../helpers';
+import { formatErrorResponse, formatListResponse } from '../../helpers';
 import { PinMeToMcpServer } from '../../mcp_server';
 import {
   LocationOutputSchema,
@@ -25,28 +25,20 @@ export function getLocation(server: PinMeToMcpServer) {
       const { locationsApiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${locationsApiBaseUrl}/v4/${accountId}/locations/${storeId}`;
-      const locationData = await server.makePinMeToRequest(locationUrl);
+      const result = await server.makePinMeToRequest(locationUrl);
 
-      if (!locationData) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Unable to fetch location data.'
-            }
-          ],
-          structuredContent: { error: 'Unable to fetch location data.' }
-        };
+      if (!result.ok) {
+        return formatErrorResponse(result.error);
       }
 
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(locationData)
+            text: JSON.stringify(result.data)
           }
         ],
-        structuredContent: { data: locationData }
+        structuredContent: { data: result.data }
       };
     }
   );
@@ -253,17 +245,19 @@ export function searchLocations(server: PinMeToMcpServer) {
       // Fetch only the fields we need for searching and display
       const fieldsParam = 'fields=storeId,name,locationDescriptor,address';
       const url = `${locationsApiBaseUrl}/v4/${accountId}/locations?pagesize=1000&${fieldsParam}`;
-      const [data, areAllPagesFetched] = await server.makePaginatedPinMeToRequest(url);
+      const [data, areAllPagesFetched, lastError] = await server.makePaginatedPinMeToRequest(url);
 
       // Detect API failure: empty array + incomplete pagination = first page failed
-      if (data.length === 0 && !areAllPagesFetched) {
+      if (data.length === 0 && !areAllPagesFetched && lastError) {
         return {
-          content: [{ type: 'text', text: 'Unable to fetch location data for search.' }],
+          content: [{ type: 'text', text: lastError.message }],
           structuredContent: {
             data: [],
             totalMatches: 0,
             hasMore: false,
-            error: 'Unable to fetch location data for search.'
+            error: lastError.message,
+            errorCode: lastError.code,
+            retryable: lastError.retryable
           }
         };
       }

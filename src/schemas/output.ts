@@ -1,6 +1,25 @@
 import { z } from 'zod';
 
 // ============================================================================
+// Error Schema
+// ============================================================================
+
+/**
+ * Standard error fields for all tool outputs.
+ * Enables programmatic error handling by AI clients.
+ */
+export const ApiErrorCodeSchema = z.enum([
+  'AUTH_INVALID_CREDENTIALS',
+  'AUTH_APP_DISABLED',
+  'BAD_REQUEST',
+  'NOT_FOUND',
+  'RATE_LIMITED',
+  'SERVER_ERROR',
+  'NETWORK_ERROR',
+  'UNKNOWN_ERROR'
+]);
+
+// ============================================================================
 // Base Schemas
 // ============================================================================
 
@@ -34,7 +53,9 @@ export const InsightsDataSchema = z.object({
  */
 export const InsightsOutputSchema = {
   data: z.array(InsightsDataSchema).describe('Array of insights data grouped by metric dimension'),
-  error: z.string().optional().describe('Error message if the request failed')
+  error: z.string().optional().describe('Error message if the request failed'),
+  errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
+  retryable: z.boolean().optional().describe('Whether the operation can be retried')
 };
 
 /**
@@ -43,7 +64,9 @@ export const InsightsOutputSchema = {
  */
 export const RatingsOutputSchema = {
   data: z.unknown().describe('Ratings data from the PinMeTo API'),
-  error: z.string().optional().describe('Error message if the request failed')
+  error: z.string().optional().describe('Error message if the request failed'),
+  errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
+  retryable: z.boolean().optional().describe('Whether the operation can be retried')
 };
 
 /**
@@ -52,7 +75,9 @@ export const RatingsOutputSchema = {
  */
 export const KeywordsOutputSchema = {
   data: z.unknown().describe('Keywords data from the PinMeTo API'),
-  error: z.string().optional().describe('Error message if the request failed')
+  error: z.string().optional().describe('Error message if the request failed'),
+  errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
+  retryable: z.boolean().optional().describe('Whether the operation can be retried')
 };
 
 /**
@@ -76,7 +101,9 @@ export const LocationOutputSchema = {
     })
     .passthrough()
     .describe('Location data from the PinMeTo API'),
-  error: z.string().optional().describe('Error message if the request failed')
+  error: z.string().optional().describe('Error message if the request failed'),
+  errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
+  retryable: z.boolean().optional().describe('Whether the operation can be retried')
 };
 
 /**
@@ -101,7 +128,9 @@ export const LocationsOutputSchema = {
   incomplete: z.boolean().describe('Whether data may be incomplete due to pagination errors'),
   warning: z.string().optional().describe('Warning message if data may be incomplete'),
   cacheInfo: CacheInfoSchema.optional().describe('Cache status information'),
-  error: z.string().optional().describe('Error message if the request failed')
+  error: z.string().optional().describe('Error message if the request failed'),
+  errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
+  retryable: z.boolean().optional().describe('Whether the operation can be retried')
 };
 
 /**
@@ -121,7 +150,9 @@ export const SearchResultOutputSchema = {
     .describe('Matching locations with minimal data for discovery'),
   totalMatches: z.number().nonnegative().describe('Total number of locations matching the query'),
   hasMore: z.boolean().describe('Whether more results exist beyond the limit'),
-  error: z.string().optional().describe('Error message if the request failed')
+  error: z.string().optional().describe('Error message if the request failed'),
+  errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
+  retryable: z.boolean().optional().describe('Whether the operation can be retried')
 };
 
 // ============================================================================
