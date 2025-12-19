@@ -6,7 +6,9 @@ import {
   Implementation
 } from '@modelcontextprotocol/sdk/types.js';
 import axios, { isAxiosError } from 'axios';
+import { readFileSync } from 'fs';
 import os from 'os';
+import { dirname, join } from 'path';
 import { ApiResult, ApiError, AuthError, mapAxiosErrorToApiError } from './errors';
 import { LocationCache } from './cache/location-cache';
 import { getLocations, getLocation, searchLocations } from './tools/locations/locations';
@@ -31,8 +33,11 @@ import { Configs, getConfigs } from './configs';
 
 import { ServerOptions } from '@modelcontextprotocol/sdk/server';
 
-const PACKAGE_NAME = '@pinmeto/pinmeto-location-mcp';
-const PACKAGE_VERSION = '1.0.2';
+const pkg = JSON.parse(
+  readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')
+) as { name: string; version: string };
+const PACKAGE_NAME = pkg.name;
+const PACKAGE_VERSION = pkg.version;
 const TOKEN_CACHE_SECONDS = 59 * 60;
 
 export class PinMeToMcpServer extends McpServer {
