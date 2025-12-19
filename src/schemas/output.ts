@@ -109,7 +109,8 @@ export const LocationOutputSchema = {
 export const CacheInfoSchema = z.object({
   cached: z.boolean().describe('Whether data was served from cache'),
   ageSeconds: z.number().optional().describe('Cache age in seconds'),
-  totalCached: z.number().optional().describe('Total locations in cache')
+  totalCached: z.number().optional().describe('Total locations in cache'),
+  stale: z.boolean().optional().describe('Whether cache data is stale and being refreshed in background')
 });
 
 /**
