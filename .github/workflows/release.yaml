@@ -1,8 +1,8 @@
 name: Release MCP Desktop Extension
 
 # This workflow serves as a backup/CI release path.
-# Primary release flow: run `npm run release:draft` locally.
-# release-it handles version bump, changelog, tag, and draft release creation.
+# Primary release flow: run commands locally (see CLAUDE.md).
+# Changesets handles version bumps and changelog generation.
 
 on:
   workflow_dispatch:
@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history needed for conventional-changelog
+          fetch-depth: 0  # Full history needed for changelog
 
       - uses: actions/setup-node@v4
         with:
@@ -44,8 +44,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Release
+      - name: Apply version bump
         if: inputs.dry_run != true
-        run: npx release-it --ci
+        run: npm run release:version
+
+      - name: Get version for commit message
+        if: inputs.dry_run != true
+        id: version
+        run: echo "version=$(node -p 'require(\"./package.json\").version')" >> "$GITHUB_OUTPUT"
+
+      - name: Commit version changes
+        if: inputs.dry_run != true
+        run: |
+          git add -A
+          git diff --staged --quiet || git commit -m "chore: release v${VERSION}"
+          git push
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+
+      - name: Create draft release
+        if: inputs.dry_run != true
+        run: npm run release:draft
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

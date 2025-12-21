@@ -13,8 +13,11 @@
     "format": "prettier --write \"**/*.{js,ts}\"",
     "inspector": "npx @modelcontextprotocol/inspector node --env-file=.env.local build/index.js",
     "test": "vitest --run",
-    "release:prepare": "release-it --dry-run",
-    "release:draft": "release-it",
+    "changeset": "changeset",
+    "changeset:add": "changeset add",
+    "release:prepare": "changeset status --verbose",
+    "release:version": "changeset version && node scripts/update-readme-badges.js",
+    "release:draft": "npm test && npm run build && npx @anthropic-ai/mcpb pack && node scripts/create-gh-release.js",
     "release:publish": "gh release edit $(git describe --tags --abbrev=0) --draft=false"
   },
   "repository": {
@@ -39,13 +42,12 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.5.2",
+    "@changesets/cli": "^2.29.8",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
-    "@release-it/conventional-changelog": "^10.0.1",
     "@types/node": "^24.5.1",
-    "conventional-changelog-conventionalcommits": "^9.1.0",
     "prettier": "^3.6.2",
-    "release-it": "^19.1.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }

@@ -23,6 +23,7 @@ bd close bd-a1b2 "Completed authentication"
 
 Do not set a bead to closed before its PR have been approved.
 When starting on a new bead set it to in-progres and asign it to the curent git user
+Alwase create a new bead(s) for new tasks/issues/fixes so all changes are tracked
 
 ## Development Commands
 
@@ -43,31 +44,37 @@ npm run format             # Format code with Prettier
 
 ### Release
 
-This project uses [release-it](https://github.com/release-it/release-it) with conventional commits for automated versioning and changelog generation.
+This project uses [Changesets](https://github.com/changesets/changesets) for version management and changelog generation.
 
-**Commit Message Format** (determines version bump):
+**Adding Changes (Contributors)**:
 ```bash
-feat: add new tool        # Minor bump (1.0.0 → 1.1.0)
-fix: correct API handling # Patch bump (1.0.0 → 1.0.1)
-feat!: breaking change    # Major bump (1.0.0 → 2.0.0)
-docs: update readme       # No version bump (non-releasable)
+npx changeset add          # Add a changeset for your changes
+# Select: major/minor/patch
+# Write: summary (appears in CHANGELOG)
+git add .changeset/ && git commit -m "docs: add changeset"
 ```
+
+**Version Guidelines**:
+- **patch**: Bug fixes, documentation, internal changes
+- **minor**: New features, enhancements (backwards compatible)
+- **major**: Breaking changes (API changes, removed features)
 
 **Release Commands**:
 ```bash
-npm run release:prepare    # Dry-run: preview version bump and changelog
-npm run release:draft      # Create draft GitHub release with .mcpb artifact
+npm run release:prepare    # Preview pending changesets
+npm run release:version    # Bump version + update CHANGELOG + README badges
+npm run release:draft      # Test, build, pack, create draft GitHub release
 npm run release:publish    # Publish the draft release (or use GitHub UI)
 npm run clean              # Remove build directory
 ```
 
-**Release Flow**:
-1. Ensure commits follow conventional format
-2. Run `npm run release:prepare` to preview changes
-3. Run `npm run release:draft` to create draft release
-   - Automatically updates README badges to new version
-   - Creates .mcpb artifact and draft GitHub release
-4. Review draft on GitHub, then publish
+**Release Flow (Maintainers)**:
+1. Run `npm run release:prepare` to see pending changes
+2. Run `npm run release:version` to apply version bump
+3. Commit: `git add -A && git commit -m "chore: release vX.Y.Z"`
+4. Run `npm run release:draft` to create draft release
+5. Review draft on GitHub, then run `npm run release:publish`
+6. Push: `git push && git push --tags`
 
 ## Environment Configuration
 
