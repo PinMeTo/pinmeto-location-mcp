@@ -29,7 +29,11 @@ export function getAppleInsights(server: PinMeToMcpServer) {
     'pinmeto_get_apple_insights',
     {
       description:
-        'Fetch Apple metrics for all locations, or a single location if storeId provided. Supports time aggregation (default: total).',
+        'Fetch Apple metrics for all locations, or a single location if storeId provided. Supports time aggregation (default: total).\n\n' +
+        'Error Handling:\n' +
+        '  - Rate limit (429): errorCode="RATE_LIMITED", message includes retry timing\n' +
+        '  - Not found (404): errorCode="NOT_FOUND" if storeId doesn\'t exist\n' +
+        '  - All errors: check structuredContent.errorCode and .retryable for programmatic handling',
       inputSchema: {
         storeId: z.string().optional().describe('Optional store ID to fetch a single location'),
         from: DateSchema.describe('Start date (YYYY-MM-DD)'),

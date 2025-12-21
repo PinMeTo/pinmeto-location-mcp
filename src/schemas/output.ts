@@ -79,19 +79,21 @@ export const AddressSchema = z
 /**
  * Contact information for locations.
  * Uses passthrough to allow extra API fields.
+ * Note: email/homepage validators are lenient to handle empty strings from API
  */
 export const ContactSchema = z
   .object({
     phone: z.string().optional().describe('Phone number'),
-    email: z.string().email().optional().describe('Email address'),
-    homepage: z.string().url().optional().describe('Website URL')
+    email: z.string().optional().describe('Email address'),
+    homepage: z.string().optional().describe('Website URL')
   })
   .passthrough();
 
 /**
- * Open hours structure - maps day names to hour strings.
+ * Open hours structure - maps day names to hour data.
+ * API returns objects with open/close times, not simple strings.
  */
-export const OpenHoursSchema = z.record(z.string(), z.string()).describe('Day to hours mapping (e.g., "monday": "09:00-17:00")');
+export const OpenHoursSchema = z.record(z.string(), z.unknown()).describe('Day to hours mapping (e.g., "mon": { open: "09:00", close: "17:00" })');
 
 // ============================================================================
 // Keywords Schema

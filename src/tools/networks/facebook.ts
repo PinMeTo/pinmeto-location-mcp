@@ -35,7 +35,11 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
     'pinmeto_get_facebook_insights',
     {
       description:
-        'Fetch Facebook metrics for all locations, or a single location if storeId provided. Supports time aggregation (default: total).',
+        'Fetch Facebook metrics for all locations, or a single location if storeId provided. Supports time aggregation (default: total).\n\n' +
+        'Error Handling:\n' +
+        '  - Rate limit (429): errorCode="RATE_LIMITED", message includes retry timing\n' +
+        '  - Not found (404): errorCode="NOT_FOUND" if storeId doesn\'t exist\n' +
+        '  - All errors: check structuredContent.errorCode and .retryable for programmatic handling',
       inputSchema: {
         storeId: z.string().optional().describe('Optional store ID to fetch a single location'),
         from: DateSchema.describe('Start date (YYYY-MM-DD)'),
@@ -98,7 +102,11 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
     'pinmeto_get_facebook_brandpage_insights',
     {
       description:
-        'Fetch Facebook metrics for all brand pages. Supports time aggregation (default: total).',
+        'Fetch Facebook metrics for all brand pages. Supports time aggregation (default: total).\n\n' +
+        'Error Handling:\n' +
+        '  - Rate limit (429): errorCode="RATE_LIMITED", message includes retry timing\n' +
+        '  - Auth failure (401): errorCode="AUTH_INVALID_CREDENTIALS"\n' +
+        '  - All errors: check structuredContent.errorCode and .retryable for programmatic handling',
       inputSchema: {
         from: DateSchema.describe('Start date (YYYY-MM-DD)'),
         to: DateSchema.describe('End date (YYYY-MM-DD)'),
@@ -149,7 +157,11 @@ export function getFacebookRatings(server: PinMeToMcpServer) {
     'pinmeto_get_facebook_ratings',
     {
       description:
-        'Fetch Facebook ratings for all locations, or a single location if storeId provided.',
+        'Fetch Facebook ratings for all locations, or a single location if storeId provided.\n\n' +
+        'Error Handling:\n' +
+        '  - Rate limit (429): errorCode="RATE_LIMITED", message includes retry timing\n' +
+        '  - Not found (404): errorCode="NOT_FOUND" if storeId doesn\'t exist\n' +
+        '  - All errors: check structuredContent.errorCode and .retryable for programmatic handling',
       inputSchema: {
         storeId: z.string().optional().describe('Optional store ID to fetch a single location'),
         from: DateSchema.describe('Start date (YYYY-MM-DD)'),

@@ -19,7 +19,11 @@ export function getLocation(server: PinMeToMcpServer) {
     'pinmeto_get_location',
     {
       description:
-        'Get details for a SINGLE location by store ID. Returns structured location data including address, contact info, and network connections.',
+        'Get details for a SINGLE location by store ID. Returns structured location data including address, contact info, and network connections.\n\n' +
+        'Error Handling:\n' +
+        '  - Not found (404): errorCode="NOT_FOUND" if store ID doesn\'t exist\n' +
+        '  - Auth failure (401): errorCode="AUTH_INVALID_CREDENTIALS"\n' +
+        '  - All errors: check structuredContent.errorCode and .retryable for programmatic handling',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         response_format: ResponseFormatSchema
@@ -93,7 +97,17 @@ export function getLocations(server: PinMeToMcpServer) {
     'pinmeto_get_locations',
     {
       description:
-        'Get ALL locations with pagination and filtering. Uses in-memory cache (5-min TTL) for fast queries on large datasets.\n\nExamples:\n- Get first 50 locations: {}\n- Get next page: { offset: 50 }\n- Filter by city: { city: "Stockholm", limit: 20 }\n- Only open locations: { permanentlyClosed: false }\n- Force cache refresh: { forceRefresh: true }',
+        'Get ALL locations with pagination and filtering. Uses in-memory cache (5-min TTL) for fast queries on large datasets.\n\n' +
+        'Examples:\n' +
+        '- Get first 50 locations: {}\n' +
+        '- Get next page: { offset: 50 }\n' +
+        '- Filter by city: { city: "Stockholm", limit: 20 }\n' +
+        '- Only open locations: { permanentlyClosed: false }\n' +
+        '- Force cache refresh: { forceRefresh: true }\n\n' +
+        'Error Handling:\n' +
+        '  - Partial results may be returned on API errors (check incomplete field)\n' +
+        '  - Stale cache data returned with warning if fresh fetch fails\n' +
+        '  - Check errorCode (string) and retryable (boolean) in structuredContent',
       inputSchema: {
         fields: z
           .array(FieldsEnum)
@@ -246,7 +260,10 @@ export function getLocations(server: PinMeToMcpServer) {
         }
       }
 
+      // Add isStale at top level for easier detection by AI clients
+      // Note: isError is NOT set because we ARE returning data (albeit stale)
       return {
+        ...(stale ? { isStale: true } : {}),
         content: [{ type: 'text', text: responseText }],
         structuredContent
       };
@@ -259,7 +276,11 @@ export function searchLocations(server: PinMeToMcpServer) {
     'pinmeto_search_locations',
     {
       description:
-        'Search ALL locations by name, address, store ID, or location descriptor. Returns lightweight results for quick discovery. Use pinmeto_get_location with storeId for full details.',
+        'Search ALL locations by name, address, store ID, or location descriptor. Returns lightweight results for quick discovery. Use pinmeto_get_location with storeId for full details.\n\n' +
+        'Error Handling:\n' +
+        '  - Network issues: errorCode="NETWORK_ERROR", retryable=true\n' +
+        '  - Auth failure (401): errorCode="AUTH_INVALID_CREDENTIALS"\n' +
+        '  - All errors: check structuredContent.errorCode and .retryable for programmatic handling',
       inputSchema: {
         query: z
           .string()
@@ -304,8 +325,9 @@ export function searchLocations(server: PinMeToMcpServer) {
 
       // Detect API failure: empty array + incomplete pagination = first page failed
       if (data.length === 0 && !areAllPagesFetched && lastError) {
-        const errorMessage = `Failed for search query '${query}': ${lastError.message}`;
+        const errorMessage = `Error: Failed for search query '${query}': ${lastError.message}`;
         return {
+          isError: true,
           content: [{ type: 'text', text: errorMessage }],
           structuredContent: {
             data: [],

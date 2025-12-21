@@ -13,7 +13,7 @@ export const API_ERROR_CODES = [
   'BAD_REQUEST', // 400 - malformed request
   'NOT_FOUND', // 404 - resource not found
   'RATE_LIMITED', // 429 - too many requests
-  'SERVER_ERROR', // 500/503 - server issues
+  'SERVER_ERROR', // 5xx - server issues (500, 502, 503, 504, etc.)
   'NETWORK_ERROR', // timeout, DNS, connection refused
   'UNKNOWN_ERROR' // fallback
 ] as const;
@@ -96,10 +96,21 @@ export function mapAxiosErrorToApiError(e: unknown): ApiError {
 
     // No response - network error (check first to handle undefined status)
     if (!e.response) {
-      const detail = e.code || e.message || 'Unknown network error';
+      const errorCode = e.code || '';
+      // Map specific network error codes to actionable messages
+      const networkErrorMessages: Record<string, string> = {
+        ECONNABORTED: 'Request timed out (30s). PinMeTo API may be slow - try again.',
+        ECONNREFUSED: 'Connection refused. Verify PinMeTo API is accessible from your network.',
+        ENOTFOUND: 'DNS lookup failed for API host. Check network configuration.',
+        ETIMEDOUT: 'Connection timed out. Check network stability.'
+      };
+      // For unknown network error codes, include both the message and code for context
+      const message =
+        networkErrorMessages[errorCode] ||
+        `Network error: ${e.message || 'Unknown'}${errorCode ? ` (${errorCode})` : ''}. Check internet connection.`;
       return {
         code: 'NETWORK_ERROR',
-        message: `Network error: ${detail}. Check internet connection.`,
+        message,
         retryable: true
       };
     }
@@ -133,13 +144,33 @@ export function mapAxiosErrorToApiError(e: unknown): ApiError {
           statusCode: 404,
           retryable: false
         };
-      case 429:
+      case 429: {
+        // Extract Retry-After header for actionable guidance
+        const retryAfter = e.response?.headers?.['retry-after'];
+        let message = apiMessage || 'Rate limit exceeded.';
+        if (retryAfter) {
+          const seconds = parseInt(retryAfter, 10);
+          // Validate bounds: NaN, Infinity, negative, or unreasonably large values
+          if (isNaN(seconds) || !isFinite(seconds)) {
+            // Non-numeric (likely HTTP-date format per RFC 7231)
+            message += ` Retry after: ${retryAfter}.`;
+          } else if (seconds > 0 && seconds <= 86400) {
+            // Valid range: 1 second to 24 hours
+            message += ` Wait ${seconds} seconds before retrying.`;
+          } else {
+            // Out of reasonable range
+            message += ` Retry after: ${retryAfter} (value out of expected range).`;
+          }
+        } else {
+          message += ' Wait before retrying.';
+        }
         return {
           code: 'RATE_LIMITED',
-          message: apiMessage || 'Rate limit exceeded. Wait before retrying.',
+          message,
           statusCode: 429,
           retryable: true
         };
+      }
       case 500:
       case 502:
       case 503:
