@@ -386,7 +386,7 @@ describe('Locations', () => {
 });
 
 describe('Tool Annotations', () => {
-  it('should register all 16 tools with readOnlyHint annotations', async () => {
+  it('should register all 10 tools with readOnlyHint annotations', async () => {
     const server = createMcpServer();
     const testTransport = new StdioServerTransport();
 
@@ -440,7 +440,7 @@ describe('Tool Annotations', () => {
     expect(toolsResponse.result.tools).toBeDefined();
 
     const tools = toolsResponse.result.tools;
-    expect(tools.length).toBe(16);
+    expect(tools.length).toBe(10);
 
     // Verify each tool has readOnlyHint: true
     for (const tool of tools) {
@@ -539,7 +539,7 @@ describe('Output Schemas', () => {
     expect(toolsResponse.result.tools).toBeDefined();
 
     const tools = toolsResponse.result.tools;
-    expect(tools.length).toBe(16);
+    expect(tools.length).toBe(10);
 
     // Verify each tool has outputSchema defined
     for (const tool of tools) {
@@ -1164,10 +1164,9 @@ describe('Initialize Handler', () => {
     expect(initResponse).toBeDefined();
     expect(initResponse.result).toBeDefined();
 
-    // Verify server returns its OWN capabilities (prompts, resources, tools)
+    // Verify server returns its OWN capabilities (resources, tools)
     // NOT the empty client capabilities
     expect(initResponse.result.capabilities).toBeDefined();
-    expect(initResponse.result.capabilities).toHaveProperty('prompts');
     expect(initResponse.result.capabilities).toHaveProperty('resources');
     expect(initResponse.result.capabilities).toHaveProperty('tools');
 
@@ -1994,6 +1993,270 @@ describe('mapAxiosErrorToApiError', () => {
 
       expect(result.code).toBe('UNKNOWN_ERROR');
       expect(result.retryable).toBe(false);
+    });
+  });
+});
+
+// ============================================================================
+// Consolidated Network Tools Tests (storeId optional pattern)
+// ============================================================================
+
+describe('Consolidated Network Tools', () => {
+  const setupNetworkToolMocks = () => {
+    vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+      if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+        return Promise.reject(new Error('Unauthorized'));
+      }
+
+      // Single location insights (storeId in URL)
+      // InsightsData format: { key: string, metrics: { key: string, value: number }[] }
+      if (url.includes('/locations/1337/insights/google')) {
+        return Promise.resolve({
+          data: [
+            {
+              key: 'ACTIONS_WEBSITE',
+              metrics: [{ key: '2024-01-01', value: 100 }]
+            },
+            {
+              key: 'VIEWS_SEARCH',
+              metrics: [{ key: '2024-01-01', value: 200 }]
+            }
+          ]
+        });
+      }
+
+      // Bulk insights (no storeId in URL)
+      if (url.includes('/locations/insights/google') && !url.includes('/locations/1337')) {
+        return Promise.resolve({
+          data: [
+            {
+              key: 'ACTIONS_WEBSITE',
+              metrics: [
+                { key: '2024-01-01', value: 50 },
+                { key: '2024-01-02', value: 75 }
+              ]
+            },
+            {
+              key: 'VIEWS_SEARCH',
+              metrics: [
+                { key: '2024-01-01', value: 150 },
+                { key: '2024-01-02', value: 200 }
+              ]
+            }
+          ]
+        });
+      }
+
+      // 404 for invalid storeId
+      if (url.includes('/locations/invalid-id/insights/google')) {
+        const error = Object.assign(new Error('Not Found'), {
+          isAxiosError: true,
+          response: {
+            status: 404,
+            data: { message: 'Location not found' }
+          }
+        });
+        return Promise.reject(error);
+      }
+
+      return Promise.reject(new Error('Not found'));
+    });
+  };
+
+  const callNetworkTool = async (toolName: string, args: any) => {
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        responses.push(JSON.parse(chunk.toString()));
+      } catch {
+        // ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    testTransport.onmessage?.({
+      method: 'tools/call',
+      params: { name: toolName, arguments: args },
+      jsonrpc: '2.0',
+      id: 1
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    return responses.find(r => r.id === 1);
+  };
+
+  describe('pinmeto_get_google_insights', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      setupNetworkToolMocks();
+    });
+
+    it('should call single-location API when storeId provided', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_insights', {
+        storeId: '1337',
+        from: '2024-01-01',
+        to: '2024-12-31'
+      });
+
+      expect(response.result).toBeDefined();
+      expect(response.result.structuredContent).toBeDefined();
+      expect(response.result.structuredContent.data).toBeDefined();
+      // Single-location mock returns ACTIONS_WEBSITE and VIEWS_SEARCH metrics
+      expect(response.result.structuredContent.data[0].key).toBe('ACTIONS_WEBSITE');
+      // With aggregation='total' (default), metrics are aggregated into one entry
+      expect(response.result.structuredContent.data[0].metrics.length).toBe(1);
+    });
+
+    it('should call bulk API when storeId omitted', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31'
+      });
+
+      expect(response.result).toBeDefined();
+      expect(response.result.structuredContent).toBeDefined();
+      expect(response.result.structuredContent.data).toBeDefined();
+      // Bulk mock returns 2 metric types
+      expect(response.result.structuredContent.data.length).toBe(2);
+      // With aggregation='total' (default), multi-day metrics are aggregated
+      expect(response.result.structuredContent.data[0].metrics[0].value).toBe(125); // 50 + 75
+    });
+
+    it('should return NOT_FOUND error with storeId context when location does not exist', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_insights', {
+        storeId: 'invalid-id',
+        from: '2024-01-01',
+        to: '2024-12-31'
+      });
+
+      expect(response.result).toBeDefined();
+      expect(response.result.structuredContent.errorCode).toBe('NOT_FOUND');
+      expect(response.result.structuredContent.error).toContain("storeId 'invalid-id'");
+      expect(response.result.structuredContent.retryable).toBe(false);
+    });
+
+    it('should format as JSON by default', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_insights', {
+        storeId: '1337',
+        from: '2024-01-01',
+        to: '2024-12-31'
+      });
+
+      expect(response.result.content[0].type).toBe('text');
+      // JSON format should be parseable
+      const parsed = JSON.parse(response.result.content[0].text);
+      expect(parsed).toBeDefined();
+    });
+
+    it('should format as markdown when requested for single location', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_insights', {
+        storeId: '1337',
+        from: '2024-01-01',
+        to: '2024-12-31',
+        response_format: 'markdown'
+      });
+
+      expect(response.result.content[0].type).toBe('text');
+      // Markdown format should contain headers
+      expect(response.result.content[0].text).toContain('#');
+    });
+
+    it('should format as markdown when requested for bulk', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        response_format: 'markdown'
+      });
+
+      expect(response.result.content[0].type).toBe('text');
+      expect(response.result.content[0].text).toContain('#');
+    });
+  });
+
+  describe('Tool names verification', () => {
+    it('should register exactly the expected 10 consolidated tools', async () => {
+      const server = createMcpServer();
+      const testTransport = new StdioServerTransport();
+
+      const responses: any[] = [];
+      const originalWrite = process.stdout.write.bind(process.stdout);
+      process.stdout.write = ((chunk: any) => {
+        try {
+          responses.push(JSON.parse(chunk.toString()));
+        } catch {
+          // ignore
+        }
+        return true;
+      }) as typeof process.stdout.write;
+
+      await server.connect(testTransport);
+
+      testTransport.onmessage?.({
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-06-18',
+          capabilities: {},
+          clientInfo: { name: 'test-client', version: '0.0.0' }
+        },
+        jsonrpc: '2.0',
+        id: 0
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      testTransport.onmessage?.({
+        method: 'tools/list',
+        params: {},
+        jsonrpc: '2.0',
+        id: 1
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      process.stdout.write = originalWrite;
+      await testTransport.close();
+
+      const toolsResponse = responses.find(r => r.id === 1);
+      const tools = toolsResponse.result.tools;
+
+      const expectedToolNames = [
+        'pinmeto_get_location',
+        'pinmeto_get_locations',
+        'pinmeto_search_locations',
+        'pinmeto_get_google_insights',
+        'pinmeto_get_google_ratings',
+        'pinmeto_get_google_keywords',
+        'pinmeto_get_facebook_insights',
+        'pinmeto_get_facebook_brandpage_insights',
+        'pinmeto_get_facebook_ratings',
+        'pinmeto_get_apple_insights'
+      ];
+
+      const actualToolNames = tools.map((t: any) => t.name).sort();
+      expect(actualToolNames).toEqual(expectedToolNames.sort());
     });
   });
 });

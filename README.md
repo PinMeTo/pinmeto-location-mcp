@@ -158,23 +158,17 @@ All tools use the `pinmeto_` prefix following MCP best practices.
 - `pinmeto_search_locations` - Search ALL locations for quick discovery
 
 ### Google Tools
-- `pinmeto_get_google_insights` - Get Google insights for ALL locations
-- `pinmeto_get_google_insights_location` - Get Google insights for a SINGLE location
-- `pinmeto_get_google_ratings` - Get Google ratings for ALL locations
-- `pinmeto_get_google_ratings_location` - Get Google ratings for a SINGLE location
-- `pinmeto_get_google_keywords` - Get Google keywords for ALL locations
-- `pinmeto_get_google_keywords_location` - Get Google keywords for a SINGLE location
+- `pinmeto_get_google_insights` - Get Google insights (all locations, or single if `storeId` provided)
+- `pinmeto_get_google_ratings` - Get Google ratings (all locations, or single if `storeId` provided)
+- `pinmeto_get_google_keywords` - Get Google keywords (all locations, or single if `storeId` provided)
 
 ### Facebook Tools
-- `pinmeto_get_facebook_insights` - Get Facebook insights for ALL locations
-- `pinmeto_get_facebook_insights_location` - Get Facebook insights for a SINGLE location
+- `pinmeto_get_facebook_insights` - Get Facebook insights (all locations, or single if `storeId` provided)
 - `pinmeto_get_facebook_brandpage_insights` - Get Facebook brandpage insights for ALL pages
-- `pinmeto_get_facebook_ratings` - Get Facebook ratings for ALL locations
-- `pinmeto_get_facebook_ratings_location` - Get Facebook ratings for a SINGLE location
+- `pinmeto_get_facebook_ratings` - Get Facebook ratings (all locations, or single if `storeId` provided)
 
 ### Apple Tools
-- `pinmeto_get_apple_insights` - Get Apple insights for ALL locations
-- `pinmeto_get_apple_insights_location` - Get Apple insights for a SINGLE location
+- `pinmeto_get_apple_insights` - Get Apple insights (all locations, or single if `storeId` provided)
 
 ---
 
@@ -262,9 +256,9 @@ To get different time periods, specify the `aggregation` parameter:
 ### Supported Tools
 
 Time aggregation works with all insights tools:
-- Google: `pinmeto_get_google_insights_location`, `pinmeto_get_google_insights`
-- Facebook: `pinmeto_get_facebook_insights_location`, `pinmeto_get_facebook_insights`, `pinmeto_get_facebook_brandpage_insights`
-- Apple: `pinmeto_get_apple_insights_location`, `pinmeto_get_apple_insights`
+- Google: `pinmeto_get_google_insights`
+- Facebook: `pinmeto_get_facebook_insights`, `pinmeto_get_facebook_brandpage_insights`
+- Apple: `pinmeto_get_apple_insights`
 
 ### How It Works
 

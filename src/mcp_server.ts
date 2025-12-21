@@ -12,23 +12,13 @@ import { dirname, join } from 'path';
 import { ApiResult, ApiError, AuthError, mapAxiosErrorToApiError } from './errors';
 import { LocationCache } from './cache/location-cache';
 import { getLocations, getLocation, searchLocations } from './tools/locations/locations';
+import { getGoogleInsights, getGoogleRatings, getGoogleKeywords } from './tools/networks/google';
 import {
-  getAllGoogleInsights,
-  getAllGoogleKeywords,
-  getAllGoogleRatings,
-  getGoogleKeywordsForLocation,
-  getGoogleLocationInsights,
-  getGoogleLocationRatings
-} from './tools/networks/google';
-import {
-  getAllFacebookBrandpageInsights,
-  getAllFacebookInsights,
-  getAllFacebookRatings,
-  getFacebookLocationRatings,
-  getFacebookLocationsInsights
+  getFacebookInsights,
+  getFacebookBrandpageInsights,
+  getFacebookRatings
 } from './tools/networks/facebook';
-import { getAllAppleInsights, getAppleLocationInsights } from './tools/networks/apple';
-import { analyzeLocationPrompt, summarizeAllInsightsPrompt } from './prompts';
+import { getAppleInsights } from './tools/networks/apple';
 import { Configs, getConfigs } from './configs';
 
 import { ServerOptions } from '@modelcontextprotocol/sdk/server';
@@ -212,7 +202,6 @@ export function createMcpServer() {
     name: 'PinMeTo Location MCP',
     version: PACKAGE_VERSION,
     capabilities: {
-      prompts: {},
       resources: {},
       tools: {}
     }
@@ -242,27 +231,17 @@ export function createMcpServer() {
   searchLocations(mcpServer);
 
   // Google
-  getGoogleLocationInsights(mcpServer);
-  getAllGoogleInsights(mcpServer);
-  getAllGoogleRatings(mcpServer);
-  getGoogleLocationRatings(mcpServer);
-  getAllGoogleKeywords(mcpServer);
-  getGoogleKeywordsForLocation(mcpServer);
+  getGoogleInsights(mcpServer);
+  getGoogleRatings(mcpServer);
+  getGoogleKeywords(mcpServer);
 
   // Facebook
-  getAllFacebookBrandpageInsights(mcpServer);
-  getFacebookLocationsInsights(mcpServer);
-  getAllFacebookInsights(mcpServer);
-  getAllFacebookRatings(mcpServer);
-  getFacebookLocationRatings(mcpServer);
+  getFacebookInsights(mcpServer);
+  getFacebookBrandpageInsights(mcpServer);
+  getFacebookRatings(mcpServer);
 
   // Apple
-  getAppleLocationInsights(mcpServer);
-  getAllAppleInsights(mcpServer);
-
-  // Prompts
-  analyzeLocationPrompt(mcpServer);
-  summarizeAllInsightsPrompt(mcpServer);
+  getAppleInsights(mcpServer);
 
   return mcpServer;
 }
