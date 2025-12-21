@@ -1,7 +1,7 @@
 import { MARKDOWN_TABLE_MAX_ROWS } from '../helpers';
 
 /**
- * Single location rating data
+ * Single location rating data (aggregated format)
  */
 interface RatingData {
   storeId?: string;
@@ -9,6 +9,57 @@ interface RatingData {
   totalReviews?: number;
   distribution?: Record<string, number>;
   [key: string]: unknown;
+}
+
+/**
+ * Individual review data (from API)
+ */
+interface ReviewData {
+  storeId: string;
+  rating: number;
+  comment?: string;
+  date?: string;
+  hasAnswer?: boolean;
+  reply?: string;
+  id?: string;
+}
+
+/**
+ * Type guard to detect if data is individual reviews vs aggregated ratings
+ */
+function isReviewData(data: unknown[]): data is ReviewData[] {
+  if (data.length === 0) return false;
+  const first = data[0] as Record<string, unknown>;
+  return 'rating' in first && !('averageRating' in first);
+}
+
+/**
+ * Aggregates individual reviews by store into rating summaries
+ */
+function aggregateReviewsByStore(reviews: ReviewData[]): RatingData[] {
+  const storeMap = new Map<string, number[]>();
+
+  for (const review of reviews) {
+    const ratings = storeMap.get(review.storeId) || [];
+    ratings.push(review.rating);
+    storeMap.set(review.storeId, ratings);
+  }
+
+  return Array.from(storeMap.entries()).map(([storeId, ratings]) => {
+    const sum = ratings.reduce((a, b) => a + b, 0);
+    const distribution: Record<string, number> = {};
+    for (const r of ratings) {
+      const key = String(Math.round(r));
+      distribution[key] = (distribution[key] || 0) + 1;
+    }
+
+    return {
+      storeId,
+      averageRating: sum / ratings.length,
+      totalReviews: ratings.length,
+      distribution
+    };
+  });
 }
 
 /**
@@ -22,6 +73,11 @@ export function formatRatingsAsMarkdown(data: unknown): string {
 
   // Handle array of ratings (all locations)
   if (Array.isArray(data)) {
+    // Detect if this is individual review data vs aggregated data
+    if (isReviewData(data)) {
+      const aggregated = aggregateReviewsByStore(data);
+      return formatAllRatingsAsMarkdown(aggregated);
+    }
     return formatAllRatingsAsMarkdown(data as RatingData[]);
   }
 

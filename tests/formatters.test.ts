@@ -450,6 +450,39 @@ describe('Markdown Formatters', () => {
         const result = formatRatingsAsMarkdown(null);
         expect(result).toContain('No ratings data available');
       });
+
+      it('should aggregate individual reviews by store', () => {
+        const reviews = [
+          { storeId: '7', rating: 5, comment: 'Great!', date: '2025-05-05' },
+          { storeId: '1337', rating: 5, comment: '', date: '2025-05-05' },
+          { storeId: '7', rating: 4, comment: 'Cool', date: '2025-03-05' }
+        ];
+
+        const result = formatRatingsAsMarkdown(reviews);
+
+        expect(result).toContain('## Ratings (All Locations)');
+        expect(result).toContain('| 7 | 4.5 | 2 |');
+        expect(result).toContain('| 1337 | 5.0 | 1 |');
+      });
+
+      it('should handle empty review array', () => {
+        const result = formatRatingsAsMarkdown([]);
+        expect(result).toContain('No ratings data available');
+      });
+
+      it('should calculate correct distribution from reviews', () => {
+        const reviews = [
+          { storeId: 'A', rating: 5, date: '2025-01-01' },
+          { storeId: 'A', rating: 5, date: '2025-01-02' },
+          { storeId: 'A', rating: 4, date: '2025-01-03' },
+          { storeId: 'A', rating: 3, date: '2025-01-04' }
+        ];
+
+        const result = formatRatingsAsMarkdown(reviews);
+
+        // Average should be (5+5+4+3)/4 = 4.25
+        expect(result).toContain('| A | 4.3 | 4 |');
+      });
     });
 
     describe('formatLocationRatingsAsMarkdown', () => {
