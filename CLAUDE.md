@@ -92,9 +92,9 @@ The server requires these environment variables (loaded via `--env-file=.env.loc
 ```typescript
 export function getLocation(server: PinMeToMcpServer) {
   server.registerTool(
-    'get_location',
+    'pinmeto_get_location',
     {
-      description: 'Get location details for a store from PinMeTo API',
+      description: 'Get details for a SINGLE location by store ID',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up')
       },
@@ -145,18 +145,35 @@ src/
         └── apple.ts
 ```
 
+## Tool Naming Convention
+
+All tools follow the MCP best practice naming pattern: `pinmeto_{action}_{network}_{resource}`
+
+| Pattern | Example | Description |
+|---------|---------|-------------|
+| `pinmeto_get_{resource}` | `pinmeto_get_location` | Single resource retrieval |
+| `pinmeto_get_{resource}s` | `pinmeto_get_locations` | Bulk resource retrieval (ALL) |
+| `pinmeto_search_{resource}s` | `pinmeto_search_locations` | Search/discovery tools |
+| `pinmeto_get_{network}_{resource}` | `pinmeto_get_google_insights` | Network-specific bulk data |
+| `pinmeto_get_{network}_{resource}_location` | `pinmeto_get_google_insights_location` | Network-specific single location |
+
+**Description Clarity**: Tool descriptions explicitly state scope:
+- **Bulk tools**: "Fetch [resource] for ALL locations..."
+- **Single tools**: "Fetch [resource] for a SINGLE location by store ID..."
+
 ## Adding New Tools
 
 1. Create tool registration function in appropriate module under `src/tools/`
-2. Define Zod schema for input validation
-3. Add `response_format: ResponseFormatSchema` to input schema
-4. Define or reuse output schema from `src/schemas/output.ts`
-5. Implement handler using `server.makePinMeToRequest()` or `server.makePaginatedPinMeToRequest()`
-6. Use `formatContent()` helper to format response based on `response_format`
-7. Return both `content` (text) and `structuredContent` (typed data) from handler
-8. For insights tools, apply `aggregateMetrics()` before formatting
-9. Add appropriate tool annotations (see Tool Annotations section below)
-10. Register tool in `createMcpServer()` function in `src/mcp_server.ts`
+2. **Name the tool** following the `pinmeto_{action}_{network}_{resource}` pattern
+3. Define Zod schema for input validation
+4. Add `response_format: ResponseFormatSchema` to input schema
+5. Define or reuse output schema from `src/schemas/output.ts`
+6. Implement handler using `server.makePinMeToRequest()` or `server.makePaginatedPinMeToRequest()`
+7. Use `formatContent()` helper to format response based on `response_format`
+8. Return both `content` (text) and `structuredContent` (typed data) from handler
+9. For insights tools, apply `aggregateMetrics()` before formatting
+10. Add appropriate tool annotations (see Tool Annotations section below)
+11. Register tool in `createMcpServer()` function in `src/mcp_server.ts`
 
 ## Tool Annotations
 
@@ -297,7 +314,7 @@ Centralized Markdown formatters for consistent output:
 
 ## Location Discovery Workflow
 
-Use `search_locations` for quick location discovery, then `get_location` for full details:
+Use `pinmeto_search_locations` for quick location discovery, then `pinmeto_get_location` for full details:
 
 ### Search Examples
 
@@ -342,7 +359,7 @@ The search matches against these fields (case-insensitive substring):
 
 ## Pagination, Filtering, and Caching
 
-`get_locations` supports pagination, filtering, and uses an in-memory cache for efficient queries on large datasets (5000+ locations).
+`pinmeto_get_locations` supports pagination, filtering, and uses an in-memory cache for efficient queries on large datasets (5000+ locations).
 
 ### Caching
 

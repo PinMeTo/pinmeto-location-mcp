@@ -15,10 +15,10 @@ const DateSchema = z
 
 export function getAppleLocationInsights(server: PinMeToMcpServer) {
   server.registerTool(
-    'get_apple_location_insights',
+    'pinmeto_get_apple_insights_location',
     {
       description:
-        'Fetch Apple metrics for a single location belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
+        'Fetch Apple metrics for a SINGLE location by store ID. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         from: DateSchema.describe('The start date (YYYY-MM-DD)'),
@@ -77,10 +77,10 @@ export function getAppleLocationInsights(server: PinMeToMcpServer) {
 
 export function getAllAppleInsights(server: PinMeToMcpServer) {
   server.registerTool(
-    'get_all_apple_insights',
+    'pinmeto_get_apple_insights',
     {
       description:
-        'Fetch Apple metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
+        'Fetch Apple metrics for ALL locations. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         from: DateSchema.describe('The start date (YYYY-MM-DD)'),
         to: DateSchema.describe('The end date (YYYY-MM-DD)'),

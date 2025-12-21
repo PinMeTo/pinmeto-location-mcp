@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - Unreleased
+
+### BREAKING CHANGES
+
+- **Tool Naming**: All 16 tools renamed with `pinmeto_` prefix following MCP best practices
+  - Location tools: `get_location` → `pinmeto_get_location`, etc.
+  - Network tools follow pattern: `pinmeto_get_{network}_{resource}[_location]`
+  - Single-location tools use `_location` suffix for clarity
+  - See [MIGRATION.md](MIGRATION.md) for complete mapping
+
+- **Prompt Naming**: All 2 prompts renamed with `pinmeto_` prefix
+  - `analyze location` → `pinmeto_analyze_location`
+  - `summarize all insights` → `pinmeto_summarize_insights`
+
+### Changed
+
+- Tool descriptions now explicitly state scope ("ALL locations" vs "SINGLE location")
+- Documentation updated with new tool names and naming convention section
+
 ## [1.1.0] - 2025-12-21
 
 ### Added
