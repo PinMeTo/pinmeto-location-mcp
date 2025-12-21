@@ -100,12 +100,14 @@ describe('Markdown Formatters', () => {
             {
               storeId: '1',
               name: 'Store One',
+              locationDescriptor: 'Main Branch',
               address: { city: 'Stockholm', country: 'Sweden' },
               permanentlyClosed: false
             },
             {
               storeId: '2',
               name: 'Store Two',
+              locationDescriptor: 'Mall Location',
               address: { city: 'Malmö', country: 'Sweden' },
               permanentlyClosed: true
             }
@@ -120,9 +122,9 @@ describe('Markdown Formatters', () => {
 
         expect(result).toContain('## Locations');
         expect(result).toContain('**Total:** 2 locations');
-        expect(result).toContain('| Store ID | Name | City | Country | Status |');
-        expect(result).toContain('| 1 | Store One | Stockholm | Sweden | Open |');
-        expect(result).toContain('| 2 | Store Two | Malmö | Sweden | Closed |');
+        expect(result).toContain('| Store ID | Name | Descriptor | City | Country | Status |');
+        expect(result).toContain('| 1 | Store One | Main Branch | Stockholm | Sweden | Open |');
+        expect(result).toContain('| 2 | Store Two | Mall Location | Malmö | Sweden | Closed |');
       });
 
       it('should show cache info when available', () => {

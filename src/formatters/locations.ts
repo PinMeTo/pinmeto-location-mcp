@@ -146,17 +146,18 @@ export function formatLocationsListAsMarkdown(response: LocationsListData): stri
   md += `Showing ${locations.length} results (offset: ${offset}, limit: ${limit})\n\n`;
 
   // Table header
-  md += '| Store ID | Name | City | Country | Status |\n';
-  md += '|----------|------|------|---------|--------|\n';
+  md += '| Store ID | Name | Descriptor | City | Country | Status |\n';
+  md += '|----------|------|------------|------|---------|--------|\n';
 
   // Table rows (truncated)
   const displayCount = Math.min(locations.length, MARKDOWN_TABLE_MAX_ROWS);
   for (let i = 0; i < displayCount; i++) {
     const loc = locations[i];
     const status = loc.permanentlyClosed ? 'Closed' : 'Open';
+    const descriptor = loc.locationDescriptor || '-';
     const city = loc.address?.city || '-';
     const country = loc.address?.country || '-';
-    md += `| ${loc.storeId || '-'} | ${loc.name || 'Unknown'} | ${city} | ${country} | ${status} |\n`;
+    md += `| ${loc.storeId || '-'} | ${loc.name || 'Unknown'} | ${descriptor} | ${city} | ${country} | ${status} |\n`;
   }
 
   // Truncation notice
