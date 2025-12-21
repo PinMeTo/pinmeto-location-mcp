@@ -83,8 +83,8 @@ export const AddressSchema = z
 export const ContactSchema = z
   .object({
     phone: z.string().optional().describe('Phone number'),
-    email: z.string().optional().describe('Email address'),
-    homepage: z.string().optional().describe('Website URL')
+    email: z.string().email().optional().describe('Email address'),
+    homepage: z.string().url().optional().describe('Website URL')
   })
   .passthrough();
 
@@ -104,8 +104,8 @@ export const OpenHoursSchema = z.record(z.string(), z.string()).describe('Day to
 export const KeywordDataSchema = z
   .object({
     keyword: z.string().describe('Search keyword'),
-    value: z.number().describe('Impression count'),
-    locationCounts: z.number().optional().describe('Number of locations with this keyword')
+    value: z.number().nonnegative().describe('Impression count'),
+    locationCounts: z.number().nonnegative().optional().describe('Number of locations with this keyword')
   })
   .passthrough();
 
@@ -119,10 +119,10 @@ export const KeywordDataSchema = z
  */
 export const RatingsSummarySchema = z
   .object({
-    averageRating: z.number().optional().describe('Average rating (1-5)'),
-    totalReviews: z.number().optional().describe('Total number of reviews'),
+    averageRating: z.number().min(1).max(5).optional().describe('Average rating (1-5)'),
+    totalReviews: z.number().nonnegative().optional().describe('Total number of reviews'),
     distribution: z
-      .record(z.string(), z.number())
+      .record(z.string(), z.number().nonnegative())
       .optional()
       .describe('Rating distribution (e.g., {"5": 100, "4": 50})')
   })
@@ -135,7 +135,7 @@ export const RatingsSummarySchema = z
 export const ReviewSchema = z
   .object({
     storeId: z.string().optional().describe('Store identifier'),
-    rating: z.number().describe('Rating value (1-5)'),
+    rating: z.number().min(1).max(5).describe('Rating value (1-5)'),
     comment: z.string().optional().describe('Review comment text'),
     date: z.string().optional().describe('Review date')
   })
@@ -149,7 +149,12 @@ export const LocationRatingsSummarySchema = RatingsSummarySchema.extend({
 });
 
 /**
- * Ratings data - can be summary, array of reviews, or array of location summaries.
+ * Ratings data union - shape depends on query context:
+ * - Single location summary: RatingsSummary object with averageRating, totalReviews, distribution
+ * - Multi-location: Array of LocationRatingsSummary (each has storeId field)
+ * - Reviews listing: Array of Review objects (each has rating and optional comment)
+ *
+ * Discriminate by: Array.isArray(data) first, then check for 'storeId' on elements
  */
 export const RatingsDataSchema = z.union([
   RatingsSummarySchema,
@@ -216,8 +221,8 @@ export const LocationOutputSchema = {
       address: AddressSchema.optional().describe('Location address'),
       location: z
         .object({
-          lat: z.number().optional(),
-          lon: z.number().optional()
+          lat: z.number().optional().describe('Latitude in decimal degrees'),
+          lon: z.number().optional().describe('Longitude in decimal degrees')
         })
         .passthrough()
         .optional()
