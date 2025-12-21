@@ -131,22 +131,16 @@ function getISOWeek(date: Date): number {
 }
 
 /**
- * Formats an ApiError into a standard MCP-compliant tool response.
+ * Formats an ApiError into a standard tool response.
  * Provides consistent error formatting across all tools.
- *
- * MCP compliance:
- * - Sets `isError: true` to help clients identify error responses
- * - Prefixes messages with "Error:" for standardized formatting
  *
  * @param error The ApiError to format
  * @param context Optional context string to identify which resource/operation failed
  *                (e.g., "storeId '1234'" or "location 'Main Street Store'")
  */
 export function formatErrorResponse(error: ApiError, context?: string) {
-  const baseMessage = context ? `Failed for ${context}: ${error.message}` : error.message;
-  const message = `Error: ${baseMessage}`;
+  const message = context ? `Failed for ${context}: ${error.message}` : error.message;
   return {
-    isError: true,
     content: [{ type: 'text' as const, text: message }],
     structuredContent: {
       error: message,

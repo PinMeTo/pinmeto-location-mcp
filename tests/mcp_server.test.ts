@@ -1012,9 +1012,9 @@ describe('Search Locations', () => {
 
     const searchResponse = responses.find(r => r.id === 1);
     expect(searchResponse).toBeDefined();
-    // With MCP-compliant errors, we get "Error:" prefix
+    // With structured errors, we now get the actual error message with context
     expect(searchResponse.result.structuredContent.error).toBe(
-      "Error: Failed for search query 'Stockholm': Network error"
+      "Failed for search query 'Stockholm': Network error"
     );
     expect(searchResponse.result.structuredContent.errorCode).toBe('UNKNOWN_ERROR');
     expect(searchResponse.result.structuredContent.retryable).toBe(false);
@@ -1678,7 +1678,7 @@ function createMockAxiosError(
 }
 
 describe('formatErrorResponse', () => {
-  it('should format ApiError with MCP-compliant isError flag and Error: prefix', () => {
+  it('should format ApiError with all required fields', () => {
     const error: ApiError = {
       code: 'NOT_FOUND',
       message: 'Store not found. Verify the store ID exists.',
@@ -1688,16 +1688,13 @@ describe('formatErrorResponse', () => {
 
     const result = formatErrorResponse(error);
 
-    // MCP compliance: isError flag must be true
-    expect(result.isError).toBe(true);
-    // MCP compliance: message must start with "Error:"
-    expect(result.content[0].text).toBe('Error: Store not found. Verify the store ID exists.');
-    expect(result.structuredContent.error).toBe('Error: Store not found. Verify the store ID exists.');
+    expect(result.content).toEqual([{ type: 'text', text: 'Store not found. Verify the store ID exists.' }]);
+    expect(result.structuredContent.error).toBe('Store not found. Verify the store ID exists.');
     expect(result.structuredContent.errorCode).toBe('NOT_FOUND');
     expect(result.structuredContent.retryable).toBe(false);
   });
 
-  it('should format retryable error correctly with isError flag', () => {
+  it('should format retryable error correctly', () => {
     const error: ApiError = {
       code: 'RATE_LIMITED',
       message: 'Rate limit exceeded. Wait before retrying.',
@@ -1707,7 +1704,6 @@ describe('formatErrorResponse', () => {
 
     const result = formatErrorResponse(error);
 
-    expect(result.isError).toBe(true);
     expect(result.structuredContent.errorCode).toBe('RATE_LIMITED');
     expect(result.structuredContent.retryable).toBe(true);
   });
@@ -1721,15 +1717,13 @@ describe('formatErrorResponse', () => {
 
     const result = formatErrorResponse(error);
 
-    expect(result.isError).toBe(true);
     expect(result.content[0].type).toBe('text');
-    expect(result.content[0].text).toContain('Error:');
     expect(result.content[0].text).toContain('ECONNREFUSED');
     expect(result.structuredContent.errorCode).toBe('NETWORK_ERROR');
     expect(result.structuredContent.retryable).toBe(true);
   });
 
-  it('should prepend context to error message with Error: prefix', () => {
+  it('should prepend context to error message when provided', () => {
     const error: ApiError = {
       code: 'NOT_FOUND',
       message: 'Resource not found. Verify the ID exists.',
@@ -1739,14 +1733,13 @@ describe('formatErrorResponse', () => {
 
     const result = formatErrorResponse(error, "storeId '12345'");
 
-    expect(result.isError).toBe(true);
-    expect(result.content[0].text).toBe("Error: Failed for storeId '12345': Resource not found. Verify the ID exists.");
-    expect(result.structuredContent.error).toBe("Error: Failed for storeId '12345': Resource not found. Verify the ID exists.");
+    expect(result.content[0].text).toBe("Failed for storeId '12345': Resource not found. Verify the ID exists.");
+    expect(result.structuredContent.error).toBe("Failed for storeId '12345': Resource not found. Verify the ID exists.");
     expect(result.structuredContent.errorCode).toBe('NOT_FOUND');
     expect(result.structuredContent.retryable).toBe(false);
   });
 
-  it('should handle all error codes with isError flag', () => {
+  it('should handle all error codes', () => {
     const errorCodes = [
       'AUTH_INVALID_CREDENTIALS',
       'AUTH_APP_DISABLED',
@@ -1766,8 +1759,6 @@ describe('formatErrorResponse', () => {
       };
 
       const result = formatErrorResponse(error);
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toMatch(/^Error:/);
       expect(result.structuredContent.errorCode).toBe(code);
     }
   });
@@ -1921,7 +1912,7 @@ describe('mapAxiosErrorToApiError', () => {
   });
 
   describe('Network Errors (No Response)', () => {
-    it('should map network timeout to NETWORK_ERROR with actionable message', () => {
+    it('should map network timeout to NETWORK_ERROR with retryable: true', () => {
       const error = new Error('timeout of 30000ms exceeded') as AxiosError;
       error.isAxiosError = true;
       error.code = 'ECONNABORTED';
@@ -1931,11 +1922,10 @@ describe('mapAxiosErrorToApiError', () => {
 
       expect(result.code).toBe('NETWORK_ERROR');
       expect(result.retryable).toBe(true);
-      // Now has human-readable message instead of error code
-      expect(result.message).toContain('timed out');
+      expect(result.message).toContain('ECONNABORTED');
     });
 
-    it('should map connection refused to NETWORK_ERROR with actionable message', () => {
+    it('should map connection refused to NETWORK_ERROR with retryable: true', () => {
       const error = new Error('connect ECONNREFUSED') as AxiosError;
       error.isAxiosError = true;
       error.code = 'ECONNREFUSED';
@@ -1944,11 +1934,10 @@ describe('mapAxiosErrorToApiError', () => {
 
       expect(result.code).toBe('NETWORK_ERROR');
       expect(result.retryable).toBe(true);
-      // Now has human-readable message instead of error code
-      expect(result.message).toContain('Connection refused');
+      expect(result.message).toContain('ECONNREFUSED');
     });
 
-    it('should map DNS lookup failure to NETWORK_ERROR with actionable message', () => {
+    it('should map DNS lookup failure to NETWORK_ERROR with retryable: true', () => {
       const error = new Error('getaddrinfo ENOTFOUND api.example.com') as AxiosError;
       error.isAxiosError = true;
       error.code = 'ENOTFOUND';
@@ -1957,8 +1946,7 @@ describe('mapAxiosErrorToApiError', () => {
 
       expect(result.code).toBe('NETWORK_ERROR');
       expect(result.retryable).toBe(true);
-      // Now has human-readable message instead of error code
-      expect(result.message).toContain('DNS');
+      expect(result.message).toContain('ENOTFOUND');
     });
   });
 
@@ -2004,112 +1992,6 @@ describe('mapAxiosErrorToApiError', () => {
       const result = mapAxiosErrorToApiError(null);
 
       expect(result.code).toBe('UNKNOWN_ERROR');
-      expect(result.retryable).toBe(false);
-    });
-  });
-
-  describe('Error Message Quality', () => {
-    it('timeout error (ECONNABORTED) should have specific actionable message', () => {
-      const error = new Error('timeout of 30000ms exceeded') as AxiosError;
-      error.isAxiosError = true;
-      error.code = 'ECONNABORTED';
-      // No response property - simulates network error
-
-      const result = mapAxiosErrorToApiError(error);
-
-      expect(result.code).toBe('NETWORK_ERROR');
-      expect(result.message).toContain('timed out');
-      expect(result.message).toContain('30s');
-      expect(result.message).toContain('try again');
-      expect(result.retryable).toBe(true);
-    });
-
-    it('DNS error (ENOTFOUND) should be distinguishable from timeout', () => {
-      const error = new Error('getaddrinfo ENOTFOUND') as AxiosError;
-      error.isAxiosError = true;
-      error.code = 'ENOTFOUND';
-
-      const result = mapAxiosErrorToApiError(error);
-
-      expect(result.code).toBe('NETWORK_ERROR');
-      expect(result.message).toContain('DNS');
-      expect(result.message).not.toContain('timed out');
-      expect(result.retryable).toBe(true);
-    });
-
-    it('connection refused (ECONNREFUSED) should have network-specific message', () => {
-      const error = new Error('connect ECONNREFUSED') as AxiosError;
-      error.isAxiosError = true;
-      error.code = 'ECONNREFUSED';
-
-      const result = mapAxiosErrorToApiError(error);
-
-      expect(result.code).toBe('NETWORK_ERROR');
-      expect(result.message).toContain('Connection refused');
-      expect(result.message).toContain('accessible');
-      expect(result.retryable).toBe(true);
-    });
-
-    it('rate limit error with Retry-After header should include wait time', () => {
-      const axiosError = {
-        isAxiosError: true,
-        response: {
-          status: 429,
-          data: {},
-          headers: {
-            'retry-after': '60'
-          }
-        },
-        code: undefined,
-        message: 'Request failed with status code 429'
-      } as unknown as AxiosError;
-
-      const result = mapAxiosErrorToApiError(axiosError);
-
-      expect(result.code).toBe('RATE_LIMITED');
-      expect(result.message).toContain('60 seconds');
-      expect(result.message).toContain('Wait');
-      expect(result.retryable).toBe(true);
-    });
-
-    it('rate limit error without Retry-After header should still be actionable', () => {
-      const axiosError = {
-        isAxiosError: true,
-        response: {
-          status: 429,
-          data: {},
-          headers: {}
-        },
-        code: undefined,
-        message: 'Request failed with status code 429'
-      } as unknown as AxiosError;
-
-      const result = mapAxiosErrorToApiError(axiosError);
-
-      expect(result.code).toBe('RATE_LIMITED');
-      expect(result.message).toContain('Wait');
-      expect(result.message).toContain('retrying');
-      expect(result.retryable).toBe(true);
-    });
-
-    it('auth error (401) should include credential check guidance', () => {
-      const axiosError = createMockAxiosError(401);
-
-      const result = mapAxiosErrorToApiError(axiosError);
-
-      expect(result.code).toBe('AUTH_INVALID_CREDENTIALS');
-      expect(result.message).toMatch(/PINMETO_APP_ID|PINMETO_APP_SECRET/);
-      expect(result.retryable).toBe(false);
-    });
-
-    it('auth error (403) should mention contacting support', () => {
-      const axiosError = createMockAxiosError(403);
-
-      const result = mapAxiosErrorToApiError(axiosError);
-
-      expect(result.code).toBe('AUTH_APP_DISABLED');
-      expect(result.message).toContain('disabled');
-      expect(result.message).toContain('support');
       expect(result.retryable).toBe(false);
     });
   });

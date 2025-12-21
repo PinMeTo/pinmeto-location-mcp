@@ -272,42 +272,12 @@ return {
   structuredContent: { data: aggregatedData }
 };
 
-// Error response (MCP compliant)
+// Error response
 return {
-  isError: true,  // MCP error flag
-  content: [{ type: 'text', text: 'Error: Resource not found. Verify the store ID exists.' }],
-  structuredContent: {
-    error: 'Error: Resource not found. Verify the store ID exists.',
-    errorCode: 'NOT_FOUND',
-    retryable: false
-  }
+  content: [{ type: 'text', text: 'Unable to fetch data.' }],
+  structuredContent: { error: 'Unable to fetch data.' }
 };
 ```
-
-### Error Handling
-
-All tools return structured errors following MCP best practices:
-
-**Error Response Fields:**
-- `isError: true` - MCP flag indicating an error response
-- `error`: Human-readable message prefixed with "Error:" for MCP compliance
-- `errorCode`: One of: `AUTH_INVALID_CREDENTIALS`, `AUTH_APP_DISABLED`, `BAD_REQUEST`, `NOT_FOUND`, `RATE_LIMITED`, `SERVER_ERROR`, `NETWORK_ERROR`, `UNKNOWN_ERROR`
-- `retryable`: `true` if the operation can be retried (rate limits, server errors, network issues)
-
-**Error Code Meanings:**
-
-| Code | HTTP Status | Retryable | Guidance |
-|------|-------------|-----------|----------|
-| `AUTH_INVALID_CREDENTIALS` | 401 | No | Check PINMETO_APP_ID and PINMETO_APP_SECRET |
-| `AUTH_APP_DISABLED` | 403 | No | Contact PinMeTo support |
-| `BAD_REQUEST` | 400 | No | Check date formats and store IDs |
-| `NOT_FOUND` | 404 | No | Verify the store ID exists |
-| `RATE_LIMITED` | 429 | Yes | Wait before retrying (includes Retry-After timing) |
-| `SERVER_ERROR` | 500/502/503/504 | Yes | Try again later |
-| `NETWORK_ERROR` | N/A | Yes | Check network (specific guidance for timeout/DNS/connection) |
-| `UNKNOWN_ERROR` | Various | No | Check error message for details |
-
-AI agents should use `errorCode` for programmatic handling and `retryable` to decide retry strategy.
 
 ### Creating New Output Schemas
 
