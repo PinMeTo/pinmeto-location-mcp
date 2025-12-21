@@ -37,6 +37,58 @@ function isFutureDate(dateStr: string): boolean {
 }
 
 /**
+ * Extracts opening/closing times from various object formats.
+ * Tries multiple common property names used by different APIs.
+ */
+function extractTimePeriod(obj: Record<string, unknown>): string | null {
+  // Common property name patterns for opening times
+  const openKeys = ['open', 'opens', 'start', 'from', 'openTime', 'opening'];
+  const closeKeys = ['close', 'closes', 'end', 'to', 'closeTime', 'closing'];
+
+  let openTime: string | null = null;
+  let closeTime: string | null = null;
+
+  for (const key of openKeys) {
+    if (key in obj && obj[key]) {
+      openTime = String(obj[key]);
+      break;
+    }
+  }
+
+  for (const key of closeKeys) {
+    if (key in obj && obj[key]) {
+      closeTime = String(obj[key]);
+      break;
+    }
+  }
+
+  if (openTime && closeTime) {
+    return `${openTime}-${closeTime}`;
+  }
+  if (openTime) {
+    return `${openTime}-`;
+  }
+  if (closeTime) {
+    return `-${closeTime}`;
+  }
+
+  // Check for 'hours' or 'time' property that might contain the full string
+  if ('hours' in obj && typeof obj.hours === 'string') {
+    return obj.hours;
+  }
+  if ('time' in obj && typeof obj.time === 'string') {
+    return obj.time;
+  }
+
+  // If it has isClosed/closed flag
+  if (obj.isClosed === true || obj.closed === true) {
+    return 'Closed';
+  }
+
+  return null;
+}
+
+/**
  * Formats an opening hours value to a display string.
  * Handles strings, arrays of time periods, null, and other formats.
  */
@@ -51,35 +103,39 @@ function formatHoursValue(value: unknown): string {
     if (value.length === 0) {
       return 'Closed';
     }
-    // Handle array of time period objects like [{open: "09:00", close: "17:00"}]
-    return value
+    // Handle array of time period objects
+    const periods = value
       .map((period) => {
         if (typeof period === 'string') {
           return period;
         }
         if (period && typeof period === 'object') {
-          const open = period.open || period.start || period.from || '';
-          const close = period.close || period.end || period.to || '';
-          if (open && close) {
-            return `${open}-${close}`;
-          }
-          if (open) return `${open}-`;
-          if (close) return `-${close}`;
+          return extractTimePeriod(period as Record<string, unknown>);
         }
-        return String(period);
+        return null;
       })
-      .join(', ');
+      .filter((p): p is string => p !== null);
+
+    return periods.length > 0 ? periods.join(', ') : 'Closed';
   }
-  // Handle object format like {open: "09:00", close: "17:00"}
+  // Handle object format
   if (typeof value === 'object') {
-    const obj = value as Record<string, string>;
-    const open = obj.open || obj.start || obj.from || '';
-    const close = obj.close || obj.end || obj.to || '';
-    if (open && close) {
-      return `${open}-${close}`;
+    const result = extractTimePeriod(value as Record<string, unknown>);
+    if (result) {
+      return result;
+    }
+    // Last resort: try to find any string values that look like times
+    const obj = value as Record<string, unknown>;
+    const timeValues = Object.values(obj)
+      .filter((v): v is string => typeof v === 'string' && /^\d{1,2}:\d{2}/.test(v));
+    if (timeValues.length >= 2) {
+      return `${timeValues[0]}-${timeValues[1]}`;
+    }
+    if (timeValues.length === 1) {
+      return timeValues[0];
     }
   }
-  return String(value);
+  return 'Closed';
 }
 
 /**
@@ -190,30 +246,37 @@ export function formatLocationAsMarkdown(location: LocationData): string {
 
     const hours = location.openHours;
 
-    // Preferred order for days (check both lowercase and capitalized)
-    const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    // Day variants: [fullName, abbreviation, displayName]
+    const dayVariants: [string, string, string][] = [
+      ['monday', 'mon', 'Monday'],
+      ['tuesday', 'tue', 'Tuesday'],
+      ['wednesday', 'wed', 'Wednesday'],
+      ['thursday', 'thu', 'Thursday'],
+      ['friday', 'fri', 'Friday'],
+      ['saturday', 'sat', 'Saturday'],
+      ['sunday', 'sun', 'Sunday']
+    ];
     const displayedDays = new Set<string>();
 
-    // First, try to display in standard order (handles both cases)
-    for (const day of dayOrder) {
-      const lowerDay = day.toLowerCase();
-      const capitalizedDay = day.charAt(0).toUpperCase() + day.slice(1);
+    // Try to display in standard order, checking all variants
+    for (const [fullLower, abbrevLower, displayName] of dayVariants) {
+      const fullCapitalized = fullLower.charAt(0).toUpperCase() + fullLower.slice(1);
+      const abbrevCapitalized = abbrevLower.charAt(0).toUpperCase() + abbrevLower.slice(1);
 
-      // Check for lowercase key
-      if (lowerDay in hours) {
-        md += `| ${capitalizedDay} | ${formatHoursValue(hours[lowerDay])} |\n`;
-        displayedDays.add(lowerDay);
-      }
-      // Check for capitalized key
-      else if (capitalizedDay in hours) {
-        md += `| ${capitalizedDay} | ${formatHoursValue(hours[capitalizedDay])} |\n`;
-        displayedDays.add(capitalizedDay);
+      // Check all possible key formats
+      const keysToCheck = [fullLower, fullCapitalized, abbrevLower, abbrevCapitalized];
+      for (const key of keysToCheck) {
+        if (key in hours) {
+          md += `| ${displayName} | ${formatHoursValue(hours[key])} |\n`;
+          displayedDays.add(key);
+          break;
+        }
       }
     }
 
-    // Show any remaining keys that weren't in standard order
+    // Show any remaining keys that weren't matched
     for (const key of Object.keys(hours)) {
-      if (!displayedDays.has(key) && !displayedDays.has(key.toLowerCase())) {
+      if (!displayedDays.has(key)) {
         const displayKey = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
         md += `| ${displayKey} | ${formatHoursValue(hours[key])} |\n`;
       }

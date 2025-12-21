@@ -114,6 +114,27 @@ describe('Markdown Formatters', () => {
         expect(result).toContain('| Sunday | Closed |');
       });
 
+      it('should handle abbreviated day names (Mon, Tue, etc.)', () => {
+        const location = {
+          storeId: '123',
+          name: 'Test Store',
+          openHours: {
+            Mon: { open: '09:00', close: '17:00' },
+            Tue: { open: '09:00', close: '17:00' },
+            Wed: { open: '09:00', close: '17:00' },
+            Sat: { isClosed: true }
+          }
+        };
+
+        const result = formatLocationAsMarkdown(location);
+
+        expect(result).toContain('### Opening Hours');
+        expect(result).toContain('| Monday | 09:00-17:00 |');
+        expect(result).toContain('| Tuesday | 09:00-17:00 |');
+        expect(result).toContain('| Wednesday | 09:00-17:00 |');
+        expect(result).toContain('| Saturday | Closed |');
+      });
+
       it('should handle null/undefined location', () => {
         const result = formatLocationAsMarkdown(null as any);
         expect(result).toContain('No location data available');
