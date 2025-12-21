@@ -51,8 +51,8 @@ export const MetricDataSchema = z.object({
 });
 
 /**
- * Insights data structure - contains metrics for a specific dimension
- * Structure matches the PinMeTo API response and aggregateMetrics() output
+ * Insights data structure - contains metrics for a specific dimension.
+ * Used across Google, Facebook, and Apple insights tools.
  */
 export const InsightsDataSchema = z.object({
   key: z.string().describe('Metric dimension name (e.g., "views", "clicks", "searches")'),

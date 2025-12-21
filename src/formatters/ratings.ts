@@ -155,7 +155,7 @@ function formatSingleRatingAsMarkdown(rating: RatingData): string {
 
 /**
  * Formats ratings for a specific location as Markdown.
- * Wrapper that includes the store ID in the header.
+ * Ensures storeId is set in the rating data before formatting.
  */
 export function formatLocationRatingsAsMarkdown(data: unknown, storeId: string): string {
   if (!data) {

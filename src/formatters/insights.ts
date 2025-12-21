@@ -101,7 +101,11 @@ function formatMetricName(name: string): string {
 
 /**
  * Formats a number for display with locale-aware separators.
+ * Returns '-' for invalid or missing values to handle malformed API responses.
  */
-function formatNumber(value: number): string {
+function formatNumber(value: unknown): string {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '-';
+  }
   return value.toLocaleString('en-US');
 }

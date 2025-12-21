@@ -1,7 +1,8 @@
 import { MARKDOWN_TABLE_MAX_ROWS } from '../helpers';
 
 /**
- * Location data structure (partial - uses passthrough for flexibility)
+ * Location data structure with known fields.
+ * Index signature allows additional unknown fields from API.
  */
 interface LocationData {
   storeId?: string;

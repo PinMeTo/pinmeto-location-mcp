@@ -130,21 +130,6 @@ function getISOWeek(date: Date): number {
   return weekNumber;
 }
 
-export function formatListResponse(response: any[], areAllPagesFetched: boolean): string {
-  if (response.length === 0) {
-    return 'The response was empty...';
-  }
-  let formattedMessage = '-'.repeat(20);
-  if (!areAllPagesFetched) {
-    formattedMessage =
-      'Not All pages were successfully fetched, collected data:\n' + formattedMessage;
-  }
-  for (const result of response) {
-    formattedMessage += '\n' + JSON.stringify(result, null, 2) + '\n' + '-'.repeat(20);
-  }
-  return formattedMessage;
-}
-
 /**
  * Formats an ApiError into a standard tool response.
  * Provides consistent error formatting across all tools.
@@ -175,7 +160,8 @@ export function formatErrorResponse(error: ApiError, context?: string) {
  * @returns Formatted text content
  *
  * @example
- * const textContent = formatContent(locationData, response_format, formatLocationAsMarkdown);
+ * // In a tool handler:
+ * const textContent = formatContent(data, response_format, formatLocationAsMarkdown);
  */
 export function formatContent<T>(
   data: T,
