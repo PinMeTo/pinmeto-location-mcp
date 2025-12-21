@@ -149,7 +149,7 @@ export function getLocations(server: PinMeToMcpServer) {
 
       // Handle complete API failure (no data and no stale cache)
       if (allData.length === 0 && !allPagesFetched && error) {
-        return formatErrorResponse(error, 'get_locations');
+        return formatErrorResponse(error, 'pinmeto_get_locations');
       }
 
       // 2. Apply filters
@@ -292,12 +292,12 @@ export function searchLocations(server: PinMeToMcpServer) {
     }) => {
       const { locationsApiBaseUrl, accountId } = server.configs;
 
-      // NOTE: search_locations intentionally bypasses LocationCache and fetches directly.
+      // NOTE: pinmeto_search_locations intentionally bypasses LocationCache and fetches directly.
       // Rationale:
       // 1. Search only needs minimal fields (storeId, name, address) - cache stores full objects
       // 2. Search is a discovery tool - users expect fresh results to find new locations
       // 3. Search doesn't have stale-cache fallback - this is intentional to ensure accurate results
-      // For bulk operations with resilience, use get_locations which uses the cached data.
+      // For bulk operations with resilience, use pinmeto_get_locations which uses the cached data.
       const fieldsParam = 'fields=storeId,name,locationDescriptor,address';
       const url = `${locationsApiBaseUrl}/v4/${accountId}/locations?pagesize=1000&${fieldsParam}`;
       const [data, areAllPagesFetched, lastError] = await server.makePaginatedPinMeToRequest(url);
