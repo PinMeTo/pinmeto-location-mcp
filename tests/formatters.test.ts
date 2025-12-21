@@ -102,10 +102,41 @@ describe('Markdown Formatters', () => {
         const result = formatLocationAsMarkdown(location);
         expect(result).toContain('**Status:** Temporarily Closed to 2025-03-15');
       });
+
+      it('should show opening soon status for future opening date', () => {
+        const futureDate = new Date();
+        futureDate.setFullYear(futureDate.getFullYear() + 1);
+        const futureDateStr = futureDate.toISOString().split('T')[0];
+
+        const location = {
+          storeId: '123',
+          name: 'New Store',
+          openingDate: futureDateStr
+        };
+
+        const result = formatLocationAsMarkdown(location);
+        expect(result).toContain(`**Status:** Opening ${futureDateStr}`);
+      });
+
+      it('should show open status for past opening date', () => {
+        const location = {
+          storeId: '123',
+          name: 'Established Store',
+          openingDate: '2020-01-15'
+        };
+
+        const result = formatLocationAsMarkdown(location);
+        expect(result).toContain('**Status:** Open');
+      });
     });
 
     describe('formatLocationsListAsMarkdown', () => {
       it('should format a list of locations as a table with all status types', () => {
+        // Generate a future date for the "opening soon" test
+        const futureDate = new Date();
+        futureDate.setFullYear(futureDate.getFullYear() + 1);
+        const futureDateStr = futureDate.toISOString().split('T')[0];
+
         const response = {
           data: [
             {
@@ -128,9 +159,16 @@ describe('Markdown Formatters', () => {
               locationDescriptor: 'Airport',
               address: { city: 'Göteborg', country: 'Sweden' },
               temporarilyClosedUntil: '2025-04-01'
+            },
+            {
+              storeId: '4',
+              name: 'Store Four',
+              locationDescriptor: 'New Location',
+              address: { city: 'Uppsala', country: 'Sweden' },
+              openingDate: futureDateStr
             }
           ],
-          totalCount: 3,
+          totalCount: 4,
           hasMore: false,
           offset: 0,
           limit: 50
@@ -139,11 +177,12 @@ describe('Markdown Formatters', () => {
         const result = formatLocationsListAsMarkdown(response);
 
         expect(result).toContain('## Locations');
-        expect(result).toContain('**Total:** 3 locations');
+        expect(result).toContain('**Total:** 4 locations');
         expect(result).toContain('| Store ID | Name | Descriptor | City | Country | Status |');
         expect(result).toContain('| 1 | Store One | Main Branch | Stockholm | Sweden | Open |');
         expect(result).toContain('| 2 | Store Two | Mall Location | Malmö | Sweden | Permanently Closed |');
         expect(result).toContain('| 3 | Store Three | Airport | Göteborg | Sweden | Closed to 2025-04-01 |');
+        expect(result).toContain(`| 4 | Store Four | New Location | Uppsala | Sweden | Opening ${futureDateStr} |`);
       });
 
       it('should show cache info when available', () => {

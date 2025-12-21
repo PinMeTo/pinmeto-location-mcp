@@ -10,6 +10,7 @@ interface LocationData {
   type?: string;
   permanentlyClosed?: boolean;
   temporarilyClosedUntil?: string;
+  openingDate?: string;
   address?: {
     street?: string;
     city?: string;
@@ -26,17 +27,31 @@ interface LocationData {
 }
 
 /**
+ * Checks if a date string (YYYY-MM-DD) is in the future.
+ */
+function isFutureDate(dateStr: string): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const date = new Date(dateStr);
+  return date > today;
+}
+
+/**
  * Formats location status as a human-readable string.
+ * Priority: Permanently Closed > Temporarily Closed > Opening Soon > Open
  * @param location - The location data
  * @param short - If true, returns abbreviated status for tables
  */
 function formatStatus(location: LocationData, short = false): string {
   if (location.permanentlyClosed) {
-    return short ? 'Permanently Closed' : 'Permanently Closed';
+    return 'Permanently Closed';
   }
   if (location.temporarilyClosedUntil) {
     const date = location.temporarilyClosedUntil;
     return short ? `Closed to ${date}` : `Temporarily Closed to ${date}`;
+  }
+  if (location.openingDate && isFutureDate(location.openingDate)) {
+    return short ? `Opening ${location.openingDate}` : `Opening ${location.openingDate}`;
   }
   return 'Open';
 }
