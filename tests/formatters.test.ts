@@ -114,14 +114,36 @@ describe('Markdown Formatters', () => {
         expect(result).toContain('| Sunday | Closed |');
       });
 
-      it('should handle abbreviated day names (Mon, Tue, etc.)', () => {
+      it('should handle PinMeTo format with state and span', () => {
+        const location = {
+          storeId: '123',
+          name: 'Test Store',
+          openHours: {
+            mon: { state: 'Open', span: [{ open: '0800', close: '1700' }] },
+            tue: { state: 'Open', span: [{ open: '0800', close: '1700' }] },
+            wed: { state: 'Open', span: [{ open: '0900', close: '1200' }, { open: '1300', close: '1700' }] },
+            sat: { state: 'Closed', span: [] },
+            sun: { state: 'Closed', span: [] }
+          }
+        };
+
+        const result = formatLocationAsMarkdown(location);
+
+        expect(result).toContain('### Opening Hours');
+        expect(result).toContain('| Monday | 08:00-17:00 |');
+        expect(result).toContain('| Tuesday | 08:00-17:00 |');
+        expect(result).toContain('| Wednesday | 09:00-12:00, 13:00-17:00 |');
+        expect(result).toContain('| Saturday | Closed |');
+        expect(result).toContain('| Sunday | Closed |');
+      });
+
+      it('should handle simple object format for opening hours', () => {
         const location = {
           storeId: '123',
           name: 'Test Store',
           openHours: {
             Mon: { open: '09:00', close: '17:00' },
             Tue: { open: '09:00', close: '17:00' },
-            Wed: { open: '09:00', close: '17:00' },
             Sat: { isClosed: true }
           }
         };
@@ -131,7 +153,6 @@ describe('Markdown Formatters', () => {
         expect(result).toContain('### Opening Hours');
         expect(result).toContain('| Monday | 09:00-17:00 |');
         expect(result).toContain('| Tuesday | 09:00-17:00 |');
-        expect(result).toContain('| Wednesday | 09:00-17:00 |');
         expect(result).toContain('| Saturday | Closed |');
       });
 

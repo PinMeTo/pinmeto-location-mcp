@@ -37,11 +37,28 @@ function isFutureDate(dateStr: string): boolean {
 }
 
 /**
- * Extracts opening/closing times from various object formats.
- * Tries multiple common property names used by different APIs.
+ * Formats a time string like "0800" or "08:00" to "08:00" format.
  */
-function extractTimePeriod(obj: Record<string, unknown>): string | null {
-  // Common property name patterns for opening times
+function formatTime(time: string): string {
+  // Already has colon
+  if (time.includes(':')) {
+    return time;
+  }
+  // Format "0800" to "08:00"
+  if (time.length === 4 && /^\d{4}$/.test(time)) {
+    return `${time.slice(0, 2)}:${time.slice(2)}`;
+  }
+  // Format "800" to "08:00"
+  if (time.length === 3 && /^\d{3}$/.test(time)) {
+    return `0${time.slice(0, 1)}:${time.slice(1)}`;
+  }
+  return time;
+}
+
+/**
+ * Extracts opening/closing times from a single time period object.
+ */
+function extractSinglePeriod(obj: Record<string, unknown>): string | null {
   const openKeys = ['open', 'opens', 'start', 'from', 'openTime', 'opening'];
   const closeKeys = ['close', 'closes', 'end', 'to', 'closeTime', 'closing'];
 
@@ -50,14 +67,14 @@ function extractTimePeriod(obj: Record<string, unknown>): string | null {
 
   for (const key of openKeys) {
     if (key in obj && obj[key]) {
-      openTime = String(obj[key]);
+      openTime = formatTime(String(obj[key]));
       break;
     }
   }
 
   for (const key of closeKeys) {
     if (key in obj && obj[key]) {
-      closeTime = String(obj[key]);
+      closeTime = formatTime(String(obj[key]));
       break;
     }
   }
@@ -65,14 +82,52 @@ function extractTimePeriod(obj: Record<string, unknown>): string | null {
   if (openTime && closeTime) {
     return `${openTime}-${closeTime}`;
   }
-  if (openTime) {
-    return `${openTime}-`;
-  }
-  if (closeTime) {
-    return `-${closeTime}`;
+  return null;
+}
+
+/**
+ * Extracts opening hours from PinMeTo's day format: { state: "Open", span: [{open, close}] }
+ */
+function extractDayHours(obj: Record<string, unknown>): string {
+  // Check for PinMeTo format: { state: "Open"|"Closed", span: [...] }
+  if ('state' in obj) {
+    const state = String(obj.state).toLowerCase();
+    if (state === 'closed') {
+      return 'Closed';
+    }
+    // Check span array for time periods
+    if ('span' in obj && Array.isArray(obj.span)) {
+      const periods = obj.span
+        .map((period) => {
+          if (period && typeof period === 'object') {
+            return extractSinglePeriod(period as Record<string, unknown>);
+          }
+          return null;
+        })
+        .filter((p): p is string => p !== null);
+
+      if (periods.length > 0) {
+        return periods.join(', ');
+      }
+    }
+    // State is Open but no span - might be 24 hours
+    if (state === 'open') {
+      return 'Open';
+    }
   }
 
-  // Check for 'hours' or 'time' property that might contain the full string
+  // Fallback: try to extract directly from object (simple {open, close} format)
+  const directPeriod = extractSinglePeriod(obj);
+  if (directPeriod) {
+    return directPeriod;
+  }
+
+  // Check for isClosed flag
+  if (obj.isClosed === true || obj.closed === true) {
+    return 'Closed';
+  }
+
+  // Check for 'hours' or 'time' property
   if ('hours' in obj && typeof obj.hours === 'string') {
     return obj.hours;
   }
@@ -80,17 +135,12 @@ function extractTimePeriod(obj: Record<string, unknown>): string | null {
     return obj.time;
   }
 
-  // If it has isClosed/closed flag
-  if (obj.isClosed === true || obj.closed === true) {
-    return 'Closed';
-  }
-
-  return null;
+  return 'Closed';
 }
 
 /**
  * Formats an opening hours value to a display string.
- * Handles strings, arrays of time periods, null, and other formats.
+ * Handles strings, arrays of time periods, null, and PinMeTo's {state, span} format.
  */
 function formatHoursValue(value: unknown): string {
   if (value === null || value === undefined) {
@@ -110,7 +160,7 @@ function formatHoursValue(value: unknown): string {
           return period;
         }
         if (period && typeof period === 'object') {
-          return extractTimePeriod(period as Record<string, unknown>);
+          return extractSinglePeriod(period as Record<string, unknown>);
         }
         return null;
       })
@@ -118,22 +168,9 @@ function formatHoursValue(value: unknown): string {
 
     return periods.length > 0 ? periods.join(', ') : 'Closed';
   }
-  // Handle object format
+  // Handle object format (including PinMeTo's {state, span} format)
   if (typeof value === 'object') {
-    const result = extractTimePeriod(value as Record<string, unknown>);
-    if (result) {
-      return result;
-    }
-    // Last resort: try to find any string values that look like times
-    const obj = value as Record<string, unknown>;
-    const timeValues = Object.values(obj)
-      .filter((v): v is string => typeof v === 'string' && /^\d{1,2}:\d{2}/.test(v));
-    if (timeValues.length >= 2) {
-      return `${timeValues[0]}-${timeValues[1]}`;
-    }
-    if (timeValues.length === 1) {
-      return timeValues[0];
-    }
+    return extractDayHours(value as Record<string, unknown>);
   }
   return 'Closed';
 }
