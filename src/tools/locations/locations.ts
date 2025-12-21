@@ -1,11 +1,18 @@
 import { z } from 'zod';
-import { formatErrorResponse, formatListResponse } from '../../helpers';
+import { formatErrorResponse, formatContent } from '../../helpers';
 import { PinMeToMcpServer } from '../../mcp_server';
 import {
   LocationOutputSchema,
   LocationsOutputSchema,
-  SearchResultOutputSchema
+  SearchResultOutputSchema,
+  ResponseFormatSchema,
+  ResponseFormat
 } from '../../schemas/output';
+import {
+  formatLocationAsMarkdown,
+  formatLocationsListAsMarkdown,
+  formatSearchResultsAsMarkdown
+} from '../../formatters';
 
 export function getLocation(server: PinMeToMcpServer) {
   server.registerTool(
@@ -14,14 +21,21 @@ export function getLocation(server: PinMeToMcpServer) {
       description:
         'Get location details for a store from PinMeTo API. Returns structured location data including address, contact info, and network connections.',
       inputSchema: {
-        storeId: z.string().describe('The store ID to look up')
+        storeId: z.string().describe('The store ID to look up'),
+        response_format: ResponseFormatSchema
       },
       outputSchema: LocationOutputSchema,
       annotations: {
         readOnlyHint: true
       }
     },
-    async ({ storeId }: { storeId: string }) => {
+    async ({
+      storeId,
+      response_format = 'json'
+    }: {
+      storeId: string;
+      response_format?: ResponseFormat;
+    }) => {
       const { locationsApiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${locationsApiBaseUrl}/v4/${accountId}/locations/${storeId}`;
@@ -31,13 +45,10 @@ export function getLocation(server: PinMeToMcpServer) {
         return formatErrorResponse(result.error, `storeId '${storeId}'`);
       }
 
+      const textContent = formatContent(result.data, response_format, formatLocationAsMarkdown);
+
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result.data)
-          }
-        ],
+        content: [{ type: 'text', text: textContent }],
         structuredContent: { data: result.data }
       };
     }
@@ -109,7 +120,8 @@ export function getLocations(server: PinMeToMcpServer) {
           .boolean()
           .optional()
           .default(false)
-          .describe('Force cache refresh (bypasses 5-minute TTL)')
+          .describe('Force cache refresh (bypasses 5-minute TTL)'),
+        response_format: ResponseFormatSchema
       },
       outputSchema: LocationsOutputSchema,
       annotations: {
@@ -125,6 +137,7 @@ export function getLocations(server: PinMeToMcpServer) {
       city?: string;
       country?: string;
       forceRefresh?: boolean;
+      response_format?: ResponseFormat;
     }) => {
       const limit = args.limit ?? 50;
       const offset = args.offset ?? 0;
@@ -191,32 +204,51 @@ export function getLocations(server: PinMeToMcpServer) {
         warning = 'Data may be incomplete due to API pagination errors. Use forceRefresh: true to retry.';
       }
 
-      // Include error info if we're returning stale data
-      const responseText = stale
-        ? `${formatListResponse(paginatedData, allPagesFetched)}\n\nWARNING: ${warning}`
-        : formatListResponse(paginatedData, allPagesFetched);
+      // Build structured content
+      const structuredContent = {
+        data: paginatedData,
+        totalCount,
+        hasMore,
+        offset,
+        limit,
+        incomplete: !allPagesFetched,
+        warning,
+        ...(errorMessage ? { error: errorMessage } : {}),
+        ...(error ? { errorCode: error.code, retryable: error.retryable } : {}),
+        cacheInfo: {
+          cached: cacheInfo.cached,
+          ageSeconds: cacheInfo.age,
+          totalCached: cacheInfo.size,
+          stale
+        }
+      };
 
-      return {
-        content: [{ type: 'text', text: responseText }],
-        structuredContent: {
+      // Format response text based on response_format
+      const response_format = args.response_format ?? 'json';
+      let responseText: string;
+
+      if (response_format === 'markdown') {
+        responseText = formatLocationsListAsMarkdown({
           data: paginatedData,
           totalCount,
           hasMore,
           offset,
           limit,
-          incomplete: !allPagesFetched,
-          warning,
-          // Include error info whenever there's an error (stale cache OR partial pagination failure)
-          // errorMessage is set explicitly when returning stale data so AI agents can detect it
-          ...(errorMessage ? { error: errorMessage } : {}),
-          ...(error ? { errorCode: error.code, retryable: error.retryable } : {}),
-          cacheInfo: {
-            cached: cacheInfo.cached,
-            ageSeconds: cacheInfo.age,
-            totalCached: cacheInfo.size,
-            stale
-          }
+          cacheInfo: structuredContent.cacheInfo
+        });
+        if (warning) {
+          responseText += `\n\n**Warning:** ${warning}`;
         }
+      } else {
+        responseText = JSON.stringify(paginatedData);
+        if (stale && warning) {
+          responseText += `\n\nWARNING: ${warning}`;
+        }
+      }
+
+      return {
+        content: [{ type: 'text', text: responseText }],
+        structuredContent
       };
     }
   );
@@ -241,14 +273,23 @@ export function searchLocations(server: PinMeToMcpServer) {
           .max(100)
           .optional()
           .default(20)
-          .describe('Maximum results to return (default: 20, max: 100)')
+          .describe('Maximum results to return (default: 20, max: 100)'),
+        response_format: ResponseFormatSchema
       },
       outputSchema: SearchResultOutputSchema,
       annotations: {
         readOnlyHint: true
       }
     },
-    async ({ query, limit = 20 }: { query: string; limit?: number }) => {
+    async ({
+      query,
+      limit = 20,
+      response_format = 'json'
+    }: {
+      query: string;
+      limit?: number;
+      response_format?: ResponseFormat;
+    }) => {
       const { locationsApiBaseUrl, accountId } = server.configs;
 
       // NOTE: search_locations intentionally bypasses LocationCache and fetches directly.
@@ -316,14 +357,22 @@ export function searchLocations(server: PinMeToMcpServer) {
         };
       });
 
-      const resultText =
-        results.length === 0
-          ? `No locations found matching "${query}".`
-          : `Found ${totalMatches} location(s) matching "${query}"${hasMore ? ` (showing first ${limit})` : ''}:\n${results.map((r: any) => `- ${r.name} (${r.storeId}): ${r.addressSummary}`).join('\n')}`;
+      const structuredContent = { data: results, totalMatches, hasMore };
+
+      // Format response based on response_format
+      let resultText: string;
+      if (response_format === 'markdown') {
+        resultText = formatSearchResultsAsMarkdown(structuredContent);
+      } else {
+        resultText =
+          results.length === 0
+            ? `No locations found matching "${query}".`
+            : JSON.stringify(results);
+      }
 
       return {
         content: [{ type: 'text', text: resultText }],
-        structuredContent: { data: results, totalMatches, hasMore }
+        structuredContent
       };
     }
   );

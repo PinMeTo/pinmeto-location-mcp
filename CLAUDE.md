@@ -126,6 +126,12 @@ src/
 ├── configs.ts            # Environment config validation
 ├── helpers.ts            # Time aggregation and response formatting
 ├── prompts.ts            # Prompt templates for common workflows
+├── formatters/           # Markdown formatters for response_format support
+│   ├── index.ts          # Module entry point
+│   ├── locations.ts      # Location/search formatters
+│   ├── insights.ts       # Insights formatters (Google/FB/Apple)
+│   ├── ratings.ts        # Ratings formatters
+│   └── keywords.ts       # Keywords formatters
 ├── schemas/
 │   └── output.ts         # Shared Zod output schemas for tools
 └── tools/
@@ -141,12 +147,14 @@ src/
 
 1. Create tool registration function in appropriate module under `src/tools/`
 2. Define Zod schema for input validation
-3. Define or reuse output schema from `src/schemas/output.ts`
-4. Implement handler using `server.makePinMeToRequest()` or `server.makePaginatedPinMeToRequest()`
-5. Return both `content` (text) and `structuredContent` (typed data) from handler
-6. For insights tools, apply `aggregateMetrics()` before returning data
-7. Add appropriate tool annotations (see Tool Annotations section below)
-8. Register tool in `createMcpServer()` function in `src/mcp_server.ts`
+3. Add `response_format: ResponseFormatSchema` to input schema
+4. Define or reuse output schema from `src/schemas/output.ts`
+5. Implement handler using `server.makePinMeToRequest()` or `server.makePaginatedPinMeToRequest()`
+6. Use `formatContent()` helper to format response based on `response_format`
+7. Return both `content` (text) and `structuredContent` (typed data) from handler
+8. For insights tools, apply `aggregateMetrics()` before formatting
+9. Add appropriate tool annotations (see Tool Annotations section below)
+10. Register tool in `createMcpServer()` function in `src/mcp_server.ts`
 
 ## Tool Annotations
 
@@ -238,6 +246,52 @@ export const NewOutputSchema = {
   error: z.string().optional().describe('Error message if request failed')
 };
 ```
+
+## Response Formats
+
+All tools support a `response_format` parameter for flexible output formatting:
+
+| Format | Description | Use Case |
+|--------|-------------|----------|
+| `json` (default) | Compact JSON string | Token-efficient, programmatic processing |
+| `markdown` | Human-readable with headers and tables | Reports, debugging, human review |
+
+### Usage Examples
+
+```typescript
+// JSON format (default) - maximum token efficiency
+{ storeId: "1337" }
+
+// Markdown format - human-readable tables
+{ storeId: "1337", response_format: "markdown" }
+
+// Insights with markdown output
+{ from: "2024-01-01", to: "2024-12-31", response_format: "markdown" }
+```
+
+### Format Behavior
+
+- **content.text**: Formatted according to `response_format` parameter
+- **structuredContent**: Always contains typed data (unaffected by format)
+- **Errors**: Always returned as JSON (not affected by response_format)
+- **Large datasets**: Markdown tables truncate at 50 rows with "... and X more" message
+
+### Markdown Output Examples
+
+**Locations**: Table with Store ID, Name, City, Country, Status columns
+**Insights**: Sections per metric with Period/Value tables
+**Ratings**: Summary stats with visual distribution bars
+**Keywords**: Table with Keyword, Impressions, Clicks, CTR columns
+
+### Formatters Module (`src/formatters/`)
+
+Centralized Markdown formatters for consistent output:
+- `formatLocationAsMarkdown()` - Single location details
+- `formatLocationsListAsMarkdown()` - Paginated location table
+- `formatSearchResultsAsMarkdown()` - Search results table
+- `formatInsightsAsMarkdown()` - Insights data with sections
+- `formatRatingsAsMarkdown()` - Ratings with distribution
+- `formatKeywordsAsMarkdown()` - Keywords with CTR calculation
 
 ## Location Discovery Workflow
 

@@ -1,7 +1,18 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
-import { aggregateMetrics, AggregationPeriod, formatErrorResponse } from '../../helpers';
-import { InsightsOutputSchema, RatingsOutputSchema } from '../../schemas/output';
+import { aggregateMetrics, AggregationPeriod, formatErrorResponse, formatContent } from '../../helpers';
+import {
+  InsightsOutputSchema,
+  RatingsOutputSchema,
+  ResponseFormatSchema,
+  ResponseFormat
+} from '../../schemas/output';
+import {
+  formatInsightsAsMarkdown,
+  formatLocationInsightsAsMarkdown,
+  formatRatingsAsMarkdown,
+  formatLocationRatingsAsMarkdown
+} from '../../formatters';
 
 // Shared date validation schema
 const DateSchema = z
@@ -24,7 +35,8 @@ export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
           .default('total')
           .describe(
             'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
-          )
+          ),
+        response_format: ResponseFormatSchema
       },
       outputSchema: InsightsOutputSchema,
       annotations: {
@@ -35,12 +47,14 @@ export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
       storeId,
       from,
       to,
-      aggregation = 'total'
+      aggregation = 'total',
+      response_format = 'json'
     }: {
       storeId: string;
       from: string;
       to: string;
       aggregation?: AggregationPeriod;
+      response_format?: ResponseFormat;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
@@ -54,13 +68,13 @@ export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
       // Apply aggregation
       const aggregatedData = aggregateMetrics(result.data, aggregation);
 
+      const textContent =
+        response_format === 'markdown'
+          ? formatLocationInsightsAsMarkdown(aggregatedData, storeId)
+          : JSON.stringify(aggregatedData);
+
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(aggregatedData)
-          }
-        ],
+        content: [{ type: 'text', text: textContent }],
         structuredContent: { data: aggregatedData }
       };
     }
@@ -82,7 +96,8 @@ export function getAllFacebookInsights(server: PinMeToMcpServer) {
           .default('total')
           .describe(
             'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
-          )
+          ),
+        response_format: ResponseFormatSchema
       },
       outputSchema: InsightsOutputSchema,
       annotations: {
@@ -92,11 +107,13 @@ export function getAllFacebookInsights(server: PinMeToMcpServer) {
     async ({
       from,
       to,
-      aggregation = 'total'
+      aggregation = 'total',
+      response_format = 'json'
     }: {
       from: string;
       to: string;
       aggregation?: AggregationPeriod;
+      response_format?: ResponseFormat;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
@@ -109,13 +126,10 @@ export function getAllFacebookInsights(server: PinMeToMcpServer) {
       // Apply aggregation
       const aggregatedData = aggregateMetrics(result.data, aggregation);
 
+      const textContent = formatContent(aggregatedData, response_format, formatInsightsAsMarkdown);
+
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(aggregatedData)
-          }
-        ],
+        content: [{ type: 'text', text: textContent }],
         structuredContent: { data: aggregatedData }
       };
     }
@@ -137,7 +151,8 @@ export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
           .default('total')
           .describe(
             'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
-          )
+          ),
+        response_format: ResponseFormatSchema
       },
       outputSchema: InsightsOutputSchema,
       annotations: {
@@ -147,11 +162,13 @@ export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
     async ({
       from,
       to,
-      aggregation = 'total'
+      aggregation = 'total',
+      response_format = 'json'
     }: {
       from: string;
       to: string;
       aggregation?: AggregationPeriod;
+      response_format?: ResponseFormat;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
@@ -164,13 +181,10 @@ export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
       // Apply aggregation
       const aggregatedData = aggregateMetrics(result.data, aggregation);
 
+      const textContent = formatContent(aggregatedData, response_format, formatInsightsAsMarkdown);
+
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(aggregatedData)
-          }
-        ],
+        content: [{ type: 'text', text: textContent }],
         structuredContent: { data: aggregatedData }
       };
     }
@@ -185,27 +199,34 @@ export const getAllFacebookRatings = (server: PinMeToMcpServer) => {
         'Fetch Facebook ratings for all locations belonging to a specific account. Returns structured ratings data.',
       inputSchema: {
         from: DateSchema.describe('The start date (YYYY-MM-DD)'),
-        to: DateSchema.describe('The end date (YYYY-MM-DD)')
+        to: DateSchema.describe('The end date (YYYY-MM-DD)'),
+        response_format: ResponseFormatSchema
       },
       outputSchema: RatingsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
     },
-    async ({ from, to }: { from: string; to: string }) => {
+    async ({
+      from,
+      to,
+      response_format = 'json'
+    }: {
+      from: string;
+      to: string;
+      response_format?: ResponseFormat;
+    }) => {
       const { apiBaseUrl, accountId } = server.configs;
       const url = `${apiBaseUrl}/listings/v3/${accountId}/ratings/facebook?from=${from}&to=${to}`;
       const result = await server.makePinMeToRequest(url);
       if (!result.ok) {
         return formatErrorResponse(result.error, `all Facebook ratings (${from} to ${to})`);
       }
+
+      const textContent = formatContent(result.data, response_format, formatRatingsAsMarkdown);
+
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result.data)
-          }
-        ],
+        content: [{ type: 'text', text: textContent }],
         structuredContent: { data: result.data }
       };
     }
@@ -221,14 +242,25 @@ export const getFacebookLocationRatings = (server: PinMeToMcpServer) => {
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         from: DateSchema.describe('The start date (YYYY-MM-DD)'),
-        to: DateSchema.describe('The end date (YYYY-MM-DD)')
+        to: DateSchema.describe('The end date (YYYY-MM-DD)'),
+        response_format: ResponseFormatSchema
       },
       outputSchema: RatingsOutputSchema,
       annotations: {
         readOnlyHint: true
       }
     },
-    async ({ storeId, from, to }: { storeId: string; from: string; to: string }) => {
+    async ({
+      storeId,
+      from,
+      to,
+      response_format = 'json'
+    }: {
+      storeId: string;
+      from: string;
+      to: string;
+      response_format?: ResponseFormat;
+    }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/ratings/facebook/${storeId}?from=${from}&to=${to}`;
@@ -238,13 +270,13 @@ export const getFacebookLocationRatings = (server: PinMeToMcpServer) => {
         return formatErrorResponse(result.error, `storeId '${storeId}'`);
       }
 
+      const textContent =
+        response_format === 'markdown'
+          ? formatLocationRatingsAsMarkdown(result.data, storeId)
+          : JSON.stringify(result.data);
+
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result.data)
-          }
-        ],
+        content: [{ type: 'text', text: textContent }],
         structuredContent: { data: result.data }
       };
     }

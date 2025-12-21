@@ -2,6 +2,27 @@ import { z } from 'zod';
 import { API_ERROR_CODES } from '../errors';
 
 // ============================================================================
+// Response Format Schema
+// ============================================================================
+
+/**
+ * Response format parameter - shared across all tools.
+ * Controls whether the content.text field returns JSON or Markdown.
+ *
+ * - json (default): Token-efficient structured data
+ * - markdown: Human-readable with headers and tables
+ *
+ * Note: structuredContent always contains typed data regardless of format.
+ */
+export const ResponseFormatSchema = z
+  .enum(['json', 'markdown'])
+  .optional()
+  .default('json')
+  .describe('Response format: "json" (default, token-efficient) or "markdown" (human-readable with tables)');
+
+export type ResponseFormat = z.infer<typeof ResponseFormatSchema>;
+
+// ============================================================================
 // Error Schema
 // ============================================================================
 

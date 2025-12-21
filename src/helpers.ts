@@ -1,5 +1,8 @@
-import { MetricData, InsightsData } from './schemas/output';
+import { MetricData, InsightsData, ResponseFormat } from './schemas/output';
 import { ApiError } from './errors';
+
+/** Maximum rows to display in Markdown tables before truncating */
+export const MARKDOWN_TABLE_MAX_ROWS = 50;
 
 export type AggregationPeriod =
   | 'daily'
@@ -160,4 +163,27 @@ export function formatErrorResponse(error: ApiError, context?: string) {
       retryable: error.retryable
     }
   };
+}
+
+/**
+ * Formats content based on the requested response format.
+ * Use this in tool handlers to support both JSON and Markdown output.
+ *
+ * @param data The data to format
+ * @param format The response format ('json' or 'markdown')
+ * @param markdownFormatter Function to convert data to markdown
+ * @returns Formatted text content
+ *
+ * @example
+ * const textContent = formatContent(locationData, response_format, formatLocationAsMarkdown);
+ */
+export function formatContent<T>(
+  data: T,
+  format: ResponseFormat,
+  markdownFormatter: (data: T) => string
+): string {
+  if (format === 'markdown') {
+    return markdownFormatter(data);
+  }
+  return JSON.stringify(data);
 }
