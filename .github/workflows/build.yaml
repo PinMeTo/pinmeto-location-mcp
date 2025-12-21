@@ -39,3 +39,17 @@ jobs:
         with:
           name: pinmeto-mcp
           path: pinmeto-location-mcp.mcpb
+
+  changeset-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Check for changeset
+        run: npx changeset status --since=origin/main
