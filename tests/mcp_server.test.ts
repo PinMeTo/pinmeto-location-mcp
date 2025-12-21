@@ -440,7 +440,7 @@ describe('Tool Annotations', () => {
     expect(toolsResponse.result.tools).toBeDefined();
 
     const tools = toolsResponse.result.tools;
-    expect(tools.length).toBe(16);
+    expect(tools.length).toBe(10);
 
     // Verify each tool has readOnlyHint: true
     for (const tool of tools) {
@@ -539,7 +539,7 @@ describe('Output Schemas', () => {
     expect(toolsResponse.result.tools).toBeDefined();
 
     const tools = toolsResponse.result.tools;
-    expect(tools.length).toBe(16);
+    expect(tools.length).toBe(10);
 
     // Verify each tool has outputSchema defined
     for (const tool of tools) {
@@ -1164,10 +1164,9 @@ describe('Initialize Handler', () => {
     expect(initResponse).toBeDefined();
     expect(initResponse.result).toBeDefined();
 
-    // Verify server returns its OWN capabilities (prompts, resources, tools)
+    // Verify server returns its OWN capabilities (resources, tools)
     // NOT the empty client capabilities
     expect(initResponse.result.capabilities).toBeDefined();
-    expect(initResponse.result.capabilities).toHaveProperty('prompts');
     expect(initResponse.result.capabilities).toHaveProperty('resources');
     expect(initResponse.result.capabilities).toHaveProperty('tools');
 

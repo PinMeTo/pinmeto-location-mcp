@@ -127,7 +127,6 @@ src/
 ├── mcp_server.ts         # Server class and tool registration
 ├── configs.ts            # Environment config validation
 ├── helpers.ts            # Time aggregation and response formatting
-├── prompts.ts            # Prompt templates for common workflows
 ├── formatters/           # Markdown formatters for response_format support
 │   ├── index.ts          # Module entry point
 │   ├── locations.ts      # Location/search formatters
@@ -154,12 +153,26 @@ All tools follow the MCP best practice naming pattern: `pinmeto_{action}_{networ
 | `pinmeto_get_{resource}` | `pinmeto_get_location` | Single resource retrieval |
 | `pinmeto_get_{resource}s` | `pinmeto_get_locations` | Bulk resource retrieval (ALL) |
 | `pinmeto_search_{resource}s` | `pinmeto_search_locations` | Search/discovery tools |
-| `pinmeto_get_{network}_{resource}` | `pinmeto_get_google_insights` | Network-specific bulk data |
-| `pinmeto_get_{network}_{resource}_location` | `pinmeto_get_google_insights_location` | Network-specific single location |
+| `pinmeto_get_{network}_{resource}` | `pinmeto_get_google_insights` | Network-specific data (single or all) |
 
-**Description Clarity**: Tool descriptions explicitly state scope:
-- **Bulk tools**: "Fetch [resource] for ALL locations..."
-- **Single tools**: "Fetch [resource] for a SINGLE location by store ID..."
+### Available Tools (10 total)
+
+| Tool | Description |
+|------|-------------|
+| `pinmeto_get_location` | Single location by storeId |
+| `pinmeto_get_locations` | All locations (paginated, cached) |
+| `pinmeto_search_locations` | Search locations |
+| `pinmeto_get_google_insights` | Google metrics (storeId optional) |
+| `pinmeto_get_google_ratings` | Google ratings (storeId optional) |
+| `pinmeto_get_google_keywords` | Google keywords (storeId optional) |
+| `pinmeto_get_facebook_insights` | Facebook metrics (storeId optional) |
+| `pinmeto_get_facebook_brandpage_insights` | Facebook brand page metrics |
+| `pinmeto_get_facebook_ratings` | Facebook ratings (storeId optional) |
+| `pinmeto_get_apple_insights` | Apple metrics (storeId optional) |
+
+**Unified Single/Bulk Pattern**: Network tools accept an optional `storeId` parameter:
+- **Without storeId**: Fetch data for all locations
+- **With storeId**: Fetch data for a single location
 
 ## Adding New Tools
 

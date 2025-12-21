@@ -26,84 +26,28 @@ const MonthSchema = z
   .string()
   .regex(/^\d{4}-\d{2}$/, 'Date must be in YYYY-MM format (e.g., 2024-01)');
 
-export function getGoogleLocationInsights(server: PinMeToMcpServer) {
-  server.registerTool(
-    'pinmeto_get_google_insights_location',
-    {
-      description:
-        'Fetch Google metrics for a SINGLE location by store ID. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
-      inputSchema: {
-        storeId: z.string().describe('The store ID to look up'),
-        from: DateSchema.describe('The start date (YYYY-MM-DD)'),
-        to: DateSchema.describe('The end date (YYYY-MM-DD)'),
-        aggregation: z
-          .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
-          .optional()
-          .default('total')
-          .describe(
-            'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
-          ),
-        response_format: ResponseFormatSchema
-      },
-      outputSchema: InsightsOutputSchema,
-      annotations: {
-        readOnlyHint: true
-      }
-    },
-    async ({
-      storeId,
-      from,
-      to,
-      aggregation = 'total',
-      response_format = 'json'
-    }: {
-      storeId: string;
-      from: string;
-      to: string;
-      aggregation?: AggregationPeriod;
-      response_format?: ResponseFormat;
-    }) => {
-      const { apiBaseUrl, accountId } = server.configs;
-
-      const locationUrl = `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/google?from=${from}&to=${to}`;
-      const result = await server.makePinMeToRequest(locationUrl);
-
-      if (!result.ok) {
-        return formatErrorResponse(result.error, `storeId '${storeId}'`);
-      }
-
-      // Apply aggregation
-      const aggregatedData = aggregateMetrics(result.data, aggregation);
-
-      const textContent =
-        response_format === 'markdown'
-          ? formatLocationInsightsAsMarkdown(aggregatedData, storeId)
-          : JSON.stringify(aggregatedData);
-
-      return {
-        content: [{ type: 'text', text: textContent }],
-        structuredContent: { data: aggregatedData }
-      };
-    }
+const AggregationSchema = z
+  .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
+  .optional()
+  .default('total')
+  .describe(
+    'Time aggregation: total (default, maximum token reduction), daily, weekly, monthly, quarterly, half-yearly, yearly'
   );
-}
 
-export function getAllGoogleInsights(server: PinMeToMcpServer) {
+/**
+ * Fetch Google insights for all locations, or a single location if storeId provided.
+ */
+export function getGoogleInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_google_insights',
     {
       description:
-        'Fetch Google metrics for ALL locations. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
+        'Fetch Google metrics for all locations, or a single location if storeId provided. Supports time aggregation (default: total).',
       inputSchema: {
-        from: DateSchema.describe('The start date (YYYY-MM-DD)'),
-        to: DateSchema.describe('The end date (YYYY-MM-DD)'),
-        aggregation: z
-          .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])
-          .optional()
-          .default('total')
-          .describe(
-            'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
-          ),
+        storeId: z.string().optional().describe('Optional store ID to fetch a single location'),
+        from: DateSchema.describe('Start date (YYYY-MM-DD)'),
+        to: DateSchema.describe('End date (YYYY-MM-DD)'),
+        aggregation: AggregationSchema,
         response_format: ResponseFormatSchema
       },
       outputSchema: InsightsOutputSchema,
@@ -112,11 +56,13 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
       }
     },
     async ({
+      storeId,
       from,
       to,
       aggregation = 'total',
       response_format = 'json'
     }: {
+      storeId?: string;
       from: string;
       to: string;
       aggregation?: AggregationPeriod;
@@ -124,16 +70,24 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
-      const url = `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/google?from=${from}&to=${to}`;
+      const url = storeId
+        ? `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/google?from=${from}&to=${to}`
+        : `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/google?from=${from}&to=${to}`;
+
       const result = await server.makePinMeToRequest(url);
+
       if (!result.ok) {
-        return formatErrorResponse(result.error, `all Google insights (${from} to ${to})`);
+        const context = storeId ? `storeId '${storeId}'` : `all Google insights (${from} to ${to})`;
+        return formatErrorResponse(result.error, context);
       }
 
-      // Apply aggregation
       const aggregatedData = aggregateMetrics(result.data, aggregation);
 
-      const textContent = formatContent(aggregatedData, response_format, formatInsightsAsMarkdown);
+      const textContent = storeId
+        ? (response_format === 'markdown'
+            ? formatLocationInsightsAsMarkdown(aggregatedData, storeId)
+            : JSON.stringify(aggregatedData))
+        : formatContent(aggregatedData, response_format, formatInsightsAsMarkdown);
 
       return {
         content: [{ type: 'text', text: textContent }],
@@ -143,59 +97,19 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
   );
 }
 
-export const getAllGoogleRatings = (server: PinMeToMcpServer) => {
+/**
+ * Fetch Google ratings for all locations, or a single location if storeId provided.
+ */
+export function getGoogleRatings(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_google_ratings',
     {
       description:
-        'Fetch Google ratings for ALL locations. Returns structured ratings data.',
+        'Fetch Google ratings for all locations, or a single location if storeId provided.',
       inputSchema: {
-        from: DateSchema.describe('The start date (YYYY-MM-DD)'),
-        to: DateSchema.describe('The end date (YYYY-MM-DD)'),
-        response_format: ResponseFormatSchema
-      },
-      outputSchema: RatingsOutputSchema,
-      annotations: {
-        readOnlyHint: true
-      }
-    },
-    async ({
-      from,
-      to,
-      response_format = 'json'
-    }: {
-      from: string;
-      to: string;
-      response_format?: ResponseFormat;
-    }) => {
-      const { apiBaseUrl, accountId } = server.configs;
-
-      const url = `${apiBaseUrl}/listings/v3/${accountId}/ratings/google?from=${from}&to=${to}`;
-      const result = await server.makePinMeToRequest(url);
-      if (!result.ok) {
-        return formatErrorResponse(result.error, `all Google ratings (${from} to ${to})`);
-      }
-
-      const textContent = formatContent(result.data, response_format, formatRatingsAsMarkdown);
-
-      return {
-        content: [{ type: 'text', text: textContent }],
-        structuredContent: { data: result.data }
-      };
-    }
-  );
-};
-
-export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
-  server.registerTool(
-    'pinmeto_get_google_ratings_location',
-    {
-      description:
-        'Fetch Google ratings for a SINGLE location by store ID. Returns structured ratings data.',
-      inputSchema: {
-        storeId: z.string().describe('The store ID to look up'),
-        from: DateSchema.describe('The start date (YYYY-MM-DD)'),
-        to: DateSchema.describe('The end date (YYYY-MM-DD)'),
+        storeId: z.string().optional().describe('Optional store ID to fetch a single location'),
+        from: DateSchema.describe('Start date (YYYY-MM-DD)'),
+        to: DateSchema.describe('End date (YYYY-MM-DD)'),
         response_format: ResponseFormatSchema
       },
       outputSchema: RatingsOutputSchema,
@@ -209,24 +123,29 @@ export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
       to,
       response_format = 'json'
     }: {
-      storeId: string;
+      storeId?: string;
       from: string;
       to: string;
       response_format?: ResponseFormat;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
-      const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/ratings/google/${storeId}?from=${from}&to=${to}`;
-      const result = await server.makePinMeToRequest(locationUrl);
+      const url = storeId
+        ? `${apiBaseUrl}/listings/v3/${accountId}/ratings/google/${storeId}?from=${from}&to=${to}`
+        : `${apiBaseUrl}/listings/v3/${accountId}/ratings/google?from=${from}&to=${to}`;
+
+      const result = await server.makePinMeToRequest(url);
 
       if (!result.ok) {
-        return formatErrorResponse(result.error, `storeId '${storeId}'`);
+        const context = storeId ? `storeId '${storeId}'` : `all Google ratings (${from} to ${to})`;
+        return formatErrorResponse(result.error, context);
       }
 
-      const textContent =
-        response_format === 'markdown'
-          ? formatLocationRatingsAsMarkdown(result.data, storeId)
-          : JSON.stringify(result.data);
+      const textContent = storeId
+        ? (response_format === 'markdown'
+            ? formatLocationRatingsAsMarkdown(result.data, storeId)
+            : JSON.stringify(result.data))
+        : formatContent(result.data, response_format, formatRatingsAsMarkdown);
 
       return {
         content: [{ type: 'text', text: textContent }],
@@ -234,62 +153,21 @@ export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
       };
     }
   );
-};
+}
 
-export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
+/**
+ * Fetch Google keywords for all locations, or a single location if storeId provided.
+ */
+export function getGoogleKeywords(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_google_keywords',
     {
       description:
-        'Fetch Google keywords for ALL locations. Returns structured keywords data.',
+        'Fetch Google keywords for all locations, or a single location if storeId provided.',
       inputSchema: {
-        from: MonthSchema.describe('The start month (YYYY-MM)'),
-        to: MonthSchema.describe('The end month (YYYY-MM)'),
-        response_format: ResponseFormatSchema
-      },
-      outputSchema: KeywordsOutputSchema,
-      annotations: {
-        readOnlyHint: true
-      }
-    },
-    async ({
-      from,
-      to,
-      response_format = 'json'
-    }: {
-      from: string;
-      to: string;
-      response_format?: ResponseFormat;
-    }) => {
-      const { apiBaseUrl, accountId } = server.configs;
-
-      const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords?from=${from}&to=${to}`;
-      const result = await server.makePinMeToRequest(locationUrl);
-
-      if (!result.ok) {
-        return formatErrorResponse(result.error, `all Google keywords (${from} to ${to})`);
-      }
-
-      const textContent = formatContent(result.data, response_format, formatKeywordsAsMarkdown);
-
-      return {
-        content: [{ type: 'text', text: textContent }],
-        structuredContent: { data: result.data }
-      };
-    }
-  );
-};
-
-export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
-  server.registerTool(
-    'pinmeto_get_google_keywords_location',
-    {
-      description:
-        'Fetch Google keywords for a SINGLE location by store ID. Returns structured keywords data.',
-      inputSchema: {
-        storeId: z.string().describe('The store ID to look up'),
-        from: MonthSchema.describe('The start month (YYYY-MM)'),
-        to: MonthSchema.describe('The end month (YYYY-MM)'),
+        storeId: z.string().optional().describe('Optional store ID to fetch a single location'),
+        from: MonthSchema.describe('Start month (YYYY-MM)'),
+        to: MonthSchema.describe('End month (YYYY-MM)'),
         response_format: ResponseFormatSchema
       },
       outputSchema: KeywordsOutputSchema,
@@ -303,24 +181,29 @@ export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
       to,
       response_format = 'json'
     }: {
-      storeId: string;
+      storeId?: string;
       from: string;
       to: string;
       response_format?: ResponseFormat;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
-      const locationUrl = `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords/${storeId}?from=${from}&to=${to}`;
-      const result = await server.makePinMeToRequest(locationUrl);
+      const url = storeId
+        ? `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords/${storeId}?from=${from}&to=${to}`
+        : `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords?from=${from}&to=${to}`;
+
+      const result = await server.makePinMeToRequest(url);
 
       if (!result.ok) {
-        return formatErrorResponse(result.error, `storeId '${storeId}'`);
+        const context = storeId ? `storeId '${storeId}'` : `all Google keywords (${from} to ${to})`;
+        return formatErrorResponse(result.error, context);
       }
 
-      const textContent =
-        response_format === 'markdown'
-          ? formatLocationKeywordsAsMarkdown(result.data, storeId)
-          : JSON.stringify(result.data);
+      const textContent = storeId
+        ? (response_format === 'markdown'
+            ? formatLocationKeywordsAsMarkdown(result.data, storeId)
+            : JSON.stringify(result.data))
+        : formatContent(result.data, response_format, formatKeywordsAsMarkdown);
 
       return {
         content: [{ type: 'text', text: textContent }],
@@ -328,4 +211,4 @@ export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
       };
     }
   );
-};
+}
