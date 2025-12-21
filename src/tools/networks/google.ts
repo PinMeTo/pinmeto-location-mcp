@@ -125,6 +125,7 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
       // Handle comparison if requested
       let comparisonData: ComparisonInsightsData[] | undefined;
       let comparisonPeriod: ComparisonPeriod | undefined;
+      let comparisonError: string | undefined;
 
       if (compare_with !== 'none') {
         const priorPeriod = calculatePriorPeriod(from, to, compare_with);
@@ -142,9 +143,10 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
             current: { from, to },
             prior: priorPeriod
           };
+        } else {
+          // Surface comparison failure - current period data is still valuable
+          comparisonError = `Comparison data unavailable (${priorPeriod.from} to ${priorPeriod.to}): ${priorResult.error.message}`;
         }
-        // If prior period fetch fails, we continue without comparison data
-        // The current period data is still valuable
       }
 
       // Format text content
@@ -173,6 +175,7 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
           data: aggregatedData,
           ...(comparisonData && { comparisonData }),
           ...(comparisonPeriod && { comparisonPeriod }),
+          ...(comparisonError && { comparisonError }),
           ...(lagWarning && lagWarning)
         });
       }
@@ -183,6 +186,7 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
           data: aggregatedData,
           ...(comparisonData && { comparisonData }),
           ...(comparisonPeriod && { comparisonPeriod }),
+          ...(comparisonError && { comparisonError }),
           ...(lagWarning && lagWarning)
         }
       };

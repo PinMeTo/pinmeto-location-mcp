@@ -97,11 +97,23 @@ export const ComparisonInsightsDataSchema = z.object({
 
 /**
  * Date range schema for comparison periods.
+ * Validates format and ensures from <= to chronologically.
  */
-export const DateRangeSchema = z.object({
-  from: z.string().describe('Start date (YYYY-MM-DD)'),
-  to: z.string().describe('End date (YYYY-MM-DD)')
-});
+export const DateRangeSchema = z
+  .object({
+    from: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD format')
+      .describe('Start date (YYYY-MM-DD)'),
+    to: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD format')
+      .describe('End date (YYYY-MM-DD)')
+  })
+  .refine(data => data.from <= data.to, {
+    message: 'from date must not be after to date',
+    path: ['from']
+  });
 
 /**
  * Comparison period info - describes the current and prior period ranges.
@@ -248,6 +260,10 @@ export const InsightsOutputSchema = {
   comparisonPeriod: ComparisonPeriodSchema.optional().describe(
     'Date ranges for the current and prior comparison periods'
   ),
+  comparisonError: z
+    .string()
+    .optional()
+    .describe('Error message if comparison data could not be fetched (current period data still returned)'),
   warning: z.string().optional().describe('Warning message (e.g., incomplete data due to lag)'),
   warningCode: WarningCodeSchema.optional().describe('Warning code for programmatic handling'),
   error: z.string().optional().describe('Error message if the request failed'),

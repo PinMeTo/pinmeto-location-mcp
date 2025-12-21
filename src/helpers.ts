@@ -190,6 +190,12 @@ export function getPeriodLabel(periodKey: string): string {
     const [fromDate, toDate] = periodKey.split(' to ');
     const from = new Date(fromDate);
     const to = new Date(toDate);
+
+    // Validate dates before accessing month indices
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+      return periodKey; // Return raw key for invalid dates
+    }
+
     const fromLabel = `${MONTH_NAMES_SHORT[from.getMonth()]} ${from.getDate()}`;
     const toLabel = `${MONTH_NAMES_SHORT[to.getMonth()]} ${to.getDate()}`;
 
@@ -244,6 +250,10 @@ export function getPeriodLabel(periodKey: string): string {
   // Daily format: "2024-01-15"
   if (/^\d{4}-\d{2}-\d{2}$/.test(periodKey)) {
     const date = new Date(periodKey);
+    // Validate date before accessing month index
+    if (isNaN(date.getTime())) {
+      return periodKey; // Return raw key for invalid dates
+    }
     return `${MONTH_NAMES_SHORT[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   }
 
@@ -333,12 +343,15 @@ export const GOOGLE_DATA_LAG_DAYS = 10;
 export function checkGoogleDataLag(
   toDate: string
 ): { warning: string; warningCode: 'INCOMPLETE_DATA' } | null {
-  const to = new Date(toDate);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Normalize to start of day
+  // Parse toDate as UTC to match input format (YYYY-MM-DD interpreted as UTC)
+  const to = new Date(toDate + 'T00:00:00Z');
 
-  const lagCutoff = new Date(today);
-  lagCutoff.setDate(lagCutoff.getDate() - GOOGLE_DATA_LAG_DAYS);
+  // Get today in UTC for consistent comparison
+  const now = new Date();
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+  const lagCutoff = new Date(todayUTC);
+  lagCutoff.setUTCDate(lagCutoff.getUTCDate() - GOOGLE_DATA_LAG_DAYS);
 
   if (to > lagCutoff) {
     const daysAffected = Math.ceil((to.getTime() - lagCutoff.getTime()) / (1000 * 60 * 60 * 24));
@@ -381,12 +394,13 @@ export function computeComparison(
 
   return currentData.map(currentInsight => {
     const priorMetrics = priorMap.get(currentInsight.key);
+    // Convert to array for index-based matching (keys differ between periods)
+    const priorMetricsArray = priorMetrics ? Array.from(priorMetrics.values()) : [];
 
-    const comparisonMetrics: ComparisonMetric[] = currentInsight.metrics.map(currentMetric => {
-      // Find matching prior metric
-      // For comparison, we need to match by position since keys differ between periods
-      // When aggregated, there's typically one metric per dimension
-      const priorMetric = priorMetrics?.values().next().value as MetricData | undefined;
+    const comparisonMetrics: ComparisonMetric[] = currentInsight.metrics.map((currentMetric, index) => {
+      // Match prior metric by position index since date keys differ between periods
+      // e.g., current "2024-01" matches with prior "2023-12" by position
+      const priorMetric = priorMetricsArray[index];
       const priorValue = priorMetric?.value ?? 0;
 
       const delta = currentMetric.value - priorValue;

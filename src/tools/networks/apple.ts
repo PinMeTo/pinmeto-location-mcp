@@ -108,6 +108,7 @@ export function getAppleInsights(server: PinMeToMcpServer) {
       // Handle comparison if requested
       let comparisonData: ComparisonInsightsData[] | undefined;
       let comparisonPeriod: ComparisonPeriod | undefined;
+      let comparisonError: string | undefined;
 
       if (compare_with !== 'none') {
         const priorPeriod = calculatePriorPeriod(from, to, compare_with);
@@ -125,6 +126,9 @@ export function getAppleInsights(server: PinMeToMcpServer) {
             current: { from, to },
             prior: priorPeriod
           };
+        } else {
+          // Surface comparison failure - current period data is still valuable
+          comparisonError = `Comparison data unavailable (${priorPeriod.from} to ${priorPeriod.to}): ${priorResult.error.message}`;
         }
       }
 
@@ -153,7 +157,8 @@ export function getAppleInsights(server: PinMeToMcpServer) {
         textContent = JSON.stringify({
           data: aggregatedData,
           ...(comparisonData && { comparisonData }),
-          ...(comparisonPeriod && { comparisonPeriod })
+          ...(comparisonPeriod && { comparisonPeriod }),
+          ...(comparisonError && { comparisonError })
         });
       }
 
@@ -162,7 +167,8 @@ export function getAppleInsights(server: PinMeToMcpServer) {
         structuredContent: {
           data: aggregatedData,
           ...(comparisonData && { comparisonData }),
-          ...(comparisonPeriod && { comparisonPeriod })
+          ...(comparisonPeriod && { comparisonPeriod }),
+          ...(comparisonError && { comparisonError })
         }
       };
     }

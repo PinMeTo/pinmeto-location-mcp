@@ -113,6 +113,7 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
       // Handle comparison if requested
       let comparisonData: ComparisonInsightsData[] | undefined;
       let comparisonPeriod: ComparisonPeriod | undefined;
+      let comparisonError: string | undefined;
 
       if (compare_with !== 'none') {
         const priorPeriod = calculatePriorPeriod(from, to, compare_with);
@@ -130,6 +131,9 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
             current: { from, to },
             prior: priorPeriod
           };
+        } else {
+          // Surface comparison failure - current period data is still valuable
+          comparisonError = `Comparison data unavailable (${priorPeriod.from} to ${priorPeriod.to}): ${priorResult.error.message}`;
         }
       }
 
@@ -158,7 +162,8 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
         textContent = JSON.stringify({
           data: aggregatedData,
           ...(comparisonData && { comparisonData }),
-          ...(comparisonPeriod && { comparisonPeriod })
+          ...(comparisonPeriod && { comparisonPeriod }),
+          ...(comparisonError && { comparisonError })
         });
       }
 
@@ -167,7 +172,8 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
         structuredContent: {
           data: aggregatedData,
           ...(comparisonData && { comparisonData }),
-          ...(comparisonPeriod && { comparisonPeriod })
+          ...(comparisonPeriod && { comparisonPeriod }),
+          ...(comparisonError && { comparisonError })
         }
       };
     }
@@ -234,6 +240,7 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
       // Handle comparison if requested
       let comparisonData: ComparisonInsightsData[] | undefined;
       let comparisonPeriod: ComparisonPeriod | undefined;
+      let comparisonError: string | undefined;
 
       if (compare_with !== 'none') {
         const priorPeriod = calculatePriorPeriod(from, to, compare_with);
@@ -247,6 +254,9 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
             current: { from, to },
             prior: priorPeriod
           };
+        } else {
+          // Surface comparison failure - current period data is still valuable
+          comparisonError = `Comparison data unavailable (${priorPeriod.from} to ${priorPeriod.to}): ${priorResult.error.message}`;
         }
       }
 
@@ -266,7 +276,8 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
         textContent = JSON.stringify({
           data: aggregatedData,
           ...(comparisonData && { comparisonData }),
-          ...(comparisonPeriod && { comparisonPeriod })
+          ...(comparisonPeriod && { comparisonPeriod }),
+          ...(comparisonError && { comparisonError })
         });
       }
 
@@ -275,7 +286,8 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
         structuredContent: {
           data: aggregatedData,
           ...(comparisonData && { comparisonData }),
-          ...(comparisonPeriod && { comparisonPeriod })
+          ...(comparisonPeriod && { comparisonPeriod }),
+          ...(comparisonError && { comparisonError })
         }
       };
     }
