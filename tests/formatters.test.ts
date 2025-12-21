@@ -91,10 +91,21 @@ describe('Markdown Formatters', () => {
         const result = formatLocationAsMarkdown(location);
         expect(result).toContain('**Status:** Permanently Closed');
       });
+
+      it('should show temporarily closed status with date', () => {
+        const location = {
+          storeId: '123',
+          name: 'Renovating Store',
+          temporarilyClosedUntil: '2025-03-15'
+        };
+
+        const result = formatLocationAsMarkdown(location);
+        expect(result).toContain('**Status:** Temporarily Closed to 2025-03-15');
+      });
     });
 
     describe('formatLocationsListAsMarkdown', () => {
-      it('should format a list of locations as a table', () => {
+      it('should format a list of locations as a table with all status types', () => {
         const response = {
           data: [
             {
@@ -110,9 +121,16 @@ describe('Markdown Formatters', () => {
               locationDescriptor: 'Mall Location',
               address: { city: 'Malmö', country: 'Sweden' },
               permanentlyClosed: true
+            },
+            {
+              storeId: '3',
+              name: 'Store Three',
+              locationDescriptor: 'Airport',
+              address: { city: 'Göteborg', country: 'Sweden' },
+              temporarilyClosedUntil: '2025-04-01'
             }
           ],
-          totalCount: 2,
+          totalCount: 3,
           hasMore: false,
           offset: 0,
           limit: 50
@@ -121,10 +139,11 @@ describe('Markdown Formatters', () => {
         const result = formatLocationsListAsMarkdown(response);
 
         expect(result).toContain('## Locations');
-        expect(result).toContain('**Total:** 2 locations');
+        expect(result).toContain('**Total:** 3 locations');
         expect(result).toContain('| Store ID | Name | Descriptor | City | Country | Status |');
         expect(result).toContain('| 1 | Store One | Main Branch | Stockholm | Sweden | Open |');
-        expect(result).toContain('| 2 | Store Two | Mall Location | Malmö | Sweden | Closed |');
+        expect(result).toContain('| 2 | Store Two | Mall Location | Malmö | Sweden | Permanently Closed |');
+        expect(result).toContain('| 3 | Store Three | Airport | Göteborg | Sweden | Closed to 2025-04-01 |');
       });
 
       it('should show cache info when available', () => {

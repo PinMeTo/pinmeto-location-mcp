@@ -9,6 +9,7 @@ interface LocationData {
   locationDescriptor?: string;
   type?: string;
   permanentlyClosed?: boolean;
+  temporarilyClosedUntil?: string;
   address?: {
     street?: string;
     city?: string;
@@ -22,6 +23,22 @@ interface LocationData {
   };
   openHours?: Record<string, string | null>;
   [key: string]: unknown;
+}
+
+/**
+ * Formats location status as a human-readable string.
+ * @param location - The location data
+ * @param short - If true, returns abbreviated status for tables
+ */
+function formatStatus(location: LocationData, short = false): string {
+  if (location.permanentlyClosed) {
+    return short ? 'Permanently Closed' : 'Permanently Closed';
+  }
+  if (location.temporarilyClosedUntil) {
+    const date = location.temporarilyClosedUntil;
+    return short ? `Closed to ${date}` : `Temporarily Closed to ${date}`;
+  }
+  return 'Open';
 }
 
 /**
@@ -78,7 +95,7 @@ export function formatLocationAsMarkdown(location: LocationData): string {
     md += `**Type:** ${location.type}\n`;
   }
 
-  md += `**Status:** ${location.permanentlyClosed ? 'Permanently Closed' : 'Open'}\n\n`;
+  md += `**Status:** ${formatStatus(location)}\n\n`;
 
   // Address section
   if (location.address) {
@@ -153,7 +170,7 @@ export function formatLocationsListAsMarkdown(response: LocationsListData): stri
   const displayCount = Math.min(locations.length, MARKDOWN_TABLE_MAX_ROWS);
   for (let i = 0; i < displayCount; i++) {
     const loc = locations[i];
-    const status = loc.permanentlyClosed ? 'Closed' : 'Open';
+    const status = formatStatus(loc, true);
     const descriptor = loc.locationDescriptor || '-';
     const city = loc.address?.city || '-';
     const country = loc.address?.country || '-';
