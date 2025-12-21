@@ -65,6 +65,8 @@ npm run clean              # Remove build directory
 1. Ensure commits follow conventional format
 2. Run `npm run release:prepare` to preview changes
 3. Run `npm run release:draft` to create draft release
+   - Automatically updates README badges to new version
+   - Creates .mcpb artifact and draft GitHub release
 4. Review draft on GitHub, then publish
 
 ## Environment Configuration

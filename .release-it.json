@@ -24,7 +24,11 @@
   },
   "hooks": {
     "before:init": ["npm test"],
-    "after:bump": ["npm run build", "npx @anthropic-ai/mcpb pack"],
+    "after:bump": [
+      "sed -i '' 's/v[0-9]*\\.[0-9]*\\.[0-9]*/v${version}/g' README.md",
+      "npm run build",
+      "npx @anthropic-ai/mcpb pack"
+    ],
     "after:release": "echo Successfully created draft release v${version}"
   }
 }
