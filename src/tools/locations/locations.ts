@@ -21,9 +21,9 @@ export function getLocation(server: PinMeToMcpServer) {
       description:
         'Get details for a SINGLE location by store ID. Returns structured location data including address, contact info, and network connections.\n\n' +
         'Error Handling:\n' +
-        '  - Returns "Error: NOT_FOUND" if store ID doesn\'t exist\n' +
-        '  - Returns "Error: AUTH_INVALID_CREDENTIALS" if authentication fails\n' +
-        '  - Check errorCode (string) and retryable (boolean) in structuredContent',
+        '  - Not found (404): errorCode="NOT_FOUND" if store ID doesn\'t exist\n' +
+        '  - Auth failure (401): errorCode="AUTH_INVALID_CREDENTIALS"\n' +
+        '  - All errors: check structuredContent.errorCode and .retryable for programmatic handling',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         response_format: ResponseFormatSchema
@@ -260,7 +260,10 @@ export function getLocations(server: PinMeToMcpServer) {
         }
       }
 
+      // Add isStale at top level for easier detection by AI clients
+      // Note: isError is NOT set because we ARE returning data (albeit stale)
       return {
+        ...(stale ? { isStale: true } : {}),
         content: [{ type: 'text', text: responseText }],
         structuredContent
       };
@@ -275,9 +278,9 @@ export function searchLocations(server: PinMeToMcpServer) {
       description:
         'Search ALL locations by name, address, store ID, or location descriptor. Returns lightweight results for quick discovery. Use pinmeto_get_location with storeId for full details.\n\n' +
         'Error Handling:\n' +
-        '  - Returns "Error: NETWORK_ERROR" with retry guidance on connection issues\n' +
-        '  - Returns "Error: AUTH_INVALID_CREDENTIALS" if authentication fails\n' +
-        '  - Check errorCode (string) and retryable (boolean) in structuredContent',
+        '  - Network issues: errorCode="NETWORK_ERROR", retryable=true\n' +
+        '  - Auth failure (401): errorCode="AUTH_INVALID_CREDENTIALS"\n' +
+        '  - All errors: check structuredContent.errorCode and .retryable for programmatic handling',
       inputSchema: {
         query: z
           .string()

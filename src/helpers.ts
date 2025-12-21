@@ -144,7 +144,8 @@ function getISOWeek(date: Date): number {
  */
 export function formatErrorResponse(error: ApiError, context?: string) {
   const baseMessage = context ? `Failed for ${context}: ${error.message}` : error.message;
-  const message = `Error: ${baseMessage}`;
+  // Prevent double-prefixing if message already starts with "Error:"
+  const message = baseMessage.startsWith('Error:') ? baseMessage : `Error: ${baseMessage}`;
   return {
     isError: true,
     content: [{ type: 'text' as const, text: message }],

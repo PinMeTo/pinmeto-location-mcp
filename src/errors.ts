@@ -13,7 +13,7 @@ export const API_ERROR_CODES = [
   'BAD_REQUEST', // 400 - malformed request
   'NOT_FOUND', // 404 - resource not found
   'RATE_LIMITED', // 429 - too many requests
-  'SERVER_ERROR', // 500/503 - server issues
+  'SERVER_ERROR', // 5xx - server issues (500, 502, 503, 504, etc.)
   'NETWORK_ERROR', // timeout, DNS, connection refused
   'UNKNOWN_ERROR' // fallback
 ] as const;
@@ -104,9 +104,10 @@ export function mapAxiosErrorToApiError(e: unknown): ApiError {
         ENOTFOUND: 'DNS lookup failed for API host. Check network configuration.',
         ETIMEDOUT: 'Connection timed out. Check network stability.'
       };
+      // For unknown network error codes, include both the message and code for context
       const message =
         networkErrorMessages[errorCode] ||
-        `Network error: ${errorCode || e.message || 'Unknown'}. Check internet connection.`;
+        `Network error: ${e.message || 'Unknown'}${errorCode ? ` (${errorCode})` : ''}. Check internet connection.`;
       return {
         code: 'NETWORK_ERROR',
         message,
@@ -149,9 +150,17 @@ export function mapAxiosErrorToApiError(e: unknown): ApiError {
         let message = apiMessage || 'Rate limit exceeded.';
         if (retryAfter) {
           const seconds = parseInt(retryAfter, 10);
-          message += isNaN(seconds)
-            ? ` Retry after: ${retryAfter}.`
-            : ` Wait ${seconds} seconds before retrying.`;
+          // Validate bounds: NaN, Infinity, negative, or unreasonably large values
+          if (isNaN(seconds) || !isFinite(seconds)) {
+            // Non-numeric (likely HTTP-date format per RFC 7231)
+            message += ` Retry after: ${retryAfter}.`;
+          } else if (seconds > 0 && seconds <= 86400) {
+            // Valid range: 1 second to 24 hours
+            message += ` Wait ${seconds} seconds before retrying.`;
+          } else {
+            // Out of reasonable range
+            message += ` Retry after: ${retryAfter} (value out of expected range).`;
+          }
         } else {
           message += ' Wait before retrying.';
         }
