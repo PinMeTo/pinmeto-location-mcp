@@ -4,7 +4,6 @@
   "description": "PinMeTo Location MCP",
   "main": "index.js",
   "scripts": {
-    "release": "npm publish ./build",
     "build": "npm run clean && node manifest.js && tsc && cp package.json build/ && node update-build-version.js",
     "build:test": "VERSION_POSTFIX=test-$(date -u +%Y%m%dT%H%M%SZ) npm run build",
     "pack:test": "npm run build:test && npx @anthropic-ai/mcpb pack",
@@ -13,7 +12,10 @@
     "start": "node --env-file=.env.local build/index.js",
     "format": "prettier --write \"**/*.{js,ts}\"",
     "inspector": "npx @modelcontextprotocol/inspector node --env-file=.env.local build/index.js",
-    "test": "vitest --run"
+    "test": "vitest --run",
+    "release:prepare": "release-it --dry-run",
+    "release:draft": "release-it",
+    "release:publish": "gh release edit $(git describe --tags --abbrev=0) --draft=false"
   },
   "repository": {
     "type": "git",
@@ -37,8 +39,12 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@release-it/conventional-changelog": "^10.0.1",
     "@types/node": "^24.5.1",
     "prettier": "^3.6.2",
+    "release-it": "^19.1.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }

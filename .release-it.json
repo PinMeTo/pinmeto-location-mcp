@@ -1,0 +1,30 @@
+{
+  "$schema": "https://unpkg.com/release-it@19/schema/release-it.json",
+  "git": {
+    "commitMessage": "chore: release v${version}",
+    "tagName": "v${version}",
+    "requireBranch": "main",
+    "requireCleanWorkingDir": true
+  },
+  "npm": {
+    "publish": false
+  },
+  "github": {
+    "release": true,
+    "draft": true,
+    "releaseName": "v${version}",
+    "assets": ["pinmeto-location-mcp.mcpb"]
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": "conventionalcommits",
+      "infile": "CHANGELOG.md",
+      "header": "# Changelog\n\nAll notable changes to this project will be documented in this file.\n"
+    }
+  },
+  "hooks": {
+    "before:init": ["npm test"],
+    "after:bump": ["npm run build", "npx @anthropic-ai/mcpb pack"],
+    "after:release": "echo Successfully created draft release v${version}"
+  }
+}

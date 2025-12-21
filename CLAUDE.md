@@ -42,10 +42,30 @@ npm run format             # Format code with Prettier
 ```
 
 ### Release
+
+This project uses [release-it](https://github.com/release-it/release-it) with conventional commits for automated versioning and changelog generation.
+
+**Commit Message Format** (determines version bump):
 ```bash
-npm run release            # Publish to npm from build directory
+feat: add new tool        # Minor bump (1.0.0 → 1.1.0)
+fix: correct API handling # Patch bump (1.0.0 → 1.0.1)
+feat!: breaking change    # Major bump (1.0.0 → 2.0.0)
+docs: update readme       # No version bump (non-releasable)
+```
+
+**Release Commands**:
+```bash
+npm run release:prepare    # Dry-run: preview version bump and changelog
+npm run release:draft      # Create draft GitHub release with .mcpb artifact
+npm run release:publish    # Publish the draft release (or use GitHub UI)
 npm run clean              # Remove build directory
 ```
+
+**Release Flow**:
+1. Ensure commits follow conventional format
+2. Run `npm run release:prepare` to preview changes
+3. Run `npm run release:draft` to create draft release
+4. Review draft on GitHub, then publish
 
 ## Environment Configuration
 
