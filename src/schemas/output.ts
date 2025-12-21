@@ -60,6 +60,104 @@ export const InsightsDataSchema = z.object({
 });
 
 // ============================================================================
+// Location Sub-Schemas
+// ============================================================================
+
+/**
+ * Address structure for locations.
+ * Uses passthrough to allow extra API fields.
+ */
+export const AddressSchema = z
+  .object({
+    street: z.string().optional().describe('Street address'),
+    city: z.string().optional().describe('City name'),
+    zip: z.string().optional().describe('Postal/ZIP code'),
+    country: z.string().optional().describe('Country name')
+  })
+  .passthrough();
+
+/**
+ * Contact information for locations.
+ * Uses passthrough to allow extra API fields.
+ */
+export const ContactSchema = z
+  .object({
+    phone: z.string().optional().describe('Phone number'),
+    email: z.string().optional().describe('Email address'),
+    homepage: z.string().optional().describe('Website URL')
+  })
+  .passthrough();
+
+/**
+ * Open hours structure - maps day names to hour strings.
+ */
+export const OpenHoursSchema = z.record(z.string(), z.string()).describe('Day to hours mapping (e.g., "monday": "09:00-17:00")');
+
+// ============================================================================
+// Keywords Schema
+// ============================================================================
+
+/**
+ * Keyword data structure from Google keywords API.
+ * Uses passthrough to allow extra API fields.
+ */
+export const KeywordDataSchema = z
+  .object({
+    keyword: z.string().describe('Search keyword'),
+    value: z.number().describe('Impression count'),
+    locationCounts: z.number().optional().describe('Number of locations with this keyword')
+  })
+  .passthrough();
+
+// ============================================================================
+// Ratings Schemas
+// ============================================================================
+
+/**
+ * Ratings summary - aggregate stats for a location.
+ * Uses passthrough to allow extra API fields.
+ */
+export const RatingsSummarySchema = z
+  .object({
+    averageRating: z.number().optional().describe('Average rating (1-5)'),
+    totalReviews: z.number().optional().describe('Total number of reviews'),
+    distribution: z
+      .record(z.string(), z.number())
+      .optional()
+      .describe('Rating distribution (e.g., {"5": 100, "4": 50})')
+  })
+  .passthrough();
+
+/**
+ * Individual review entry.
+ * Uses passthrough to allow extra API fields.
+ */
+export const ReviewSchema = z
+  .object({
+    storeId: z.string().optional().describe('Store identifier'),
+    rating: z.number().describe('Rating value (1-5)'),
+    comment: z.string().optional().describe('Review comment text'),
+    date: z.string().optional().describe('Review date')
+  })
+  .passthrough();
+
+/**
+ * Location ratings summary (for multi-location queries).
+ */
+export const LocationRatingsSummarySchema = RatingsSummarySchema.extend({
+  storeId: z.string().describe('Store identifier')
+});
+
+/**
+ * Ratings data - can be summary, array of reviews, or array of location summaries.
+ */
+export const RatingsDataSchema = z.union([
+  RatingsSummarySchema,
+  z.array(ReviewSchema),
+  z.array(LocationRatingsSummarySchema)
+]);
+
+// ============================================================================
 // Tool Output Schemas
 // ============================================================================
 
@@ -79,24 +177,24 @@ export const InsightsOutputSchema = {
 };
 
 /**
- * Output schema for ratings tools
- * Ratings have a different structure than insights
+ * Output schema for ratings tools (Google, Facebook)
+ * Returns ratings summary, reviews, or per-location summaries
  * Note: data is optional to allow error-only responses
  */
 export const RatingsOutputSchema = {
-  data: z.unknown().optional().describe('Ratings data from the PinMeTo API (absent on error)'),
+  data: RatingsDataSchema.optional().describe('Ratings data: summary, reviews array, or location summaries (absent on error)'),
   error: z.string().optional().describe('Error message if the request failed'),
   errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
   retryable: z.boolean().optional().describe('Whether the operation can be retried')
 };
 
 /**
- * Output schema for keywords tools
- * Keywords have a different structure than insights
+ * Output schema for keywords tools (Google)
+ * Returns array of keywords with impression counts
  * Note: data is optional to allow error-only responses
  */
 export const KeywordsOutputSchema = {
-  data: z.unknown().optional().describe('Keywords data from the PinMeTo API (absent on error)'),
+  data: z.array(KeywordDataSchema).optional().describe('Array of keywords with impression data (absent on error)'),
   error: z.string().optional().describe('Error message if the request failed'),
   errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
   retryable: z.boolean().optional().describe('Whether the operation can be retried')
@@ -110,17 +208,24 @@ export const KeywordsOutputSchema = {
 export const LocationOutputSchema = {
   data: z
     .object({
-      _id: z.string().optional(),
-      storeId: z.string().optional(),
-      name: z.string().optional(),
-      type: z.string().optional(),
-      site: z.string().optional(),
-      address: z.unknown().optional(),
-      location: z.unknown().optional(),
-      contact: z.unknown().optional(),
-      openHours: z.unknown().optional(),
-      google: z.unknown().optional(),
-      fb: z.unknown().optional()
+      _id: z.string().optional().describe('Internal MongoDB ID'),
+      storeId: z.string().optional().describe('Unique store identifier'),
+      name: z.string().optional().describe('Location name'),
+      type: z.string().optional().describe('Type: "location" or "serviceArea"'),
+      site: z.string().optional().describe('Site identifier'),
+      address: AddressSchema.optional().describe('Location address'),
+      location: z
+        .object({
+          lat: z.number().optional(),
+          lon: z.number().optional()
+        })
+        .passthrough()
+        .optional()
+        .describe('Geographic coordinates'),
+      contact: ContactSchema.optional().describe('Contact information'),
+      openHours: OpenHoursSchema.optional().describe('Opening hours by day'),
+      google: z.record(z.unknown()).optional().describe('Google-specific data'),
+      fb: z.record(z.unknown()).optional().describe('Facebook-specific data')
     })
     .passthrough()
     .optional()
