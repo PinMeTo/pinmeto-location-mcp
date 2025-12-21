@@ -114,8 +114,24 @@ bd sync --merge            # Execute merge to main
 **Important**: `bd sync` commits to `beads-sync` branch, NOT main. Code changes and beads changes are separate workflows.
 
 ```bash
-# Create issues
-bd create "Implement user authentication" -t feature -p 1
+# Create a main bead (epic or feature) with description (REQUIRED)
+bd create "Implement user authentication" -t epic -p 1 \
+  -d "Add OAuth2 authentication flow with JWT tokens. Includes login, logout, and session management.
+
+## Completion Checklist
+- [ ] Implementation complete
+- [ ] Tests added and passing
+- [ ] Manual testing performed
+- [ ] README.md updated (if applicable)
+- [ ] Other documentation updated (if applicable)"
+
+# Create sub-tasks under the main bead using --parent
+bd create "Set up OAuth2 provider" -t task --parent bd-xxxx \
+  -d "Configure OAuth2 provider settings and environment variables."
+bd create "Implement login endpoint" -t task --parent bd-xxxx \
+  -d "Create POST /auth/login endpoint with credential validation."
+bd create "Add session management" -t task --parent bd-xxxx \
+  -d "Implement JWT token generation and refresh logic."
 
 # Update issues
 bd update bd-a1b2 --status in_progress
@@ -132,14 +148,46 @@ bd close bd-a1b2 "Completed authentication"
 - Always create a new bead(s) for new tasks/issues/fixes so all changes are tracked
 - NEVER commit directly to main - always use feature branches and PRs
 
+**Bead Creation Rules:**
+- **ALWAYS include a description (`-d`)** - Never create a bead with just a title
+- **Use hierarchical structure** - Create a main bead (epic/feature) then sub-tasks with `--parent`
+- **Main beads must include a completion checklist** in the description
+- **Available types:** `bug|feature|task|epic|chore`
+
+**Main Bead Description Template:**
+```
+<Brief description of the feature/task>
+
+## Completion Checklist
+- [ ] Implementation complete
+- [ ] Tests added and passing
+- [ ] Manual testing performed
+- [ ] README.md updated (if applicable)
+- [ ] Other documentation updated (if applicable)
+```
+
 ## Feature Development Workflow (MANDATORY)
 
 Before starting ANY feature, bug fix, or enhancement, follow this workflow:
 
 ### Step 1: Create or Claim a Bead
 ```bash
-# Create new bead if one doesn't exist
-bd create --title="Description of task" --type=feature|bug|task --priority=2
+# Create main bead with full description (types: bug|feature|task|epic|chore)
+bd create "Add user profile page" -t feature -p 2 \
+  -d "Create user profile page showing account details and settings.
+
+## Completion Checklist
+- [ ] Implementation complete
+- [ ] Tests added and passing
+- [ ] Manual testing performed
+- [ ] README.md updated (if applicable)
+- [ ] Other documentation updated (if applicable)"
+
+# Break down into sub-tasks using --parent
+bd create "Create profile API endpoint" -t task --parent <main-bead-id> \
+  -d "Add GET /api/user/profile endpoint returning user data."
+bd create "Build profile UI component" -t task --parent <main-bead-id> \
+  -d "Create React component for displaying profile information."
 
 # Or claim existing bead
 bd update <id> --status in_progress --assignee=$(git config user.name)
