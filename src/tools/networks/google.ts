@@ -28,10 +28,10 @@ const MonthSchema = z
 
 export function getGoogleLocationInsights(server: PinMeToMcpServer) {
   server.registerTool(
-    'get_google_location_insights',
+    'pinmeto_get_google_insights_location',
     {
       description:
-        'Fetch Google metrics for a single location belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
+        'Fetch Google metrics for a SINGLE location by store ID. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         from: DateSchema.describe('The start date (YYYY-MM-DD)'),
@@ -90,10 +90,10 @@ export function getGoogleLocationInsights(server: PinMeToMcpServer) {
 
 export function getAllGoogleInsights(server: PinMeToMcpServer) {
   server.registerTool(
-    'get_all_google_insights',
+    'pinmeto_get_google_insights',
     {
       description:
-        'Fetch Google metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
+        'Fetch Google metrics for ALL locations. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         from: DateSchema.describe('The start date (YYYY-MM-DD)'),
         to: DateSchema.describe('The end date (YYYY-MM-DD)'),
@@ -145,10 +145,10 @@ export function getAllGoogleInsights(server: PinMeToMcpServer) {
 
 export const getAllGoogleRatings = (server: PinMeToMcpServer) => {
   server.registerTool(
-    'get_all_google_ratings',
+    'pinmeto_get_google_ratings',
     {
       description:
-        'Fetch Google ratings for all locations belonging to a specific account. Returns structured ratings data.',
+        'Fetch Google ratings for ALL locations. Returns structured ratings data.',
       inputSchema: {
         from: DateSchema.describe('The start date (YYYY-MM-DD)'),
         to: DateSchema.describe('The end date (YYYY-MM-DD)'),
@@ -188,10 +188,10 @@ export const getAllGoogleRatings = (server: PinMeToMcpServer) => {
 
 export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
   server.registerTool(
-    'get_google_location_ratings',
+    'pinmeto_get_google_ratings_location',
     {
       description:
-        'Fetch Google ratings for a given location belonging to a specific account. Returns structured ratings data.',
+        'Fetch Google ratings for a SINGLE location by store ID. Returns structured ratings data.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         from: DateSchema.describe('The start date (YYYY-MM-DD)'),
@@ -238,10 +238,10 @@ export const getGoogleLocationRatings = (server: PinMeToMcpServer) => {
 
 export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
   server.registerTool(
-    'get_google_keywords',
+    'pinmeto_get_google_keywords',
     {
       description:
-        'Fetch Google keywords for all locations belonging to a specific account. Returns structured keywords data.',
+        'Fetch Google keywords for ALL locations. Returns structured keywords data.',
       inputSchema: {
         from: MonthSchema.describe('The start month (YYYY-MM)'),
         to: MonthSchema.describe('The end month (YYYY-MM)'),
@@ -282,10 +282,10 @@ export const getAllGoogleKeywords = (server: PinMeToMcpServer) => {
 
 export const getGoogleKeywordsForLocation = (server: PinMeToMcpServer) => {
   server.registerTool(
-    'get_google_keywords_for_location',
+    'pinmeto_get_google_keywords_location',
     {
       description:
-        'Fetch Google keywords for a given location belonging to a specific account. Returns structured keywords data.',
+        'Fetch Google keywords for a SINGLE location by store ID. Returns structured keywords data.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         from: MonthSchema.describe('The start month (YYYY-MM)'),

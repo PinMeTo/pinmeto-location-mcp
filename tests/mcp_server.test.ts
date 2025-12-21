@@ -287,7 +287,7 @@ describe('Locations', () => {
     testTransport.onmessage?.({
       method: 'tools/call',
       params: {
-        name: 'get_locations',
+        name: 'pinmeto_get_locations',
         arguments: {
           fields: ['_id']
         }
@@ -365,7 +365,7 @@ describe('Locations', () => {
     testTransport.onmessage?.({
       method: 'tools/call',
       params: {
-        name: 'get_location',
+        name: 'pinmeto_get_location',
         arguments: { storeId: 'invalid-store-id' }
       },
       jsonrpc: '2.0',
@@ -386,7 +386,7 @@ describe('Locations', () => {
 });
 
 describe('Tool Annotations', () => {
-  it('should register all 15 tools with readOnlyHint annotations', async () => {
+  it('should register all 16 tools with readOnlyHint annotations', async () => {
     const server = createMcpServer();
     const testTransport = new StdioServerTransport();
 
@@ -469,7 +469,7 @@ describe('Tool Annotations', () => {
     // Test tool invocation still works after migration
     testTransport.onmessage?.({
       method: 'tools/call',
-      params: { name: 'get_locations', arguments: { fields: ['_id'] } },
+      params: { name: 'pinmeto_get_locations', arguments: { fields: ['_id'] } },
       jsonrpc: '2.0',
       id: 3
     });
@@ -625,7 +625,7 @@ describe('Search Locations', () => {
     testTransport.onmessage?.({
       method: 'tools/call',
       params: {
-        name: 'search_locations',
+        name: 'pinmeto_search_locations',
         arguments: { query: 'malm' }
       },
       jsonrpc: '2.0',
@@ -707,7 +707,7 @@ describe('Search Locations', () => {
     testTransport.onmessage?.({
       method: 'tools/call',
       params: {
-        name: 'search_locations',
+        name: 'pinmeto_search_locations',
         arguments: { query: '1337' }
       },
       jsonrpc: '2.0',
@@ -780,7 +780,7 @@ describe('Search Locations', () => {
     testTransport.onmessage?.({
       method: 'tools/call',
       params: {
-        name: 'search_locations',
+        name: 'pinmeto_search_locations',
         arguments: { query: 'nonexistent' }
       },
       jsonrpc: '2.0',
@@ -851,7 +851,7 @@ describe('Search Locations', () => {
     testTransport.onmessage?.({
       method: 'tools/call',
       params: {
-        name: 'search_locations',
+        name: 'pinmeto_search_locations',
         arguments: { query: 'Stockholm', limit: 2 }
       },
       jsonrpc: '2.0',
@@ -932,7 +932,7 @@ describe('Search Locations', () => {
     testTransport.onmessage?.({
       method: 'tools/call',
       params: {
-        name: 'search_locations',
+        name: 'pinmeto_search_locations',
         arguments: { query: 'headquarters' }
       },
       jsonrpc: '2.0',
@@ -998,7 +998,7 @@ describe('Search Locations', () => {
     testTransport.onmessage?.({
       method: 'tools/call',
       params: {
-        name: 'search_locations',
+        name: 'pinmeto_search_locations',
         arguments: { query: 'Stockholm' }
       },
       jsonrpc: '2.0',
@@ -1091,7 +1091,7 @@ describe('Search Locations', () => {
     testTransport.onmessage?.({
       method: 'tools/call',
       params: {
-        name: 'search_locations',
+        name: 'pinmeto_search_locations',
         arguments: { query: 'Location' }
       },
       jsonrpc: '2.0',
@@ -1229,7 +1229,7 @@ describe('get_locations pagination', () => {
 
     testTransport.onmessage?.({
       method: 'tools/call',
-      params: { name: 'get_locations', arguments: args },
+      params: { name: 'pinmeto_get_locations', arguments: args },
       jsonrpc: '2.0',
       id: 1
     });

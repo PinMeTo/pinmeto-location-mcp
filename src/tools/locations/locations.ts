@@ -16,10 +16,10 @@ import {
 
 export function getLocation(server: PinMeToMcpServer) {
   server.registerTool(
-    'get_location',
+    'pinmeto_get_location',
     {
       description:
-        'Get location details for a store from PinMeTo API. Returns structured location data including address, contact info, and network connections.',
+        'Get details for a SINGLE location by store ID. Returns structured location data including address, contact info, and network connections.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         response_format: ResponseFormatSchema
@@ -90,10 +90,10 @@ export function getLocations(server: PinMeToMcpServer) {
   const LocationTypeEnum = z.enum(['location', 'serviceArea']);
 
   server.registerTool(
-    'get_locations',
+    'pinmeto_get_locations',
     {
       description:
-        'Get location details with pagination and filtering. Uses in-memory cache (5-min TTL) for fast queries on large datasets.\n\nExamples:\n- Get first 50 locations: {}\n- Get next page: { offset: 50 }\n- Filter by city: { city: "Stockholm", limit: 20 }\n- Only open locations: { permanentlyClosed: false }\n- Force cache refresh: { forceRefresh: true }',
+        'Get ALL locations with pagination and filtering. Uses in-memory cache (5-min TTL) for fast queries on large datasets.\n\nExamples:\n- Get first 50 locations: {}\n- Get next page: { offset: 50 }\n- Filter by city: { city: "Stockholm", limit: 20 }\n- Only open locations: { permanentlyClosed: false }\n- Force cache refresh: { forceRefresh: true }',
       inputSchema: {
         fields: z
           .array(FieldsEnum)
@@ -149,7 +149,7 @@ export function getLocations(server: PinMeToMcpServer) {
 
       // Handle complete API failure (no data and no stale cache)
       if (allData.length === 0 && !allPagesFetched && error) {
-        return formatErrorResponse(error, 'get_locations');
+        return formatErrorResponse(error, 'pinmeto_get_locations');
       }
 
       // 2. Apply filters
@@ -256,10 +256,10 @@ export function getLocations(server: PinMeToMcpServer) {
 
 export function searchLocations(server: PinMeToMcpServer) {
   server.registerTool(
-    'search_locations',
+    'pinmeto_search_locations',
     {
       description:
-        'Search for locations by name, address, store ID, or location descriptor. Returns lightweight results for quick discovery. Use get_location with storeId for full details.',
+        'Search ALL locations by name, address, store ID, or location descriptor. Returns lightweight results for quick discovery. Use pinmeto_get_location with storeId for full details.',
       inputSchema: {
         query: z
           .string()
@@ -292,12 +292,12 @@ export function searchLocations(server: PinMeToMcpServer) {
     }) => {
       const { locationsApiBaseUrl, accountId } = server.configs;
 
-      // NOTE: search_locations intentionally bypasses LocationCache and fetches directly.
+      // NOTE: pinmeto_search_locations intentionally bypasses LocationCache and fetches directly.
       // Rationale:
       // 1. Search only needs minimal fields (storeId, name, address) - cache stores full objects
       // 2. Search is a discovery tool - users expect fresh results to find new locations
       // 3. Search doesn't have stale-cache fallback - this is intentional to ensure accurate results
-      // For bulk operations with resilience, use get_locations which uses the cached data.
+      // For bulk operations with resilience, use pinmeto_get_locations which uses the cached data.
       const fieldsParam = 'fields=storeId,name,locationDescriptor,address';
       const url = `${locationsApiBaseUrl}/v4/${accountId}/locations?pagesize=1000&${fieldsParam}`;
       const [data, areAllPagesFetched, lastError] = await server.makePaginatedPinMeToRequest(url);

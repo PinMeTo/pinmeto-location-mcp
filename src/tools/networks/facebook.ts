@@ -21,10 +21,10 @@ const DateSchema = z
 
 export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
   server.registerTool(
-    'get_facebook_location_insights',
+    'pinmeto_get_facebook_insights_location',
     {
       description:
-        'Fetch Facebook metrics for a single location belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
+        'Fetch Facebook metrics for a SINGLE location by store ID. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         from: DateSchema.describe('The start date (YYYY-MM-DD)'),
@@ -83,10 +83,10 @@ export function getFacebookLocationsInsights(server: PinMeToMcpServer) {
 
 export function getAllFacebookInsights(server: PinMeToMcpServer) {
   server.registerTool(
-    'get_all_facebook_insights',
+    'pinmeto_get_facebook_insights',
     {
       description:
-        'Fetch Facebook metrics for all locations belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
+        'Fetch Facebook metrics for ALL locations. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         from: DateSchema.describe('The start date (YYYY-MM-DD)'),
         to: DateSchema.describe('The end date (YYYY-MM-DD)'),
@@ -138,10 +138,10 @@ export function getAllFacebookInsights(server: PinMeToMcpServer) {
 
 export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
   server.registerTool(
-    'get_all_facebook_brandpage_insights',
+    'pinmeto_get_facebook_brandpage_insights',
     {
       description:
-        'Fetch Facebook metrics for all brand pages belonging to a specific account. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
+        'Fetch Facebook metrics for ALL brand pages. Supports time aggregation to reduce token usage (daily, weekly, monthly, quarterly, half-yearly, yearly, total). Default: total. Returns structured insights data with metrics grouped by dimension.',
       inputSchema: {
         from: DateSchema.describe('The start date (YYYY-MM-DD)'),
         to: DateSchema.describe('The end date (YYYY-MM-DD)'),
@@ -193,10 +193,10 @@ export const getAllFacebookBrandpageInsights = (server: PinMeToMcpServer) => {
 
 export const getAllFacebookRatings = (server: PinMeToMcpServer) => {
   server.registerTool(
-    'get_all_facebook_ratings',
+    'pinmeto_get_facebook_ratings',
     {
       description:
-        'Fetch Facebook ratings for all locations belonging to a specific account. Returns structured ratings data.',
+        'Fetch Facebook ratings for ALL locations. Returns structured ratings data.',
       inputSchema: {
         from: DateSchema.describe('The start date (YYYY-MM-DD)'),
         to: DateSchema.describe('The end date (YYYY-MM-DD)'),
@@ -235,10 +235,10 @@ export const getAllFacebookRatings = (server: PinMeToMcpServer) => {
 
 export const getFacebookLocationRatings = (server: PinMeToMcpServer) => {
   server.registerTool(
-    'get_facebook_location_ratings',
+    'pinmeto_get_facebook_ratings_location',
     {
       description:
-        'Fetch Facebook ratings for a given location belonging to a specific account. Returns structured ratings data.',
+        'Fetch Facebook ratings for a SINGLE location by store ID. Returns structured ratings data.',
       inputSchema: {
         storeId: z.string().describe('The store ID to look up'),
         from: DateSchema.describe('The start date (YYYY-MM-DD)'),

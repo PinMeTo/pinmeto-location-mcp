@@ -150,29 +150,31 @@ Below are instructions on how to manually integrate the PinMeTo MCP with Claude 
 
 ## Available Tools
 
+All tools use the `pinmeto_` prefix following MCP best practices.
+
 ### Location Tools
-- `get_location` - Get PinMeTo data for a single location
-- `get_locations` - Get all location data with pagination, filtering, and caching
-- `search_locations` - Lightweight location search for quick discovery
+- `pinmeto_get_location` - Get PinMeTo data for a SINGLE location by store ID
+- `pinmeto_get_locations` - Get ALL location data with pagination, filtering, and caching
+- `pinmeto_search_locations` - Search ALL locations for quick discovery
 
 ### Google Tools
-- `get_all_google_insights` - Get Google insights for all locations
-- `get_google_location_insights` - Get Google insights for a specific location
-- `get_all_google_ratings` - Get Google ratings for all locations
-- `get_google_location_ratings` - Get Google ratings for a specific location
-- `get_google_keywords` - Get Google keywords for all locations
-- `get_google_keywords_for_location` - Get Google keywords for a specific location
+- `pinmeto_get_google_insights` - Get Google insights for ALL locations
+- `pinmeto_get_google_insights_location` - Get Google insights for a SINGLE location
+- `pinmeto_get_google_ratings` - Get Google ratings for ALL locations
+- `pinmeto_get_google_ratings_location` - Get Google ratings for a SINGLE location
+- `pinmeto_get_google_keywords` - Get Google keywords for ALL locations
+- `pinmeto_get_google_keywords_location` - Get Google keywords for a SINGLE location
 
 ### Facebook Tools
-- `get_all_facebook_insights` - Get Facebook insights for all locations
-- `get_facebook_location_insights` - Get Facebook insights for a specific location
-- `get_all_facebook_brandpage_insights` - Get Facebook brandpage insights
-- `get_all_facebook_ratings` - Get Facebook ratings for all locations
-- `get_facebook_location_ratings` - Get Facebook ratings for a specific location
+- `pinmeto_get_facebook_insights` - Get Facebook insights for ALL locations
+- `pinmeto_get_facebook_insights_location` - Get Facebook insights for a SINGLE location
+- `pinmeto_get_facebook_brandpage_insights` - Get Facebook brandpage insights for ALL pages
+- `pinmeto_get_facebook_ratings` - Get Facebook ratings for ALL locations
+- `pinmeto_get_facebook_ratings_location` - Get Facebook ratings for a SINGLE location
 
 ### Apple Tools
-- `get_all_apple_insights` - Get Apple insights for all locations
-- `get_apple_location_insights` - Get Apple insights for a specific location
+- `pinmeto_get_apple_insights` - Get Apple insights for ALL locations
+- `pinmeto_get_apple_insights_location` - Get Apple insights for a SINGLE location
 
 ---
 
@@ -260,9 +262,9 @@ To get different time periods, specify the `aggregation` parameter:
 ### Supported Tools
 
 Time aggregation works with all insights tools:
-- Google: `get_google_location_insights`, `get_all_google_insights`
-- Facebook: `get_facebook_location_insights`, `get_all_facebook_insights`, `get_all_facebook_brandpage_insights`
-- Apple: `get_apple_location_insights`, `get_all_apple_insights`
+- Google: `pinmeto_get_google_insights_location`, `pinmeto_get_google_insights`
+- Facebook: `pinmeto_get_facebook_insights_location`, `pinmeto_get_facebook_insights`, `pinmeto_get_facebook_brandpage_insights`
+- Apple: `pinmeto_get_apple_insights_location`, `pinmeto_get_apple_insights`
 
 ### How It Works
 
