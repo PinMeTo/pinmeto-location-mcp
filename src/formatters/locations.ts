@@ -22,7 +22,7 @@ interface LocationData {
     email?: string;
     homepage?: string;
   };
-  openHours?: Record<string, string | null>;
+  openHours?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
@@ -34,6 +34,52 @@ function isFutureDate(dateStr: string): boolean {
   today.setHours(0, 0, 0, 0);
   const date = new Date(dateStr);
   return date > today;
+}
+
+/**
+ * Formats an opening hours value to a display string.
+ * Handles strings, arrays of time periods, null, and other formats.
+ */
+function formatHoursValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return 'Closed';
+  }
+  if (typeof value === 'string') {
+    return value || 'Closed';
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return 'Closed';
+    }
+    // Handle array of time period objects like [{open: "09:00", close: "17:00"}]
+    return value
+      .map((period) => {
+        if (typeof period === 'string') {
+          return period;
+        }
+        if (period && typeof period === 'object') {
+          const open = period.open || period.start || period.from || '';
+          const close = period.close || period.end || period.to || '';
+          if (open && close) {
+            return `${open}-${close}`;
+          }
+          if (open) return `${open}-`;
+          if (close) return `-${close}`;
+        }
+        return String(period);
+      })
+      .join(', ');
+  }
+  // Handle object format like {open: "09:00", close: "17:00"}
+  if (typeof value === 'object') {
+    const obj = value as Record<string, string>;
+    const open = obj.open || obj.start || obj.from || '';
+    const close = obj.close || obj.end || obj.to || '';
+    if (open && close) {
+      return `${open}-${close}`;
+    }
+  }
+  return String(value);
 }
 
 /**
@@ -142,15 +188,37 @@ export function formatLocationAsMarkdown(location: LocationData): string {
     md += '| Day | Hours |\n';
     md += '|-----|-------|\n';
 
-    const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
     const hours = location.openHours;
 
+    // Preferred order for days (check both lowercase and capitalized)
+    const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const displayedDays = new Set<string>();
+
+    // First, try to display in standard order (handles both cases)
     for (const day of dayOrder) {
-      if (day in hours) {
-        const capitalizedDay = day.charAt(0).toUpperCase() + day.slice(1);
-        md += `| ${capitalizedDay} | ${hours[day] || 'Closed'} |\n`;
+      const lowerDay = day.toLowerCase();
+      const capitalizedDay = day.charAt(0).toUpperCase() + day.slice(1);
+
+      // Check for lowercase key
+      if (lowerDay in hours) {
+        md += `| ${capitalizedDay} | ${formatHoursValue(hours[lowerDay])} |\n`;
+        displayedDays.add(lowerDay);
+      }
+      // Check for capitalized key
+      else if (capitalizedDay in hours) {
+        md += `| ${capitalizedDay} | ${formatHoursValue(hours[capitalizedDay])} |\n`;
+        displayedDays.add(capitalizedDay);
       }
     }
+
+    // Show any remaining keys that weren't in standard order
+    for (const key of Object.keys(hours)) {
+      if (!displayedDays.has(key) && !displayedDays.has(key.toLowerCase())) {
+        const displayKey = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+        md += `| ${displayKey} | ${formatHoursValue(hours[key])} |\n`;
+      }
+    }
+
     md += '\n';
   }
 

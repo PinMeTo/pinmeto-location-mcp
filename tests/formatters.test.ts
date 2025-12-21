@@ -76,6 +76,44 @@ describe('Markdown Formatters', () => {
         expect(result).not.toContain('### Contact');
       });
 
+      it('should handle capitalized day names in opening hours', () => {
+        const location = {
+          storeId: '123',
+          name: 'Test Store',
+          openHours: {
+            Monday: '09:00-17:00',
+            Tuesday: '09:00-17:00',
+            Saturday: null
+          }
+        };
+
+        const result = formatLocationAsMarkdown(location);
+
+        expect(result).toContain('### Opening Hours');
+        expect(result).toContain('| Monday | 09:00-17:00 |');
+        expect(result).toContain('| Tuesday | 09:00-17:00 |');
+        expect(result).toContain('| Saturday | Closed |');
+      });
+
+      it('should handle array format for opening hours', () => {
+        const location = {
+          storeId: '123',
+          name: 'Test Store',
+          openHours: {
+            monday: [{ open: '09:00', close: '12:00' }, { open: '13:00', close: '17:00' }],
+            tuesday: [{ open: '09:00', close: '17:00' }],
+            sunday: []
+          }
+        };
+
+        const result = formatLocationAsMarkdown(location);
+
+        expect(result).toContain('### Opening Hours');
+        expect(result).toContain('| Monday | 09:00-12:00, 13:00-17:00 |');
+        expect(result).toContain('| Tuesday | 09:00-17:00 |');
+        expect(result).toContain('| Sunday | Closed |');
+      });
+
       it('should handle null/undefined location', () => {
         const result = formatLocationAsMarkdown(null as any);
         expect(result).toContain('No location data available');
