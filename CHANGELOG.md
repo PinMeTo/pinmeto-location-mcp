@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0] - 2025-12-21
+
+### BREAKING CHANGES
+
+- **Tool Consolidation**: Merged 7 single-location tools into their bulk counterparts (17 → 10 tools)
+  - Network tools now accept optional `storeId` parameter
+  - Without `storeId`: fetch data for all locations
+  - With `storeId`: fetch data for single location
+  - ~44% reduction in context tokens (~5,500 tokens saved per request)
+
+- **Removed Tools** (use base tool with `storeId` parameter instead):
+  - `pinmeto_get_google_insights_location` → `pinmeto_get_google_insights`
+  - `pinmeto_get_google_ratings_location` → `pinmeto_get_google_ratings`
+  - `pinmeto_get_google_keywords_location` → `pinmeto_get_google_keywords`
+  - `pinmeto_get_facebook_insights_location` → `pinmeto_get_facebook_insights`
+  - `pinmeto_get_facebook_ratings_location` → `pinmeto_get_facebook_ratings`
+  - `pinmeto_get_apple_insights_location` → `pinmeto_get_apple_insights`
+
+- **Removed Prompts**: Prompts capability removed entirely
+  - `pinmeto_analyze_location`
+  - `pinmeto_summarize_insights`
+
+### Changed
+
+- Tool descriptions updated to reflect unified single/bulk pattern
+- Documentation updated with migration guide and new tool patterns
+
+### Added
+
+- Test coverage for consolidated tools with optional `storeId` behavior ([#26](https://github.com/PinMeTo/pinmeto-location-mcp/pull/26))
+
 ## [2.0.0] - 2025-12-21
 
 ### BREAKING CHANGES
