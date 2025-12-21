@@ -141,4 +141,4 @@ vite.config.ts.timestamp-*
 .vite/
 *.mcpb
 
-.DS_Store
+.DS_Store*.sock
