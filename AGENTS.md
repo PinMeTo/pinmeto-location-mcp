@@ -54,6 +54,8 @@ npx changeset add          # Add a changeset for your changes
 git add .changeset/ && git commit -m "docs: add changeset"
 ```
 
+**⚠️ REQUIRED**: Every PR must include a changeset. CI will reject PRs without one.
+
 **Version Guidelines**:
 - **patch**: Bug fixes, documentation, internal changes
 - **minor**: New features, enhancements (backwards compatible)
