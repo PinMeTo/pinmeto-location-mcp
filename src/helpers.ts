@@ -182,8 +182,15 @@ export function formatContent<T>(
   format: ResponseFormat,
   markdownFormatter: (data: T) => string
 ): string {
-  if (format === 'markdown') {
-    return markdownFormatter(data);
+  switch (format) {
+    case 'markdown':
+      return markdownFormatter(data);
+    case 'json':
+      return JSON.stringify(data);
+    default: {
+      // Exhaustive check - TypeScript will error if new format added without handling
+      const _exhaustive: never = format;
+      return JSON.stringify(data);
+    }
   }
-  return JSON.stringify(data);
 }

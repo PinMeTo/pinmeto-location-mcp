@@ -281,7 +281,7 @@ All tools support a `response_format` parameter for flexible output formatting:
 **Locations**: Table with Store ID, Name, City, Country, Status columns
 **Insights**: Sections per metric with Period/Value tables
 **Ratings**: Summary stats with visual distribution bars
-**Keywords**: Table with Keyword, Impressions, Clicks, CTR columns
+**Keywords**: Table with Keyword and Impressions columns
 
 ### Formatters Module (`src/formatters/`)
 

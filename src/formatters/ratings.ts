@@ -162,8 +162,7 @@ export function formatLocationRatingsAsMarkdown(data: unknown, storeId: string):
     return `## Ratings for ${storeId}\n\nNo ratings data available.`;
   }
 
-  const ratingData = data as RatingData;
-  ratingData.storeId = storeId;
+  const ratingData = { ...(data as RatingData), storeId };
 
   return formatSingleRatingAsMarkdown(ratingData);
 }

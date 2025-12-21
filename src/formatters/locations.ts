@@ -135,7 +135,9 @@ function extractDayHours(obj: Record<string, unknown>): string {
     return obj.time;
   }
 
-  return 'Closed';
+  // Unable to parse format - log warning and return explicit unknown status
+  console.warn('Unable to parse opening hours format:', JSON.stringify(obj));
+  return 'Unknown';
 }
 
 /**
