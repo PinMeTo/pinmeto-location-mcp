@@ -1,12 +1,12 @@
 import { MARKDOWN_TABLE_MAX_ROWS } from '../helpers';
 
 /**
- * Keyword data structure
+ * Keyword data structure from PinMeTo API
  */
 interface KeywordData {
   keyword?: string;
-  impressions?: number;
-  clicks?: number;
+  value?: number; // Impressions count
+  locationCounts?: number;
   [key: string]: unknown;
 }
 
@@ -40,18 +40,16 @@ function formatKeywordsArrayAsMarkdown(keywords: KeywordData[]): string {
   md += `**Total keywords:** ${keywords.length}\n\n`;
 
   // Table header
-  md += '| Keyword | Impressions | Clicks | CTR |\n';
-  md += '|---------|-------------|--------|-----|\n';
+  md += '| Keyword | Impressions |\n';
+  md += '|---------|-------------|\n';
 
   // Table rows (truncated)
   const displayCount = Math.min(keywords.length, MARKDOWN_TABLE_MAX_ROWS);
   for (let i = 0; i < displayCount; i++) {
     const kw = keywords[i];
-    const impressions = kw.impressions || 0;
-    const clicks = kw.clicks || 0;
-    const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(1) + '%' : '-';
+    const impressions = kw.value || 0;
 
-    md += `| ${kw.keyword || '-'} | ${impressions.toLocaleString('en-US')} | ${clicks.toLocaleString('en-US')} | ${ctr} |\n`;
+    md += `| ${kw.keyword || '-'} | ${impressions.toLocaleString('en-US')} |\n`;
   }
 
   // Truncation notice
@@ -102,18 +100,16 @@ export function formatLocationKeywordsAsMarkdown(data: unknown, storeId: string)
     md += `**Total keywords:** ${keywords.length}\n\n`;
 
     // Table header
-    md += '| Keyword | Impressions | Clicks | CTR |\n';
-    md += '|---------|-------------|--------|-----|\n';
+    md += '| Keyword | Impressions |\n';
+    md += '|---------|-------------|\n';
 
     // Table rows (truncated)
     const displayCount = Math.min(keywords.length, MARKDOWN_TABLE_MAX_ROWS);
     for (let i = 0; i < displayCount; i++) {
       const kw = keywords[i];
-      const impressions = kw.impressions || 0;
-      const clicks = kw.clicks || 0;
-      const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(1) + '%' : '-';
+      const impressions = kw.value || 0;
 
-      md += `| ${kw.keyword || '-'} | ${impressions.toLocaleString('en-US')} | ${clicks.toLocaleString('en-US')} | ${ctr} |\n`;
+      md += `| ${kw.keyword || '-'} | ${impressions.toLocaleString('en-US')} |\n`;
     }
 
     // Truncation notice

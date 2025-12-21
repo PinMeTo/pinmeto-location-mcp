@@ -463,25 +463,25 @@ describe('Markdown Formatters', () => {
 
   describe('Keywords Formatters', () => {
     describe('formatKeywordsAsMarkdown', () => {
-      it('should format keywords with CTR calculation', () => {
+      it('should format keywords with impressions (value field)', () => {
         const data = [
-          { keyword: 'pizza', impressions: 1000, clicks: 100 },
-          { keyword: 'restaurant', impressions: 500, clicks: 25 }
+          { keyword: 'pizza', value: 1000, locationCounts: 5 },
+          { keyword: 'restaurant', value: 500, locationCounts: 3 }
         ];
 
         const result = formatKeywordsAsMarkdown(data);
 
         expect(result).toContain('## Google Keywords');
-        expect(result).toContain('| Keyword | Impressions | Clicks | CTR |');
-        expect(result).toContain('| pizza | 1,000 | 100 | 10.0% |');
-        expect(result).toContain('| restaurant | 500 | 25 | 5.0% |');
+        expect(result).toContain('| Keyword | Impressions |');
+        expect(result).toContain('| pizza | 1,000 |');
+        expect(result).toContain('| restaurant | 500 |');
       });
 
       it('should handle zero impressions', () => {
-        const data = [{ keyword: 'test', impressions: 0, clicks: 0 }];
+        const data = [{ keyword: 'test', value: 0, locationCounts: 1 }];
 
         const result = formatKeywordsAsMarkdown(data);
-        expect(result).toContain('| test | 0 | 0 | - |');
+        expect(result).toContain('| test | 0 |');
       });
 
       it('should handle empty data', () => {
@@ -492,7 +492,7 @@ describe('Markdown Formatters', () => {
 
     describe('formatLocationKeywordsAsMarkdown', () => {
       it('should include store ID in header', () => {
-        const data = [{ keyword: 'test', impressions: 100, clicks: 10 }];
+        const data = [{ keyword: 'test', value: 100, locationCounts: 1 }];
 
         const result = formatLocationKeywordsAsMarkdown(data, '1337');
         expect(result).toContain('## Google Keywords for Store: 1337');
