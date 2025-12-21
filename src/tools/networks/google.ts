@@ -1,12 +1,23 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
-import { aggregateMetrics, AggregationPeriod, formatErrorResponse, formatContent } from '../../helpers';
+import {
+  aggregateMetrics,
+  AggregationPeriod,
+  formatErrorResponse,
+  formatContent,
+  CompareWithType,
+  calculatePriorPeriod,
+  checkGoogleDataLag,
+  computeComparison
+} from '../../helpers';
 import {
   InsightsOutputSchema,
   RatingsOutputSchema,
   KeywordsOutputSchema,
   ResponseFormatSchema,
-  ResponseFormat
+  ResponseFormat,
+  ComparisonInsightsData,
+  ComparisonPeriod
 } from '../../schemas/output';
 import {
   formatInsightsAsMarkdown,
@@ -14,7 +25,8 @@ import {
   formatRatingsAsMarkdown,
   formatLocationRatingsAsMarkdown,
   formatKeywordsAsMarkdown,
-  formatLocationKeywordsAsMarkdown
+  formatLocationKeywordsAsMarkdown,
+  formatInsightsWithComparisonAsMarkdown
 } from '../../formatters';
 
 // Shared date validation schemas
@@ -34,15 +46,32 @@ const AggregationSchema = z
     'Time aggregation: total (default, maximum token reduction), daily, weekly, monthly, quarterly, half-yearly, yearly'
   );
 
+const CompareWithSchema = z
+  .enum(['prior_period', 'prior_year', 'none'])
+  .optional()
+  .default('none')
+  .describe(
+    'Compare with: prior_period (MoM/QoQ for same-duration period before), prior_year (YoY for same dates last year), or none (default)'
+  );
+
 /**
  * Fetch Google insights for all locations, or a single location if storeId provided.
+ * Supports period comparisons (MoM, QoQ, YoY) via compare_with parameter.
  */
 export function getGoogleInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_google_insights',
     {
       description:
-        'Fetch Google metrics for all locations, or a single location if storeId provided. Supports time aggregation (default: total).\n\n' +
+        'Fetch Google metrics for all locations, or a single location if storeId provided. ' +
+        'Supports time aggregation (default: total) and period comparisons.\n\n' +
+        'Comparison Options:\n' +
+        '  - compare_with="prior_period": Compare with same-duration period before (MoM, QoQ)\n' +
+        '  - compare_with="prior_year": Compare with same dates last year (YoY)\n' +
+        '  - Returns comparisonData with current, prior, delta, deltaPercent\n\n' +
+        'Data Lag Warning:\n' +
+        '  - Google data has ~10 day lag. Requests with recent end dates may return incomplete data.\n' +
+        '  - Check structuredContent.warning and warningCode for data completeness.\n\n' +
         'Error Handling:\n' +
         '  - Rate limit (429): errorCode="RATE_LIMITED", message includes retry timing\n' +
         '  - Not found (404): errorCode="NOT_FOUND" if storeId doesn\'t exist\n' +
@@ -52,6 +81,7 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
         from: DateSchema.describe('Start date (YYYY-MM-DD)'),
         to: DateSchema.describe('End date (YYYY-MM-DD)'),
         aggregation: AggregationSchema,
+        compare_with: CompareWithSchema,
         response_format: ResponseFormatSchema
       },
       outputSchema: InsightsOutputSchema,
@@ -64,15 +94,20 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
       from,
       to,
       aggregation = 'total',
+      compare_with = 'none',
       response_format = 'json'
     }: {
       storeId?: string;
       from: string;
       to: string;
       aggregation?: AggregationPeriod;
+      compare_with?: CompareWithType;
       response_format?: ResponseFormat;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
+
+      // Check for data lag warning
+      const lagWarning = checkGoogleDataLag(to);
 
       const url = storeId
         ? `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/google?from=${from}&to=${to}`
@@ -87,15 +122,69 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
 
       const aggregatedData = aggregateMetrics(result.data, aggregation);
 
-      const textContent = storeId
-        ? (response_format === 'markdown'
+      // Handle comparison if requested
+      let comparisonData: ComparisonInsightsData[] | undefined;
+      let comparisonPeriod: ComparisonPeriod | undefined;
+
+      if (compare_with !== 'none') {
+        const priorPeriod = calculatePriorPeriod(from, to, compare_with);
+
+        const priorUrl = storeId
+          ? `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/google?from=${priorPeriod.from}&to=${priorPeriod.to}`
+          : `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/google?from=${priorPeriod.from}&to=${priorPeriod.to}`;
+
+        const priorResult = await server.makePinMeToRequest(priorUrl);
+
+        if (priorResult.ok) {
+          const priorAggregated = aggregateMetrics(priorResult.data, aggregation);
+          comparisonData = computeComparison(aggregatedData, priorAggregated);
+          comparisonPeriod = {
+            current: { from, to },
+            prior: priorPeriod
+          };
+        }
+        // If prior period fetch fails, we continue without comparison data
+        // The current period data is still valuable
+      }
+
+      // Format text content
+      let textContent: string;
+      if (response_format === 'markdown') {
+        if (comparisonData && comparisonPeriod) {
+          textContent = storeId
+            ? formatInsightsWithComparisonAsMarkdown(
+                aggregatedData,
+                comparisonData,
+                comparisonPeriod,
+                storeId
+              )
+            : formatInsightsWithComparisonAsMarkdown(
+                aggregatedData,
+                comparisonData,
+                comparisonPeriod
+              );
+        } else {
+          textContent = storeId
             ? formatLocationInsightsAsMarkdown(aggregatedData, storeId)
-            : JSON.stringify(aggregatedData))
-        : formatContent(aggregatedData, response_format, formatInsightsAsMarkdown);
+            : formatInsightsAsMarkdown(aggregatedData);
+        }
+      } else {
+        textContent = JSON.stringify({
+          data: aggregatedData,
+          ...(comparisonData && { comparisonData }),
+          ...(comparisonPeriod && { comparisonPeriod }),
+          ...(lagWarning && lagWarning)
+        });
+      }
 
       return {
         content: [{ type: 'text', text: textContent }],
-        structuredContent: { data: aggregatedData }
+        structuredContent: {
+          data: aggregatedData,
+          ...(comparisonData && { comparisonData }),
+          ...(comparisonPeriod && { comparisonPeriod }),
+          ...(lagWarning && lagWarning)
+        }
       };
     }
   );
@@ -110,6 +199,9 @@ export function getGoogleRatings(server: PinMeToMcpServer) {
     {
       description:
         'Fetch Google ratings for all locations, or a single location if storeId provided.\n\n' +
+        'Data Lag Warning:\n' +
+        '  - Google data has ~10 day lag. Requests with recent end dates may return incomplete data.\n' +
+        '  - Check structuredContent.warning and warningCode for data completeness.\n\n' +
         'Error Handling:\n' +
         '  - Rate limit (429): errorCode="RATE_LIMITED", message includes retry timing\n' +
         '  - Not found (404): errorCode="NOT_FOUND" if storeId doesn\'t exist\n' +
@@ -138,6 +230,9 @@ export function getGoogleRatings(server: PinMeToMcpServer) {
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
+      // Check for data lag warning
+      const lagWarning = checkGoogleDataLag(to);
+
       const url = storeId
         ? `${apiBaseUrl}/listings/v3/${accountId}/ratings/google/${storeId}?from=${from}&to=${to}`
         : `${apiBaseUrl}/listings/v3/${accountId}/ratings/google?from=${from}&to=${to}`;
@@ -150,14 +245,17 @@ export function getGoogleRatings(server: PinMeToMcpServer) {
       }
 
       const textContent = storeId
-        ? (response_format === 'markdown'
-            ? formatLocationRatingsAsMarkdown(result.data, storeId)
-            : JSON.stringify(result.data))
+        ? response_format === 'markdown'
+          ? formatLocationRatingsAsMarkdown(result.data, storeId)
+          : JSON.stringify(result.data)
         : formatContent(result.data, response_format, formatRatingsAsMarkdown);
 
       return {
         content: [{ type: 'text', text: textContent }],
-        structuredContent: { data: result.data }
+        structuredContent: {
+          data: result.data,
+          ...(lagWarning && lagWarning)
+        }
       };
     }
   );
@@ -172,6 +270,9 @@ export function getGoogleKeywords(server: PinMeToMcpServer) {
     {
       description:
         'Fetch Google keywords for all locations, or a single location if storeId provided.\n\n' +
+        'Data Lag Warning:\n' +
+        '  - Google data has ~10 day lag. Current month data may be incomplete.\n' +
+        '  - Check structuredContent.warning and warningCode for data completeness.\n\n' +
         'Error Handling:\n' +
         '  - Rate limit (429): errorCode="RATE_LIMITED", message includes retry timing\n' +
         '  - Not found (404): errorCode="NOT_FOUND" if storeId doesn\'t exist\n' +
@@ -200,6 +301,12 @@ export function getGoogleKeywords(server: PinMeToMcpServer) {
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
+      // Check for data lag warning (convert month to last day of month for comparison)
+      const [year, month] = to.split('-').map(Number);
+      const lastDayOfMonth = new Date(year, month, 0).getDate();
+      const toDateStr = `${to}-${String(lastDayOfMonth).padStart(2, '0')}`;
+      const lagWarning = checkGoogleDataLag(toDateStr);
+
       const url = storeId
         ? `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords/${storeId}?from=${from}&to=${to}`
         : `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords?from=${from}&to=${to}`;
@@ -212,14 +319,17 @@ export function getGoogleKeywords(server: PinMeToMcpServer) {
       }
 
       const textContent = storeId
-        ? (response_format === 'markdown'
-            ? formatLocationKeywordsAsMarkdown(result.data, storeId)
-            : JSON.stringify(result.data))
+        ? response_format === 'markdown'
+          ? formatLocationKeywordsAsMarkdown(result.data, storeId)
+          : JSON.stringify(result.data)
         : formatContent(result.data, response_format, formatKeywordsAsMarkdown);
 
       return {
         content: [{ type: 'text', text: textContent }],
-        structuredContent: { data: result.data }
+        structuredContent: {
+          data: result.data,
+          ...(lagWarning && lagWarning)
+        }
       };
     }
   );

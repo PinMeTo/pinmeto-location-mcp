@@ -1,17 +1,28 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
-import { aggregateMetrics, AggregationPeriod, formatErrorResponse, formatContent } from '../../helpers';
+import {
+  aggregateMetrics,
+  AggregationPeriod,
+  formatErrorResponse,
+  formatContent,
+  CompareWithType,
+  calculatePriorPeriod,
+  computeComparison
+} from '../../helpers';
 import {
   InsightsOutputSchema,
   RatingsOutputSchema,
   ResponseFormatSchema,
-  ResponseFormat
+  ResponseFormat,
+  ComparisonInsightsData,
+  ComparisonPeriod
 } from '../../schemas/output';
 import {
   formatInsightsAsMarkdown,
   formatLocationInsightsAsMarkdown,
   formatRatingsAsMarkdown,
-  formatLocationRatingsAsMarkdown
+  formatLocationRatingsAsMarkdown,
+  formatInsightsWithComparisonAsMarkdown
 } from '../../formatters';
 
 // Shared date validation schema
@@ -27,15 +38,29 @@ const AggregationSchema = z
     'Time aggregation: total (default, maximum token reduction), daily, weekly, monthly, quarterly, half-yearly, yearly'
   );
 
+const CompareWithSchema = z
+  .enum(['prior_period', 'prior_year', 'none'])
+  .optional()
+  .default('none')
+  .describe(
+    'Compare with: prior_period (MoM/QoQ for same-duration period before), prior_year (YoY for same dates last year), or none (default)'
+  );
+
 /**
  * Fetch Facebook insights for all locations, or a single location if storeId provided.
+ * Supports period comparisons (MoM, QoQ, YoY) via compare_with parameter.
  */
 export function getFacebookInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_facebook_insights',
     {
       description:
-        'Fetch Facebook metrics for all locations, or a single location if storeId provided. Supports time aggregation (default: total).\n\n' +
+        'Fetch Facebook metrics for all locations, or a single location if storeId provided. ' +
+        'Supports time aggregation (default: total) and period comparisons.\n\n' +
+        'Comparison Options:\n' +
+        '  - compare_with="prior_period": Compare with same-duration period before (MoM, QoQ)\n' +
+        '  - compare_with="prior_year": Compare with same dates last year (YoY)\n' +
+        '  - Returns comparisonData with current, prior, delta, deltaPercent\n\n' +
         'Error Handling:\n' +
         '  - Rate limit (429): errorCode="RATE_LIMITED", message includes retry timing\n' +
         '  - Not found (404): errorCode="NOT_FOUND" if storeId doesn\'t exist\n' +
@@ -45,6 +70,7 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
         from: DateSchema.describe('Start date (YYYY-MM-DD)'),
         to: DateSchema.describe('End date (YYYY-MM-DD)'),
         aggregation: AggregationSchema,
+        compare_with: CompareWithSchema,
         response_format: ResponseFormatSchema
       },
       outputSchema: InsightsOutputSchema,
@@ -57,12 +83,14 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
       from,
       to,
       aggregation = 'total',
+      compare_with = 'none',
       response_format = 'json'
     }: {
       storeId?: string;
       from: string;
       to: string;
       aggregation?: AggregationPeriod;
+      compare_with?: CompareWithType;
       response_format?: ResponseFormat;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -74,21 +102,73 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
       const result = await server.makePinMeToRequest(url);
 
       if (!result.ok) {
-        const context = storeId ? `storeId '${storeId}'` : `all Facebook insights (${from} to ${to})`;
+        const context = storeId
+          ? `storeId '${storeId}'`
+          : `all Facebook insights (${from} to ${to})`;
         return formatErrorResponse(result.error, context);
       }
 
       const aggregatedData = aggregateMetrics(result.data, aggregation);
 
-      const textContent = storeId
-        ? (response_format === 'markdown'
+      // Handle comparison if requested
+      let comparisonData: ComparisonInsightsData[] | undefined;
+      let comparisonPeriod: ComparisonPeriod | undefined;
+
+      if (compare_with !== 'none') {
+        const priorPeriod = calculatePriorPeriod(from, to, compare_with);
+
+        const priorUrl = storeId
+          ? `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/facebook?from=${priorPeriod.from}&to=${priorPeriod.to}`
+          : `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/facebook?from=${priorPeriod.from}&to=${priorPeriod.to}`;
+
+        const priorResult = await server.makePinMeToRequest(priorUrl);
+
+        if (priorResult.ok) {
+          const priorAggregated = aggregateMetrics(priorResult.data, aggregation);
+          comparisonData = computeComparison(aggregatedData, priorAggregated);
+          comparisonPeriod = {
+            current: { from, to },
+            prior: priorPeriod
+          };
+        }
+      }
+
+      // Format text content
+      let textContent: string;
+      if (response_format === 'markdown') {
+        if (comparisonData && comparisonPeriod) {
+          textContent = storeId
+            ? formatInsightsWithComparisonAsMarkdown(
+                aggregatedData,
+                comparisonData,
+                comparisonPeriod,
+                storeId
+              )
+            : formatInsightsWithComparisonAsMarkdown(
+                aggregatedData,
+                comparisonData,
+                comparisonPeriod
+              );
+        } else {
+          textContent = storeId
             ? formatLocationInsightsAsMarkdown(aggregatedData, storeId)
-            : JSON.stringify(aggregatedData))
-        : formatContent(aggregatedData, response_format, formatInsightsAsMarkdown);
+            : formatInsightsAsMarkdown(aggregatedData);
+        }
+      } else {
+        textContent = JSON.stringify({
+          data: aggregatedData,
+          ...(comparisonData && { comparisonData }),
+          ...(comparisonPeriod && { comparisonPeriod })
+        });
+      }
 
       return {
         content: [{ type: 'text', text: textContent }],
-        structuredContent: { data: aggregatedData }
+        structuredContent: {
+          data: aggregatedData,
+          ...(comparisonData && { comparisonData }),
+          ...(comparisonPeriod && { comparisonPeriod })
+        }
       };
     }
   );
@@ -96,13 +176,18 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
 
 /**
  * Fetch Facebook brand page insights (no single-location variant).
+ * Supports period comparisons (MoM, QoQ, YoY) via compare_with parameter.
  */
 export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_facebook_brandpage_insights',
     {
       description:
-        'Fetch Facebook metrics for all brand pages. Supports time aggregation (default: total).\n\n' +
+        'Fetch Facebook metrics for all brand pages. Supports time aggregation (default: total) and period comparisons.\n\n' +
+        'Comparison Options:\n' +
+        '  - compare_with="prior_period": Compare with same-duration period before (MoM, QoQ)\n' +
+        '  - compare_with="prior_year": Compare with same dates last year (YoY)\n' +
+        '  - Returns comparisonData with current, prior, delta, deltaPercent\n\n' +
         'Error Handling:\n' +
         '  - Rate limit (429): errorCode="RATE_LIMITED", message includes retry timing\n' +
         '  - Auth failure (401): errorCode="AUTH_INVALID_CREDENTIALS"\n' +
@@ -111,6 +196,7 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
         from: DateSchema.describe('Start date (YYYY-MM-DD)'),
         to: DateSchema.describe('End date (YYYY-MM-DD)'),
         aggregation: AggregationSchema,
+        compare_with: CompareWithSchema,
         response_format: ResponseFormatSchema
       },
       outputSchema: InsightsOutputSchema,
@@ -122,11 +208,13 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
       from,
       to,
       aggregation = 'total',
+      compare_with = 'none',
       response_format = 'json'
     }: {
       from: string;
       to: string;
       aggregation?: AggregationPeriod;
+      compare_with?: CompareWithType;
       response_format?: ResponseFormat;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
@@ -135,15 +223,60 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
       const result = await server.makePinMeToRequest(url);
 
       if (!result.ok) {
-        return formatErrorResponse(result.error, `all Facebook brand page insights (${from} to ${to})`);
+        return formatErrorResponse(
+          result.error,
+          `all Facebook brand page insights (${from} to ${to})`
+        );
       }
 
       const aggregatedData = aggregateMetrics(result.data, aggregation);
-      const textContent = formatContent(aggregatedData, response_format, formatInsightsAsMarkdown);
+
+      // Handle comparison if requested
+      let comparisonData: ComparisonInsightsData[] | undefined;
+      let comparisonPeriod: ComparisonPeriod | undefined;
+
+      if (compare_with !== 'none') {
+        const priorPeriod = calculatePriorPeriod(from, to, compare_with);
+        const priorUrl = `${apiBaseUrl}/listings/v4/${accountId}/brand-page/insights/facebook?from=${priorPeriod.from}&to=${priorPeriod.to}`;
+        const priorResult = await server.makePinMeToRequest(priorUrl);
+
+        if (priorResult.ok) {
+          const priorAggregated = aggregateMetrics(priorResult.data, aggregation);
+          comparisonData = computeComparison(aggregatedData, priorAggregated);
+          comparisonPeriod = {
+            current: { from, to },
+            prior: priorPeriod
+          };
+        }
+      }
+
+      // Format text content
+      let textContent: string;
+      if (response_format === 'markdown') {
+        if (comparisonData && comparisonPeriod) {
+          textContent = formatInsightsWithComparisonAsMarkdown(
+            aggregatedData,
+            comparisonData,
+            comparisonPeriod
+          );
+        } else {
+          textContent = formatInsightsAsMarkdown(aggregatedData);
+        }
+      } else {
+        textContent = JSON.stringify({
+          data: aggregatedData,
+          ...(comparisonData && { comparisonData }),
+          ...(comparisonPeriod && { comparisonPeriod })
+        });
+      }
 
       return {
         content: [{ type: 'text', text: textContent }],
-        structuredContent: { data: aggregatedData }
+        structuredContent: {
+          data: aggregatedData,
+          ...(comparisonData && { comparisonData }),
+          ...(comparisonPeriod && { comparisonPeriod })
+        }
       };
     }
   );
@@ -193,14 +326,16 @@ export function getFacebookRatings(server: PinMeToMcpServer) {
       const result = await server.makePinMeToRequest(url);
 
       if (!result.ok) {
-        const context = storeId ? `storeId '${storeId}'` : `all Facebook ratings (${from} to ${to})`;
+        const context = storeId
+          ? `storeId '${storeId}'`
+          : `all Facebook ratings (${from} to ${to})`;
         return formatErrorResponse(result.error, context);
       }
 
       const textContent = storeId
-        ? (response_format === 'markdown'
-            ? formatLocationRatingsAsMarkdown(result.data, storeId)
-            : JSON.stringify(result.data))
+        ? response_format === 'markdown'
+          ? formatLocationRatingsAsMarkdown(result.data, storeId)
+          : JSON.stringify(result.data)
         : formatContent(result.data, response_format, formatRatingsAsMarkdown);
 
       return {

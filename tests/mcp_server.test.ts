@@ -1692,7 +1692,9 @@ describe('formatErrorResponse', () => {
     expect(result.isError).toBe(true);
     // MCP compliance: message must start with "Error:"
     expect(result.content[0].text).toBe('Error: Store not found. Verify the store ID exists.');
-    expect(result.structuredContent.error).toBe('Error: Store not found. Verify the store ID exists.');
+    expect(result.structuredContent.error).toBe(
+      'Error: Store not found. Verify the store ID exists.'
+    );
     expect(result.structuredContent.errorCode).toBe('NOT_FOUND');
     expect(result.structuredContent.retryable).toBe(false);
   });
@@ -1740,8 +1742,12 @@ describe('formatErrorResponse', () => {
     const result = formatErrorResponse(error, "storeId '12345'");
 
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toBe("Error: Failed for storeId '12345': Resource not found. Verify the ID exists.");
-    expect(result.structuredContent.error).toBe("Error: Failed for storeId '12345': Resource not found. Verify the ID exists.");
+    expect(result.content[0].text).toBe(
+      "Error: Failed for storeId '12345': Resource not found. Verify the ID exists."
+    );
+    expect(result.structuredContent.error).toBe(
+      "Error: Failed for storeId '12345': Resource not found. Verify the ID exists."
+    );
     expect(result.structuredContent.errorCode).toBe('NOT_FOUND');
     expect(result.structuredContent.retryable).toBe(false);
   });

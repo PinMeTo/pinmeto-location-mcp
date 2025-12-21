@@ -8,7 +8,10 @@ import {
   formatInsightsAsMarkdown,
   formatLocationInsightsAsMarkdown
 } from '../src/formatters/insights';
-import { formatRatingsAsMarkdown, formatLocationRatingsAsMarkdown } from '../src/formatters/ratings';
+import {
+  formatRatingsAsMarkdown,
+  formatLocationRatingsAsMarkdown
+} from '../src/formatters/ratings';
 import {
   formatKeywordsAsMarkdown,
   formatLocationKeywordsAsMarkdown
@@ -100,7 +103,10 @@ describe('Markdown Formatters', () => {
           storeId: '123',
           name: 'Test Store',
           openHours: {
-            monday: [{ open: '09:00', close: '12:00' }, { open: '13:00', close: '17:00' }],
+            monday: [
+              { open: '09:00', close: '12:00' },
+              { open: '13:00', close: '17:00' }
+            ],
             tuesday: [{ open: '09:00', close: '17:00' }],
             sunday: []
           }
@@ -121,7 +127,13 @@ describe('Markdown Formatters', () => {
           openHours: {
             mon: { state: 'Open', span: [{ open: '0800', close: '1700' }] },
             tue: { state: 'Open', span: [{ open: '0800', close: '1700' }] },
-            wed: { state: 'Open', span: [{ open: '0900', close: '1200' }, { open: '1300', close: '1700' }] },
+            wed: {
+              state: 'Open',
+              span: [
+                { open: '0900', close: '1200' },
+                { open: '1300', close: '1700' }
+              ]
+            },
             sat: { state: 'Closed', span: [] },
             sun: { state: 'Closed', span: [] }
           }
@@ -260,9 +272,15 @@ describe('Markdown Formatters', () => {
         expect(result).toContain('**Total:** 4 locations');
         expect(result).toContain('| Store ID | Name | Descriptor | City | Country | Status |');
         expect(result).toContain('| 1 | Store One | Main Branch | Stockholm | Sweden | Open |');
-        expect(result).toContain('| 2 | Store Two | Mall Location | Malmö | Sweden | Permanently Closed |');
-        expect(result).toContain('| 3 | Store Three | Airport | Göteborg | Sweden | Closed to 2025-04-01 |');
-        expect(result).toContain(`| 4 | Store Four | New Location | Uppsala | Sweden | Opening ${futureDateStr} |`);
+        expect(result).toContain(
+          '| 2 | Store Two | Mall Location | Malmö | Sweden | Permanently Closed |'
+        );
+        expect(result).toContain(
+          '| 3 | Store Three | Airport | Göteborg | Sweden | Closed to 2025-04-01 |'
+        );
+        expect(result).toContain(
+          `| 4 | Store Four | New Location | Uppsala | Sweden | Opening ${futureDateStr} |`
+        );
       });
 
       it('should show cache info when available', () => {

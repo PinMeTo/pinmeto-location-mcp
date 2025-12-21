@@ -126,14 +126,16 @@ export function mapAxiosErrorToApiError(e: unknown): ApiError {
       case 401:
         return {
           code: 'AUTH_INVALID_CREDENTIALS',
-          message: apiMessage || 'Authentication failed. Check PINMETO_APP_ID and PINMETO_APP_SECRET.',
+          message:
+            apiMessage || 'Authentication failed. Check PINMETO_APP_ID and PINMETO_APP_SECRET.',
           statusCode: 401,
           retryable: false
         };
       case 403:
         return {
           code: 'AUTH_APP_DISABLED',
-          message: apiMessage || 'OAuth application is disabled or revoked. Contact PinMeTo support.',
+          message:
+            apiMessage || 'OAuth application is disabled or revoked. Contact PinMeTo support.',
           statusCode: 403,
           retryable: false
         };

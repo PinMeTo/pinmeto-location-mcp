@@ -215,7 +215,8 @@ export function getLocations(server: PinMeToMcpServer) {
         // Include specific error details in pagination warning
         warning = `Data may be incomplete (${error.code}: ${error.message}). Use forceRefresh: true to retry.`;
       } else if (!allPagesFetched) {
-        warning = 'Data may be incomplete due to API pagination errors. Use forceRefresh: true to retry.';
+        warning =
+          'Data may be incomplete due to API pagination errors. Use forceRefresh: true to retry.';
       }
 
       // Build structured content

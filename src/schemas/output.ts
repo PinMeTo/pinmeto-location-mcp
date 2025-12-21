@@ -18,7 +18,9 @@ export const ResponseFormatSchema = z
   .enum(['json', 'markdown'])
   .optional()
   .default('json')
-  .describe('Response format: "json" (default, token-efficient) or "markdown" (human-readable with tables)');
+  .describe(
+    'Response format: "json" (default, token-efficient) or "markdown" (human-readable with tables)'
+  );
 
 export type ResponseFormat = z.infer<typeof ResponseFormatSchema>;
 
@@ -47,7 +49,11 @@ export const MetricDataSchema = z.object({
   key: z
     .string()
     .describe('Date or period identifier (e.g., "2024-01-15" or "2024-01-15 to 2024-03-15")'),
-  value: z.number().describe('Numeric metric value')
+  value: z.number().describe('Numeric metric value'),
+  label: z
+    .string()
+    .optional()
+    .describe('Human-readable period label (e.g., "January 2024", "Q1 2024")')
 });
 
 /**
@@ -58,6 +64,57 @@ export const InsightsDataSchema = z.object({
   key: z.string().describe('Metric dimension name (e.g., "views", "clicks", "searches")'),
   metrics: z.array(MetricDataSchema).describe('Array of metric data points')
 });
+
+// ============================================================================
+// Comparison Schemas
+// ============================================================================
+
+/**
+ * Comparison metric data point - represents a current vs prior period comparison.
+ * Used when compare_with parameter is specified in insights tools.
+ */
+export const ComparisonMetricSchema = z.object({
+  key: z.string().describe('Period identifier'),
+  current: z.number().describe('Current period value'),
+  prior: z.number().describe('Prior period value'),
+  delta: z.number().describe('Absolute change (current - prior)'),
+  deltaPercent: z
+    .number()
+    .nullable()
+    .describe('Percentage change ((current - prior) / prior * 100). Null if prior is 0'),
+  currentLabel: z.string().optional().describe('Human-readable current period label'),
+  priorLabel: z.string().optional().describe('Human-readable prior period label')
+});
+
+/**
+ * Comparison insights data structure - contains comparison metrics for a dimension.
+ * Used when compare_with parameter is specified.
+ */
+export const ComparisonInsightsDataSchema = z.object({
+  key: z.string().describe('Metric dimension name'),
+  metrics: z.array(ComparisonMetricSchema).describe('Array of comparison metric data points')
+});
+
+/**
+ * Date range schema for comparison periods.
+ */
+export const DateRangeSchema = z.object({
+  from: z.string().describe('Start date (YYYY-MM-DD)'),
+  to: z.string().describe('End date (YYYY-MM-DD)')
+});
+
+/**
+ * Comparison period info - describes the current and prior period ranges.
+ */
+export const ComparisonPeriodSchema = z.object({
+  current: DateRangeSchema.describe('Current period date range'),
+  prior: DateRangeSchema.describe('Prior period date range')
+});
+
+/**
+ * Warning codes for data validation issues.
+ */
+export const WarningCodeSchema = z.enum(['INCOMPLETE_DATA']);
 
 // ============================================================================
 // Location Sub-Schemas
@@ -93,7 +150,9 @@ export const ContactSchema = z
  * Open hours structure - maps day names to hour data.
  * API returns objects with open/close times, not simple strings.
  */
-export const OpenHoursSchema = z.record(z.string(), z.unknown()).describe('Day to hours mapping (e.g., "mon": { open: "09:00", close: "17:00" })');
+export const OpenHoursSchema = z
+  .record(z.string(), z.unknown())
+  .describe('Day to hours mapping (e.g., "mon": { open: "09:00", close: "17:00" })');
 
 // ============================================================================
 // Keywords Schema
@@ -107,7 +166,11 @@ export const KeywordDataSchema = z
   .object({
     keyword: z.string().describe('Search keyword'),
     value: z.number().nonnegative().describe('Impression count'),
-    locationCounts: z.number().nonnegative().optional().describe('Number of locations with this keyword')
+    locationCounts: z
+      .number()
+      .nonnegative()
+      .optional()
+      .describe('Number of locations with this keyword')
   })
   .passthrough();
 
@@ -170,7 +233,7 @@ export const RatingsDataSchema = z.union([
 
 /**
  * Output schema for insights tools (Google, Facebook, Apple)
- * Returns aggregated metrics data
+ * Returns aggregated metrics data with optional period comparisons.
  * Note: data is optional to allow error-only responses
  */
 export const InsightsOutputSchema = {
@@ -178,6 +241,15 @@ export const InsightsOutputSchema = {
     .array(InsightsDataSchema)
     .optional()
     .describe('Array of insights data grouped by metric dimension (absent on error)'),
+  comparisonData: z
+    .array(ComparisonInsightsDataSchema)
+    .optional()
+    .describe('Period comparison data when compare_with is specified'),
+  comparisonPeriod: ComparisonPeriodSchema.optional().describe(
+    'Date ranges for the current and prior comparison periods'
+  ),
+  warning: z.string().optional().describe('Warning message (e.g., incomplete data due to lag)'),
+  warningCode: WarningCodeSchema.optional().describe('Warning code for programmatic handling'),
   error: z.string().optional().describe('Error message if the request failed'),
   errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
   retryable: z.boolean().optional().describe('Whether the operation can be retried')
@@ -189,7 +261,9 @@ export const InsightsOutputSchema = {
  * Note: data is optional to allow error-only responses
  */
 export const RatingsOutputSchema = {
-  data: RatingsDataSchema.optional().describe('Ratings data: summary, reviews array, or location summaries (absent on error)'),
+  data: RatingsDataSchema.optional().describe(
+    'Ratings data: summary, reviews array, or location summaries (absent on error)'
+  ),
   error: z.string().optional().describe('Error message if the request failed'),
   errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
   retryable: z.boolean().optional().describe('Whether the operation can be retried')
@@ -201,7 +275,10 @@ export const RatingsOutputSchema = {
  * Note: data is optional to allow error-only responses
  */
 export const KeywordsOutputSchema = {
-  data: z.array(KeywordDataSchema).optional().describe('Array of keywords with impression data (absent on error)'),
+  data: z
+    .array(KeywordDataSchema)
+    .optional()
+    .describe('Array of keywords with impression data (absent on error)'),
   error: z.string().optional().describe('Error message if the request failed'),
   errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
   retryable: z.boolean().optional().describe('Whether the operation can be retried')
@@ -249,7 +326,10 @@ export const CacheInfoSchema = z.object({
   cached: z.boolean().describe('Whether data was served from cache'),
   ageSeconds: z.number().optional().describe('Cache age in seconds'),
   totalCached: z.number().optional().describe('Total locations in cache'),
-  stale: z.boolean().optional().describe('Whether cache data is stale and being refreshed in background')
+  stale: z
+    .boolean()
+    .optional()
+    .describe('Whether cache data is stale and being refreshed in background')
 });
 
 /**
@@ -266,7 +346,10 @@ export const LocationsOutputSchema = {
   hasMore: z.boolean().optional().describe('Whether more results exist beyond offset+limit'),
   offset: z.number().nonnegative().optional().describe('Current offset position'),
   limit: z.number().positive().optional().describe('Requested limit'),
-  incomplete: z.boolean().optional().describe('Whether data may be incomplete due to pagination errors'),
+  incomplete: z
+    .boolean()
+    .optional()
+    .describe('Whether data may be incomplete due to pagination errors'),
   warning: z.string().optional().describe('Warning message if data may be incomplete'),
   cacheInfo: CacheInfoSchema.optional().describe('Cache status information'),
   error: z.string().optional().describe('Error message if the request failed'),
@@ -308,3 +391,8 @@ export const SearchResultOutputSchema = {
 
 export type MetricData = z.infer<typeof MetricDataSchema>;
 export type InsightsData = z.infer<typeof InsightsDataSchema>;
+export type ComparisonMetric = z.infer<typeof ComparisonMetricSchema>;
+export type ComparisonInsightsData = z.infer<typeof ComparisonInsightsDataSchema>;
+export type DateRange = z.infer<typeof DateRangeSchema>;
+export type ComparisonPeriod = z.infer<typeof ComparisonPeriodSchema>;
+export type WarningCode = z.infer<typeof WarningCodeSchema>;

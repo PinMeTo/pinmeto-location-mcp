@@ -99,7 +99,7 @@ function extractDayHours(obj: Record<string, unknown>): string {
     // Check span array for time periods
     if ('span' in obj && Array.isArray(obj.span)) {
       const periods = obj.span
-        .map((period) => {
+        .map(period => {
           if (period && typeof period === 'object') {
             return extractSinglePeriod(period as Record<string, unknown>);
           }
@@ -158,7 +158,7 @@ function formatHoursValue(value: unknown): string {
     }
     // Handle array of time period objects
     const periods = value
-      .map((period) => {
+      .map(period => {
         if (typeof period === 'string') {
           return period;
         }
