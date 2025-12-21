@@ -19,9 +19,7 @@
     "@release-it/conventional-changelog": {
       "preset": {
         "name": "conventionalcommits"
-      },
-      "infile": "CHANGELOG.md",
-      "header": "# Changelog\n\nAll notable changes to this project will be documented in this file.\n"
+      }
     }
   },
   "hooks": {
