@@ -80,6 +80,39 @@ npm run clean              # Remove build directory
 
 ## Beads Workflow (CRITICAL)
 
+**Bead Statuses:**
+| Status | Description |
+|--------|-------------|
+| `open` | New/pending work, not yet started |
+| `in_progress` | Currently being worked on |
+| `blocked` | Waiting on dependency or external blocker |
+| `closed` | Completed |
+
+**Hierarchical IDs** (for epics with tasks/sub-tasks):
+```
+bd-a3f8       # Epic
+bd-a3f8.1     # Task under epic
+bd-a3f8.1.1   # Sub-task under task
+```
+
+**Protected Branch Workflow:**
+
+This project uses a separate `beads-sync` branch for beads metadata:
+- Beads daemon auto-commits to `beads-sync` (not main)
+- Main branch stays protected from beads auto-commits
+- Beads changes are merged to main periodically
+
+```bash
+# Check sync status
+bd sync --status
+
+# Merge beads changes to main (when needed)
+bd sync --merge --dry-run  # Preview
+bd sync --merge            # Execute merge to main
+```
+
+**Important**: `bd sync` commits to `beads-sync` branch, NOT main. Code changes and beads changes are separate workflows.
+
 ```bash
 # Create issues
 bd create "Implement user authentication" -t feature -p 1
@@ -92,9 +125,72 @@ bd close bd-a1b2 "Completed authentication"
 ```
 
 **Critical Rules:**
+- Create a bead BEFORE starting any work (not after)
+- Create a feature branch BEFORE making any code changes
 - Do not set a bead to closed before its PR has been approved
 - When starting on a new bead, set it to in-progress and assign it to the current git user
 - Always create a new bead(s) for new tasks/issues/fixes so all changes are tracked
+- NEVER commit directly to main - always use feature branches and PRs
+
+## Feature Development Workflow (MANDATORY)
+
+Before starting ANY feature, bug fix, or enhancement, follow this workflow:
+
+### Step 1: Create or Claim a Bead
+```bash
+# Create new bead if one doesn't exist
+bd create --title="Description of task" --type=feature|bug|task --priority=2
+
+# Or claim existing bead
+bd update <id> --status in_progress --assignee=$(git config user.name)
+```
+
+### Step 2: Create Feature Branch
+```bash
+# NEVER work directly on main
+git checkout main
+git pull origin main
+git checkout -b <branch-name>  # e.g., feature/add-apple-ratings, fix/auth-timeout
+```
+
+**Branch Naming Convention:**
+- `feature/<description>` - New features
+- `fix/<description>` - Bug fixes
+- `refactor/<description>` - Code refactoring
+- `docs/<description>` - Documentation only
+
+### Step 3: Do the Work
+- Make commits to your feature branch
+- Run tests: `npm test`
+- Run build: `npm run build`
+
+### Step 4: Create Pull Request
+```bash
+# Push branch and create PR
+git push -u origin <branch-name>
+gh pr create --title "feat: description" --body "Closes #<bead-id>"
+```
+
+### Step 5: Get PR Approved
+- Request review
+- Address feedback
+- **NEVER merge without approval**
+
+### Step 6: Merge and Clean Up
+```bash
+# After PR approval
+gh pr merge --squash  # or via GitHub UI
+git checkout main
+git pull origin main
+bd close <id>
+bd sync
+```
+
+⚠️ **WORKFLOW CRITICAL RULES:**
+- NEVER commit directly to main without explicit user approval
+- ALWAYS create a feature branch for any code changes
+- ALWAYS create a bead BEFORE starting work
+- ALWAYS create a PR for features and fixes
 
 ## Architecture
 
@@ -530,19 +626,33 @@ Pagination:
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
 2. **Run quality gates** (if code changed) - Tests, linters, builds
 3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+4. **PUSH AND CREATE PR** - This is MANDATORY:
    ```bash
+   # If on feature branch (normal case):
+   git push -u origin <branch-name>
+   gh pr create --title "..." --body "..."  # If PR doesn't exist
+   bd sync
+
+   # If on main (only for documentation-only changes with user approval):
    git pull --rebase
    bd sync
    git push
    git status  # MUST show "up to date with origin"
    ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+5. **Sync beads metadata** (if beads were updated):
+   ```bash
+   bd sync              # Commits to beads-sync branch
+   bd sync --merge      # Optional: merge beads to main if desired
+   ```
+6. **Clean up** - Clear stashes, prune remote branches
+7. **Verify** - All changes committed AND pushed
+8. **Hand off** - Provide context for next session
 
 **CRITICAL RULES:**
 - Work is NOT complete until `git push` succeeds
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
+- NEVER push directly to main for code changes - use feature branches and PRs
+- Documentation-only changes MAY go to main with explicit user approval
+- Always ask user before any direct main branch operations
