@@ -79,12 +79,13 @@ export const AddressSchema = z
 /**
  * Contact information for locations.
  * Uses passthrough to allow extra API fields.
+ * Note: email/homepage validators are lenient to handle empty strings from API
  */
 export const ContactSchema = z
   .object({
     phone: z.string().optional().describe('Phone number'),
-    email: z.string().email().optional().describe('Email address'),
-    homepage: z.string().url().optional().describe('Website URL')
+    email: z.string().optional().describe('Email address'),
+    homepage: z.string().optional().describe('Website URL')
   })
   .passthrough();
 
