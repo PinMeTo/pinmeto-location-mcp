@@ -90,9 +90,10 @@ export const ContactSchema = z
   .passthrough();
 
 /**
- * Open hours structure - maps day names to hour strings.
+ * Open hours structure - maps day names to hour data.
+ * API returns objects with open/close times, not simple strings.
  */
-export const OpenHoursSchema = z.record(z.string(), z.string()).describe('Day to hours mapping (e.g., "monday": "09:00-17:00")');
+export const OpenHoursSchema = z.record(z.string(), z.unknown()).describe('Day to hours mapping (e.g., "mon": { open: "09:00", close: "17:00" })');
 
 // ============================================================================
 // Keywords Schema
