@@ -2,6 +2,27 @@ import { z } from 'zod';
 import { API_ERROR_CODES } from '../errors';
 
 // ============================================================================
+// Response Format Schema
+// ============================================================================
+
+/**
+ * Response format parameter - shared across all tools.
+ * Controls whether the content.text field returns JSON or Markdown.
+ *
+ * - json (default): Token-efficient structured data
+ * - markdown: Human-readable with headers and tables
+ *
+ * Note: structuredContent always contains typed data regardless of format.
+ */
+export const ResponseFormatSchema = z
+  .enum(['json', 'markdown'])
+  .optional()
+  .default('json')
+  .describe('Response format: "json" (default, token-efficient) or "markdown" (human-readable with tables)');
+
+export type ResponseFormat = z.infer<typeof ResponseFormatSchema>;
+
+// ============================================================================
 // Error Schema
 // ============================================================================
 
@@ -30,8 +51,8 @@ export const MetricDataSchema = z.object({
 });
 
 /**
- * Insights data structure - contains metrics for a specific dimension
- * Structure matches the PinMeTo API response and aggregateMetrics() output
+ * Insights data structure - contains metrics for a specific dimension.
+ * Used across Google, Facebook, and Apple insights tools.
  */
 export const InsightsDataSchema = z.object({
   key: z.string().describe('Metric dimension name (e.g., "views", "clicks", "searches")'),

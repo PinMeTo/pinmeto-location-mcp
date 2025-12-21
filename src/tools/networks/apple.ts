@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
-import { aggregateMetrics, AggregationPeriod, formatErrorResponse } from '../../helpers';
-import { InsightsOutputSchema } from '../../schemas/output';
+import { aggregateMetrics, AggregationPeriod, formatErrorResponse, formatContent } from '../../helpers';
+import {
+  InsightsOutputSchema,
+  ResponseFormatSchema,
+  ResponseFormat
+} from '../../schemas/output';
+import { formatInsightsAsMarkdown, formatLocationInsightsAsMarkdown } from '../../formatters';
 
 // Shared date validation schema
 const DateSchema = z
@@ -24,7 +29,8 @@ export function getAppleLocationInsights(server: PinMeToMcpServer) {
           .default('total')
           .describe(
             'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
-          )
+          ),
+        response_format: ResponseFormatSchema
       },
       outputSchema: InsightsOutputSchema,
       annotations: {
@@ -35,12 +41,14 @@ export function getAppleLocationInsights(server: PinMeToMcpServer) {
       storeId,
       from,
       to,
-      aggregation = 'total'
+      aggregation = 'total',
+      response_format = 'json'
     }: {
       storeId: string;
       from: string;
       to: string;
       aggregation?: AggregationPeriod;
+      response_format?: ResponseFormat;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
@@ -54,13 +62,13 @@ export function getAppleLocationInsights(server: PinMeToMcpServer) {
       // Apply aggregation
       const aggregatedData = aggregateMetrics(result.data, aggregation);
 
+      const textContent =
+        response_format === 'markdown'
+          ? formatLocationInsightsAsMarkdown(aggregatedData, storeId)
+          : JSON.stringify(aggregatedData);
+
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(aggregatedData)
-          }
-        ],
+        content: [{ type: 'text', text: textContent }],
         structuredContent: { data: aggregatedData }
       };
     }
@@ -82,7 +90,8 @@ export function getAllAppleInsights(server: PinMeToMcpServer) {
           .default('total')
           .describe(
             'Time aggregation period. Options: total (default, single sum - maximum token reduction), daily (no aggregation, full granularity), weekly (~85% token reduction), monthly (~96% reduction), quarterly (~98% reduction), half-yearly, yearly (~99.7% reduction)'
-          )
+          ),
+        response_format: ResponseFormatSchema
       },
       outputSchema: InsightsOutputSchema,
       annotations: {
@@ -92,11 +101,13 @@ export function getAllAppleInsights(server: PinMeToMcpServer) {
     async ({
       from,
       to,
-      aggregation = 'total'
+      aggregation = 'total',
+      response_format = 'json'
     }: {
       from: string;
       to: string;
       aggregation?: AggregationPeriod;
+      response_format?: ResponseFormat;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
@@ -109,13 +120,10 @@ export function getAllAppleInsights(server: PinMeToMcpServer) {
       // Apply aggregation
       const aggregatedData = aggregateMetrics(result.data, aggregation);
 
+      const textContent = formatContent(aggregatedData, response_format, formatInsightsAsMarkdown);
+
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(aggregatedData)
-          }
-        ],
+        content: [{ type: 'text', text: textContent }],
         structuredContent: { data: aggregatedData }
       };
     }
