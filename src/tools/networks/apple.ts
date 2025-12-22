@@ -25,10 +25,26 @@ import {
   InsightsFormatOptions
 } from '../../formatters';
 
+/**
+ * Validates that a YYYY-MM-DD string represents a real calendar date.
+ */
+function isValidDate(dateStr: string): boolean {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
+}
+
 // Shared date validation schema
 const DateSchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format (e.g., 2024-01-15)');
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format (e.g., 2024-01-15)')
+  .refine(isValidDate, {
+    message: 'Invalid date - check month/day values (e.g., June has 30 days, not 31)'
+  });
 
 const AggregationSchema = z
   .enum(['daily', 'weekly', 'monthly', 'quarterly', 'half-yearly', 'yearly', 'total'])

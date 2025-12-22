@@ -386,7 +386,7 @@ describe('Locations', () => {
 });
 
 describe('Tool Annotations', () => {
-  it('should register all 10 tools with readOnlyHint annotations', async () => {
+  it('should register all 11 tools with readOnlyHint annotations', async () => {
     const server = createMcpServer();
     const testTransport = new StdioServerTransport();
 
@@ -440,7 +440,7 @@ describe('Tool Annotations', () => {
     expect(toolsResponse.result.tools).toBeDefined();
 
     const tools = toolsResponse.result.tools;
-    expect(tools.length).toBe(10);
+    expect(tools.length).toBe(11);
 
     // Verify each tool has readOnlyHint: true
     for (const tool of tools) {
@@ -539,7 +539,7 @@ describe('Output Schemas', () => {
     expect(toolsResponse.result.tools).toBeDefined();
 
     const tools = toolsResponse.result.tools;
-    expect(tools.length).toBe(10);
+    expect(tools.length).toBe(11);
 
     // Verify each tool has outputSchema defined
     for (const tool of tools) {
@@ -2321,7 +2321,7 @@ describe('Consolidated Network Tools', () => {
   });
 
   describe('Tool names verification', () => {
-    it('should register exactly the expected 10 consolidated tools', async () => {
+    it('should register exactly the expected 11 consolidated tools', async () => {
       const server = createMcpServer();
       const testTransport = new StdioServerTransport();
 
@@ -2372,6 +2372,7 @@ describe('Consolidated Network Tools', () => {
         'pinmeto_search_locations',
         'pinmeto_get_google_insights',
         'pinmeto_get_google_ratings',
+        'pinmeto_get_google_reviews',
         'pinmeto_get_google_keywords',
         'pinmeto_get_facebook_insights',
         'pinmeto_get_facebook_brandpage_insights',

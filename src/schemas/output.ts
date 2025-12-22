@@ -141,6 +141,19 @@ export const ComparisonPeriodSchema = z.object({
  */
 export const WarningCodeSchema = z.enum(['INCOMPLETE_DATA']);
 
+/**
+ * Cache information schema for queries with caching support.
+ */
+export const CacheInfoSchema = z.object({
+  cached: z.boolean().describe('Whether data was served from cache'),
+  ageSeconds: z.number().optional().describe('Cache age in seconds'),
+  totalCached: z.number().optional().describe('Total items in cache'),
+  stale: z
+    .boolean()
+    .optional()
+    .describe('Whether cache data is stale and being refreshed in background')
+});
+
 // ============================================================================
 // Location Sub-Schemas
 // ============================================================================
@@ -219,17 +232,17 @@ export const RatingsSummarySchema = z
   .passthrough();
 
 /**
- * Individual review entry.
- * Uses passthrough to allow extra API fields.
+ * Individual review entry for the reviews tool.
+ * Extended with owner response fields for sentiment analysis.
  */
-export const ReviewSchema = z
-  .object({
-    storeId: z.string().optional().describe('Store identifier'),
-    rating: z.number().min(1).max(5).describe('Rating value (1-5)'),
-    comment: z.string().optional().describe('Review comment text'),
-    date: z.string().optional().describe('Review date')
-  })
-  .passthrough();
+export const ReviewSchema = z.object({
+  storeId: z.string().describe('Store identifier'),
+  rating: z.number().min(1).max(5).describe('Rating value (1-5)'),
+  comment: z.string().optional().describe('Review comment text'),
+  date: z.string().optional().describe('Review date (YYYY-MM-DD)'),
+  ownerResponse: z.string().optional().describe('Owner response to the review'),
+  responseDate: z.string().optional().describe('Date of owner response (YYYY-MM-DD)')
+});
 
 /**
  * Location ratings summary (for multi-location queries).
@@ -239,16 +252,15 @@ export const LocationRatingsSummarySchema = RatingsSummarySchema.extend({
 });
 
 /**
- * Ratings data union - shape depends on query context:
- * - Single location summary: RatingsSummary object with averageRating, totalReviews, distribution
+ * Ratings data - aggregate statistics only (no individual reviews).
+ * Shape depends on query context:
+ * - Single location: RatingsSummary object with averageRating, totalReviews, distribution
  * - Multi-location: Array of LocationRatingsSummary (each has storeId field)
- * - Reviews listing: Array of Review objects (each has rating and optional comment)
  *
- * Discriminate by: Array.isArray(data) first, then check for 'storeId' on elements
+ * For individual reviews, use the pinmeto_get_google_reviews tool instead.
  */
 export const RatingsDataSchema = z.union([
   RatingsSummarySchema,
-  z.array(ReviewSchema),
   z.array(LocationRatingsSummarySchema)
 ]);
 
@@ -327,13 +339,36 @@ export const InsightsOutputSchema = {
 
 /**
  * Output schema for ratings tools (Google, Facebook)
- * Returns ratings summary, reviews, or per-location summaries
+ * Returns aggregate statistics only (averageRating, totalReviews, distribution)
+ * For individual reviews, use the reviews tool instead.
  * Note: data is optional to allow error-only responses
  */
 export const RatingsOutputSchema = {
   data: RatingsDataSchema.optional().describe(
-    'Ratings data: summary, reviews array, or location summaries (absent on error)'
+    'Ratings data: single location summary or array of location summaries (absent on error)'
   ),
+  cacheInfo: CacheInfoSchema.optional().describe('Cache status information'),
+  warning: z.string().optional().describe('Warning message (e.g., incomplete data due to lag)'),
+  warningCode: WarningCodeSchema.optional().describe('Warning code for programmatic handling'),
+  error: z.string().optional().describe('Error message if the request failed'),
+  errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
+  retryable: z.boolean().optional().describe('Whether the operation can be retried')
+};
+
+/**
+ * Output schema for reviews tools (Google)
+ * Returns individual reviews with pagination and filtering support.
+ * Note: data is optional to allow error-only responses
+ */
+export const ReviewsOutputSchema = {
+  data: z.array(ReviewSchema).optional().describe('Array of reviews (absent on error)'),
+  totalCount: z.number().nonnegative().optional().describe('Total reviews matching filters'),
+  hasMore: z.boolean().optional().describe('Whether more results exist beyond offset+limit'),
+  offset: z.number().nonnegative().optional().describe('Current offset position'),
+  limit: z.number().positive().optional().describe('Requested limit'),
+  cacheInfo: CacheInfoSchema.optional().describe('Cache status information'),
+  warning: z.string().optional().describe('Warning message (e.g., incomplete data due to lag)'),
+  warningCode: WarningCodeSchema.optional().describe('Warning code for programmatic handling'),
   error: z.string().optional().describe('Error message if the request failed'),
   errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
   retryable: z.boolean().optional().describe('Whether the operation can be retried')
@@ -388,19 +423,6 @@ export const LocationOutputSchema = {
   errorCode: ApiErrorCodeSchema.optional().describe('Error code for programmatic handling'),
   retryable: z.boolean().optional().describe('Whether the operation can be retried')
 };
-
-/**
- * Cache information schema for location queries
- */
-export const CacheInfoSchema = z.object({
-  cached: z.boolean().describe('Whether data was served from cache'),
-  ageSeconds: z.number().optional().describe('Cache age in seconds'),
-  totalCached: z.number().optional().describe('Total locations in cache'),
-  stale: z
-    .boolean()
-    .optional()
-    .describe('Whether cache data is stale and being refreshed in background')
-});
 
 /**
  * Output schema for multiple locations retrieval
@@ -464,6 +486,10 @@ export type InsightValue = z.infer<typeof InsightValueSchema>;
 export type Insight = z.infer<typeof InsightSchema>;
 export type FlatInsight = z.infer<typeof FlatInsightSchema>;
 export type PeriodRange = z.infer<typeof PeriodRangeSchema>;
+export type Review = z.infer<typeof ReviewSchema>;
+export type RatingsSummary = z.infer<typeof RatingsSummarySchema>;
+export type LocationRatingsSummary = z.infer<typeof LocationRatingsSummarySchema>;
+export type CacheInfo = z.infer<typeof CacheInfoSchema>;
 
 // Legacy type aliases for backwards compatibility during migration
 export type MetricData = InsightValue;
