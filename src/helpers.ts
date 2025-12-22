@@ -55,8 +55,13 @@ function aggregateMetricsByPeriod(metrics: MetricData[], period: AggregationPeri
   // Handle 'total' aggregation - sum all values
   if (period === 'total') {
     const totalValue = metrics.reduce((sum, m) => sum + m.value, 0);
-    const firstDate = metrics[0]?.key || 'total';
-    const lastDate = metrics[metrics.length - 1]?.key || 'total';
+
+    // Find actual min and max dates (API returns unsorted data)
+    const dates = metrics.map(m => m.key).filter(k => k && k !== 'total');
+    const sortedDates = dates.sort((a, b) => a.localeCompare(b));
+    const firstDate = sortedDates[0] || 'total';
+    const lastDate = sortedDates[sortedDates.length - 1] || 'total';
+
     const key = `${firstDate} to ${lastDate}`;
     return [
       {

@@ -3,7 +3,8 @@ import {
   calculatePriorPeriod,
   computeComparison,
   checkGoogleDataLag,
-  getPeriodLabel
+  getPeriodLabel,
+  aggregateMetrics
 } from '../src/helpers';
 import type { InsightsData } from '../src/schemas/output';
 
@@ -322,6 +323,50 @@ describe('Comparison Helper Functions', () => {
         expect(getPeriodLabel('some-random-string')).toBe('some-random-string');
         expect(getPeriodLabel('')).toBe('');
       });
+    });
+  });
+
+  describe('aggregateMetrics with total', () => {
+    it('should produce chronological date range from unsorted metrics', () => {
+      const unsortedData: InsightsData[] = [
+        {
+          key: 'VIEWS',
+          metrics: [
+            { key: '2024-05-15', value: 10 },
+            { key: '2024-01-10', value: 20 }, // Earliest
+            { key: '2024-03-20', value: 30 },
+            { key: '2024-12-25', value: 40 } // Latest
+          ]
+        }
+      ];
+
+      const result = aggregateMetrics(unsortedData, 'total');
+
+      expect(result[0].metrics[0].key).toBe('2024-01-10 to 2024-12-25');
+      expect(result[0].metrics[0].label).toBe('Jan 10 - Dec 25, 2024');
+      expect(result[0].metrics[0].value).toBe(100);
+    });
+
+    it('should handle single metric', () => {
+      const singleData: InsightsData[] = [
+        {
+          key: 'CLICKS',
+          metrics: [{ key: '2024-06-15', value: 50 }]
+        }
+      ];
+
+      const result = aggregateMetrics(singleData, 'total');
+
+      expect(result[0].metrics[0].key).toBe('2024-06-15 to 2024-06-15');
+      expect(result[0].metrics[0].value).toBe(50);
+    });
+
+    it('should return empty metrics unchanged', () => {
+      const emptyData: InsightsData[] = [{ key: 'VIEWS', metrics: [] }];
+
+      const result = aggregateMetrics(emptyData, 'total');
+
+      expect(result[0].metrics).toHaveLength(0);
     });
   });
 });
