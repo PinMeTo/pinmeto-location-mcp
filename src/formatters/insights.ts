@@ -1,5 +1,5 @@
 import { MARKDOWN_TABLE_MAX_ROWS } from '../helpers';
-import { InsightsData, ComparisonInsightsData, ComparisonPeriod } from '../schemas/output';
+import { InsightsData, ComparisonPeriod } from '../schemas/output';
 
 /**
  * Formats insights data as Markdown.
@@ -90,20 +90,21 @@ export function formatLocationInsightsAsMarkdown(data: InsightsData[], storeId: 
 }
 
 /**
- * Formats insights with comparison data as Markdown.
+ * Formats insights with embedded comparison data as Markdown.
  * Shows current vs prior period values with deltas.
+ *
+ * The comparison data is embedded in each metric as metric.comparison
+ * (unified structure - no separate comparisonData array).
  */
 export function formatInsightsWithComparisonAsMarkdown(
   data: InsightsData[],
-  comparisonData: ComparisonInsightsData[],
   comparisonPeriod: ComparisonPeriod,
   storeId?: string
 ): string {
-  if (!comparisonData || comparisonData.length === 0) {
-    // Fall back to regular format if no comparison data
+  if (!data || data.length === 0) {
     return storeId
-      ? formatLocationInsightsAsMarkdown(data, storeId)
-      : formatInsightsAsMarkdown(data);
+      ? `## Insights Comparison for ${storeId}\n\nNo insights data available.`
+      : '## Insights Comparison\n\nNo insights data available.';
   }
 
   const header = storeId
@@ -116,11 +117,11 @@ export function formatInsightsWithComparisonAsMarkdown(
   md += `**Current Period:** ${comparisonPeriod.current.from} to ${comparisonPeriod.current.to}\n`;
   md += `**Prior Period:** ${comparisonPeriod.prior.from} to ${comparisonPeriod.prior.to}\n\n`;
 
-  for (const comparison of comparisonData) {
-    md += `### ${formatMetricName(comparison.key)}\n\n`;
+  for (const insight of data) {
+    md += `### ${formatMetricName(insight.key)}\n\n`;
 
-    if (!comparison.metrics || comparison.metrics.length === 0) {
-      md += '*No comparison data for this metric.*\n\n';
+    if (!insight.metrics || insight.metrics.length === 0) {
+      md += '*No data for this metric.*\n\n';
       continue;
     }
 
@@ -129,22 +130,29 @@ export function formatInsightsWithComparisonAsMarkdown(
     md += '|--------|--------:|------:|-------:|---------:|\n';
 
     // Table rows (truncated)
-    const displayCount = Math.min(comparison.metrics.length, MARKDOWN_TABLE_MAX_ROWS);
+    const displayCount = Math.min(insight.metrics.length, MARKDOWN_TABLE_MAX_ROWS);
     for (let i = 0; i < displayCount; i++) {
-      const metric = comparison.metrics[i];
-      const periodDisplay = metric.currentLabel || metric.key;
-      const deltaSign = metric.delta >= 0 ? '+' : '';
-      const pctChange =
-        metric.deltaPercent !== null
-          ? `${metric.deltaPercent >= 0 ? '+' : ''}${metric.deltaPercent.toFixed(1)}%`
-          : 'N/A';
+      const metric = insight.metrics[i];
+      const periodDisplay = metric.label || metric.key;
+      const comparison = metric.comparison;
 
-      md += `| ${periodDisplay} | ${formatNumber(metric.current)} | ${formatNumber(metric.prior)} | ${deltaSign}${formatNumber(metric.delta)} | ${pctChange} |\n`;
+      if (comparison) {
+        const deltaSign = comparison.delta >= 0 ? '+' : '';
+        const pctChange =
+          comparison.deltaPercent !== null
+            ? `${comparison.deltaPercent >= 0 ? '+' : ''}${comparison.deltaPercent.toFixed(1)}%`
+            : 'N/A';
+
+        md += `| ${periodDisplay} | ${formatNumber(metric.value)} | ${formatNumber(comparison.prior)} | ${deltaSign}${formatNumber(comparison.delta)} | ${pctChange} |\n`;
+      } else {
+        // Metric without comparison data (shouldn't happen in normal flow)
+        md += `| ${periodDisplay} | ${formatNumber(metric.value)} | - | - | - |\n`;
+      }
     }
 
     // Truncation notice
-    if (comparison.metrics.length > MARKDOWN_TABLE_MAX_ROWS) {
-      const remaining = comparison.metrics.length - MARKDOWN_TABLE_MAX_ROWS;
+    if (insight.metrics.length > MARKDOWN_TABLE_MAX_ROWS) {
+      const remaining = insight.metrics.length - MARKDOWN_TABLE_MAX_ROWS;
       md += `\n*... and ${remaining} more rows (use structuredContent for full data)*\n`;
     }
 

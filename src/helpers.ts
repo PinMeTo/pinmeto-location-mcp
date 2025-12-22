@@ -1,10 +1,4 @@
-import {
-  MetricData,
-  InsightsData,
-  ResponseFormat,
-  ComparisonInsightsData,
-  ComparisonMetric
-} from './schemas/output';
+import { MetricData, InsightsData, ResponseFormat } from './schemas/output';
 import { ApiError } from './errors';
 
 /** Maximum rows to display in Markdown tables before truncating */
@@ -376,16 +370,25 @@ export function checkGoogleDataLag(
 // ============================================================================
 
 /**
- * Computes comparison metrics between current and prior period data.
+ * Embeds comparison data directly into metrics, avoiding duplication.
+ *
+ * Instead of returning a separate ComparisonInsightsData[] array that duplicates
+ * current values, this function enriches the existing InsightsData[] by adding
+ * a 'comparison' field to each metric containing prior period info.
  *
  * @param currentData Current period insights data
  * @param priorData Prior period insights data
- * @returns Comparison insights data with deltas
+ * @returns Current data with comparison embedded in each metric
+ *
+ * @example
+ * // Before: metric = { key: "2024-01", value: 250, label: "Jan 2024" }
+ * // After:  metric = { key: "2024-01", value: 250, label: "Jan 2024",
+ * //                    comparison: { prior: 200, priorLabel: "Jan 2023", delta: 50, deltaPercent: 25 } }
  */
-export function computeComparison(
+export function embedComparison(
   currentData: InsightsData[],
   priorData: InsightsData[]
-): ComparisonInsightsData[] {
+): InsightsData[] {
   // Create a map of prior data by metric key for efficient lookup
   const priorMap = new Map<string, Map<string, MetricData>>();
 
@@ -402,7 +405,7 @@ export function computeComparison(
     // Convert to array for index-based matching (keys differ between periods)
     const priorMetricsArray = priorMetrics ? Array.from(priorMetrics.values()) : [];
 
-    const comparisonMetrics: ComparisonMetric[] = currentInsight.metrics.map((currentMetric, index) => {
+    const enrichedMetrics: MetricData[] = currentInsight.metrics.map((currentMetric, index) => {
       // Match prior metric by position index since date keys differ between periods
       // e.g., current "2024-01" matches with prior "2023-12" by position
       const priorMetric = priorMetricsArray[index];
@@ -413,18 +416,20 @@ export function computeComparison(
 
       return {
         key: currentMetric.key,
-        current: currentMetric.value,
-        prior: priorValue,
-        delta,
-        deltaPercent,
-        currentLabel: currentMetric.label,
-        priorLabel: priorMetric?.label
+        value: currentMetric.value,
+        label: currentMetric.label,
+        comparison: {
+          prior: priorValue,
+          priorLabel: priorMetric?.label,
+          delta,
+          deltaPercent
+        }
       };
     });
 
     return {
       key: currentInsight.key,
-      metrics: comparisonMetrics
+      metrics: enrichedMetrics
     };
   });
 }

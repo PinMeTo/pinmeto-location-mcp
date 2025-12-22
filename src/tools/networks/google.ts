@@ -8,7 +8,7 @@ import {
   CompareWithType,
   calculatePriorPeriod,
   checkGoogleDataLag,
-  computeComparison
+  embedComparison
 } from '../../helpers';
 import {
   InsightsOutputSchema,
@@ -16,8 +16,8 @@ import {
   KeywordsOutputSchema,
   ResponseFormatSchema,
   ResponseFormat,
-  ComparisonInsightsData,
-  ComparisonPeriod
+  ComparisonPeriod,
+  InsightsData
 } from '../../schemas/output';
 import {
   formatInsightsAsMarkdown,
@@ -68,7 +68,7 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
         'Comparison Options:\n' +
         '  - compare_with="prior_period": Compare with same-duration period before (MoM, QoQ)\n' +
         '  - compare_with="prior_year": Compare with same dates last year (YoY)\n' +
-        '  - Returns comparisonData with current, prior, delta, deltaPercent\n\n' +
+        '  - When comparison is active, each metric includes a comparison field with prior, delta, deltaPercent\n\n' +
         'Data Lag Warning:\n' +
         '  - Google data has ~10 day lag. Requests with recent end dates may return incomplete data.\n' +
         '  - Check structuredContent.warning and warningCode for data completeness.\n\n' +
@@ -120,10 +120,9 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
         return formatErrorResponse(result.error, context);
       }
 
-      const aggregatedData = aggregateMetrics(result.data, aggregation);
+      let aggregatedData: InsightsData[] = aggregateMetrics(result.data, aggregation);
 
-      // Handle comparison if requested
-      let comparisonData: ComparisonInsightsData[] | undefined;
+      // Handle comparison if requested - embed comparison data directly into metrics
       let comparisonPeriod: ComparisonPeriod | undefined;
       let comparisonError: string | undefined;
 
@@ -138,7 +137,8 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
 
         if (priorResult.ok) {
           const priorAggregated = aggregateMetrics(priorResult.data, aggregation);
-          comparisonData = computeComparison(aggregatedData, priorAggregated);
+          // Embed comparison directly into each metric (no separate comparisonData array)
+          aggregatedData = embedComparison(aggregatedData, priorAggregated);
           comparisonPeriod = {
             current: { from, to },
             prior: priorPeriod
@@ -152,19 +152,12 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
       // Format text content
       let textContent: string;
       if (response_format === 'markdown') {
-        if (comparisonData && comparisonPeriod) {
-          textContent = storeId
-            ? formatInsightsWithComparisonAsMarkdown(
-                aggregatedData,
-                comparisonData,
-                comparisonPeriod,
-                storeId
-              )
-            : formatInsightsWithComparisonAsMarkdown(
-                aggregatedData,
-                comparisonData,
-                comparisonPeriod
-              );
+        if (comparisonPeriod) {
+          textContent = formatInsightsWithComparisonAsMarkdown(
+            aggregatedData,
+            comparisonPeriod,
+            storeId
+          );
         } else {
           textContent = storeId
             ? formatLocationInsightsAsMarkdown(aggregatedData, storeId)
@@ -173,7 +166,6 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
       } else {
         textContent = JSON.stringify({
           data: aggregatedData,
-          ...(comparisonData && { comparisonData }),
           ...(comparisonPeriod && { comparisonPeriod }),
           ...(comparisonError && { comparisonError }),
           ...(lagWarning && lagWarning)
@@ -184,7 +176,6 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
         content: [{ type: 'text', text: textContent }],
         structuredContent: {
           data: aggregatedData,
-          ...(comparisonData && { comparisonData }),
           ...(comparisonPeriod && { comparisonPeriod }),
           ...(comparisonError && { comparisonError }),
           ...(lagWarning && lagWarning)

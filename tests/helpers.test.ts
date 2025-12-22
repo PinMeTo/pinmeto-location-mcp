@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   calculatePriorPeriod,
-  computeComparison,
+  embedComparison,
   checkGoogleDataLag,
   getPeriodLabel,
   aggregateMetrics
@@ -97,53 +97,45 @@ describe('Comparison Helper Functions', () => {
     });
   });
 
-  describe('computeComparison', () => {
+  describe('embedComparison', () => {
     it('should compute positive delta correctly', () => {
       const currentData: InsightsData[] = [
         { key: 'views', metrics: [{ key: '2024', value: 150 }] }
       ];
-      const priorData: InsightsData[] = [
-        { key: 'views', metrics: [{ key: '2023', value: 100 }] }
-      ];
+      const priorData: InsightsData[] = [{ key: 'views', metrics: [{ key: '2023', value: 100 }] }];
 
-      const result = computeComparison(currentData, priorData);
+      const result = embedComparison(currentData, priorData);
 
       expect(result).toHaveLength(1);
       expect(result[0].key).toBe('views');
-      expect(result[0].metrics[0].current).toBe(150);
-      expect(result[0].metrics[0].prior).toBe(100);
-      expect(result[0].metrics[0].delta).toBe(50);
-      expect(result[0].metrics[0].deltaPercent).toBe(50);
+      expect(result[0].metrics[0].value).toBe(150); // Current value stays in .value
+      expect(result[0].metrics[0].comparison?.prior).toBe(100);
+      expect(result[0].metrics[0].comparison?.delta).toBe(50);
+      expect(result[0].metrics[0].comparison?.deltaPercent).toBe(50);
     });
 
     it('should compute negative delta correctly', () => {
-      const currentData: InsightsData[] = [
-        { key: 'views', metrics: [{ key: '2024', value: 80 }] }
-      ];
-      const priorData: InsightsData[] = [
-        { key: 'views', metrics: [{ key: '2023', value: 100 }] }
-      ];
+      const currentData: InsightsData[] = [{ key: 'views', metrics: [{ key: '2024', value: 80 }] }];
+      const priorData: InsightsData[] = [{ key: 'views', metrics: [{ key: '2023', value: 100 }] }];
 
-      const result = computeComparison(currentData, priorData);
+      const result = embedComparison(currentData, priorData);
 
-      expect(result[0].metrics[0].delta).toBe(-20);
-      expect(result[0].metrics[0].deltaPercent).toBe(-20);
+      expect(result[0].metrics[0].comparison?.delta).toBe(-20);
+      expect(result[0].metrics[0].comparison?.deltaPercent).toBe(-20);
     });
 
     it('should return null deltaPercent when prior is 0', () => {
       const currentData: InsightsData[] = [
         { key: 'views', metrics: [{ key: '2024', value: 100 }] }
       ];
-      const priorData: InsightsData[] = [
-        { key: 'views', metrics: [{ key: '2023', value: 0 }] }
-      ];
+      const priorData: InsightsData[] = [{ key: 'views', metrics: [{ key: '2023', value: 0 }] }];
 
-      const result = computeComparison(currentData, priorData);
+      const result = embedComparison(currentData, priorData);
 
-      expect(result[0].metrics[0].current).toBe(100);
-      expect(result[0].metrics[0].prior).toBe(0);
-      expect(result[0].metrics[0].delta).toBe(100);
-      expect(result[0].metrics[0].deltaPercent).toBeNull();
+      expect(result[0].metrics[0].value).toBe(100); // Current value in .value
+      expect(result[0].metrics[0].comparison?.prior).toBe(0);
+      expect(result[0].metrics[0].comparison?.delta).toBe(100);
+      expect(result[0].metrics[0].comparison?.deltaPercent).toBeNull();
     });
 
     it('should match metrics by index for multiple periods', () => {
@@ -166,17 +158,17 @@ describe('Comparison Helper Functions', () => {
         }
       ];
 
-      const result = computeComparison(currentData, priorData);
+      const result = embedComparison(currentData, priorData);
 
       // First metric: 100 vs 80
-      expect(result[0].metrics[0].current).toBe(100);
-      expect(result[0].metrics[0].prior).toBe(80);
-      expect(result[0].metrics[0].delta).toBe(20);
+      expect(result[0].metrics[0].value).toBe(100);
+      expect(result[0].metrics[0].comparison?.prior).toBe(80);
+      expect(result[0].metrics[0].comparison?.delta).toBe(20);
 
       // Second metric: 200 vs 150 (NOT 200 vs 80)
-      expect(result[0].metrics[1].current).toBe(200);
-      expect(result[0].metrics[1].prior).toBe(150);
-      expect(result[0].metrics[1].delta).toBe(50);
+      expect(result[0].metrics[1].value).toBe(200);
+      expect(result[0].metrics[1].comparison?.prior).toBe(150);
+      expect(result[0].metrics[1].comparison?.delta).toBe(50);
     });
 
     it('should handle missing prior dimension', () => {
@@ -187,11 +179,11 @@ describe('Comparison Helper Functions', () => {
         { key: 'clicks', metrics: [{ key: '2023', value: 50 }] } // Different key
       ];
 
-      const result = computeComparison(currentData, priorData);
+      const result = embedComparison(currentData, priorData);
 
       // Should use 0 for missing prior
-      expect(result[0].metrics[0].prior).toBe(0);
-      expect(result[0].metrics[0].delta).toBe(100);
+      expect(result[0].metrics[0].comparison?.prior).toBe(0);
+      expect(result[0].metrics[0].comparison?.delta).toBe(100);
     });
 
     it('should preserve labels', () => {
@@ -202,10 +194,10 @@ describe('Comparison Helper Functions', () => {
         { key: 'views', metrics: [{ key: '2023-01', value: 80, label: 'January 2023' }] }
       ];
 
-      const result = computeComparison(currentData, priorData);
+      const result = embedComparison(currentData, priorData);
 
-      expect(result[0].metrics[0].currentLabel).toBe('January 2024');
-      expect(result[0].metrics[0].priorLabel).toBe('January 2023');
+      expect(result[0].metrics[0].label).toBe('January 2024'); // Current label in .label
+      expect(result[0].metrics[0].comparison?.priorLabel).toBe('January 2023');
     });
   });
 

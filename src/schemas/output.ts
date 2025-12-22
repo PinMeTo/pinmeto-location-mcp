@@ -42,18 +42,37 @@ export const ApiErrorCodeSchema = z.enum(API_ERROR_CODES);
 // ============================================================================
 
 /**
+ * Embedded comparison data for a metric.
+ * Present only when compare_with parameter is specified in insights tools.
+ * Note: The 'current' value is NOT duplicated here - use the parent metric's 'value' field.
+ */
+export const MetricComparisonSchema = z.object({
+  prior: z.number().describe('Prior period value'),
+  priorLabel: z.string().optional().describe('Human-readable prior period label'),
+  delta: z.number().describe('Absolute change (current value - prior)'),
+  deltaPercent: z
+    .number()
+    .nullable()
+    .describe('Percentage change ((value - prior) / prior * 100). Null if prior is 0')
+});
+
+/**
  * Metric data point - represents a single key-value metric
- * Used in insights data across Google, Facebook, and Apple
+ * Used in insights data across Google, Facebook, and Apple.
+ * When comparison is requested, the 'comparison' field contains prior period data.
  */
 export const MetricDataSchema = z.object({
   key: z
     .string()
     .describe('Date or period identifier (e.g., "2024-01-15" or "2024-01-15 to 2024-03-15")'),
-  value: z.number().describe('Numeric metric value'),
+  value: z.number().describe('Numeric metric value (current period when comparison is active)'),
   label: z
     .string()
     .optional()
-    .describe('Human-readable period label (e.g., "January 2024", "Q1 2024")')
+    .describe('Human-readable period label (e.g., "January 2024", "Q1 2024")'),
+  comparison: MetricComparisonSchema.optional().describe(
+    'Prior period comparison data (present only when compare_with is specified)'
+  )
 });
 
 /**
@@ -66,34 +85,8 @@ export const InsightsDataSchema = z.object({
 });
 
 // ============================================================================
-// Comparison Schemas
+// Comparison Period Schema
 // ============================================================================
-
-/**
- * Comparison metric data point - represents a current vs prior period comparison.
- * Used when compare_with parameter is specified in insights tools.
- */
-export const ComparisonMetricSchema = z.object({
-  key: z.string().describe('Period identifier'),
-  current: z.number().describe('Current period value'),
-  prior: z.number().describe('Prior period value'),
-  delta: z.number().describe('Absolute change (current - prior)'),
-  deltaPercent: z
-    .number()
-    .nullable()
-    .describe('Percentage change ((current - prior) / prior * 100). Null if prior is 0'),
-  currentLabel: z.string().optional().describe('Human-readable current period label'),
-  priorLabel: z.string().optional().describe('Human-readable prior period label')
-});
-
-/**
- * Comparison insights data structure - contains comparison metrics for a dimension.
- * Used when compare_with parameter is specified.
- */
-export const ComparisonInsightsDataSchema = z.object({
-  key: z.string().describe('Metric dimension name'),
-  metrics: z.array(ComparisonMetricSchema).describe('Array of comparison metric data points')
-});
 
 /**
  * Date range schema for comparison periods.
@@ -246,24 +239,29 @@ export const RatingsDataSchema = z.union([
 /**
  * Output schema for insights tools (Google, Facebook, Apple)
  * Returns aggregated metrics data with optional period comparisons.
+ *
+ * When compare_with is specified, each metric in data[].metrics[] includes
+ * a 'comparison' field with prior period data. This unified structure avoids
+ * the duplication of having both 'data' and 'comparisonData' arrays.
+ *
  * Note: data is optional to allow error-only responses
  */
 export const InsightsOutputSchema = {
   data: z
     .array(InsightsDataSchema)
     .optional()
-    .describe('Array of insights data grouped by metric dimension (absent on error)'),
-  comparisonData: z
-    .array(ComparisonInsightsDataSchema)
-    .optional()
-    .describe('Period comparison data when compare_with is specified'),
+    .describe(
+      'Array of insights data grouped by metric dimension. When compare_with is specified, each metric includes a comparison field with prior period data (absent on error)'
+    ),
   comparisonPeriod: ComparisonPeriodSchema.optional().describe(
-    'Date ranges for the current and prior comparison periods'
+    'Date ranges for the current and prior comparison periods (present when compare_with is specified)'
   ),
   comparisonError: z
     .string()
     .optional()
-    .describe('Error message if comparison data could not be fetched (current period data still returned)'),
+    .describe(
+      'Error message if comparison data could not be fetched (current period data still returned)'
+    ),
   warning: z.string().optional().describe('Warning message (e.g., incomplete data due to lag)'),
   warningCode: WarningCodeSchema.optional().describe('Warning code for programmatic handling'),
   error: z.string().optional().describe('Error message if the request failed'),
@@ -405,10 +403,9 @@ export const SearchResultOutputSchema = {
 // Type Exports
 // ============================================================================
 
+export type MetricComparison = z.infer<typeof MetricComparisonSchema>;
 export type MetricData = z.infer<typeof MetricDataSchema>;
 export type InsightsData = z.infer<typeof InsightsDataSchema>;
-export type ComparisonMetric = z.infer<typeof ComparisonMetricSchema>;
-export type ComparisonInsightsData = z.infer<typeof ComparisonInsightsDataSchema>;
 export type DateRange = z.infer<typeof DateRangeSchema>;
 export type ComparisonPeriod = z.infer<typeof ComparisonPeriodSchema>;
 export type WarningCode = z.infer<typeof WarningCodeSchema>;
