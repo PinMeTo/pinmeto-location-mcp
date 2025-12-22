@@ -18,4 +18,5 @@
 export * from './locations';
 export * from './insights';
 export * from './ratings';
+export * from './reviews';
 export * from './keywords';

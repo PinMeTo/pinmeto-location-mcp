@@ -356,7 +356,7 @@ All tools follow the MCP best practice naming pattern: `pinmeto_{action}_{networ
 | `pinmeto_search_{resource}s` | `pinmeto_search_locations` | Search/discovery tools |
 | `pinmeto_get_{network}_{resource}` | `pinmeto_get_google_insights` | Network-specific data (single or all) |
 
-### Available Tools (10 total)
+### Available Tools (11 total)
 
 | Tool | Description |
 |------|-------------|
@@ -364,7 +364,8 @@ All tools follow the MCP best practice naming pattern: `pinmeto_{action}_{networ
 | `pinmeto_get_locations` | All locations (paginated, cached) |
 | `pinmeto_search_locations` | Search locations |
 | `pinmeto_get_google_insights` | Google metrics with aggregation and period comparison |
-| `pinmeto_get_google_ratings` | Google ratings (storeId optional) |
+| `pinmeto_get_google_ratings` | Google rating aggregates (averageRating, totalReviews, distribution) |
+| `pinmeto_get_google_reviews` | Google reviews with pagination and filtering (for sentiment analysis) |
 | `pinmeto_get_google_keywords` | Google keywords (storeId optional) |
 | `pinmeto_get_facebook_insights` | Facebook metrics with aggregation and period comparison |
 | `pinmeto_get_facebook_brandpage_insights` | Facebook brand page metrics with aggregation and period comparison |
@@ -378,6 +379,14 @@ All tools follow the MCP best practice naming pattern: `pinmeto_{action}_{networ
 **Insights Tools Parameters**: All insights tools support these additional parameters:
 - `aggregation`: Time aggregation level (`total`, `daily`, `weekly`, `monthly`, `quarterly`, `half-yearly`, `yearly`)
 - `compare_with`: Period comparison mode (`none`, `prior_period`, `prior_year`)
+
+**Ratings vs Reviews Split** (Google):
+- `pinmeto_get_google_ratings`: Returns aggregate statistics (averageRating, totalReviews, distribution) - lightweight for context efficiency
+- `pinmeto_get_google_reviews`: Returns individual reviews with text for sentiment analysis - supports:
+  - **Pagination**: `limit` (default: 50, max: 500), `offset`
+  - **Rating filter**: `minRating`, `maxRating` (1-5)
+  - **Response filter**: `hasResponse` (true for responded, false for unresponded)
+  - **Caching**: Shared 5-minute cache with ratings tool, `forceRefresh` to bypass
 
 ## Adding New Tools
 
