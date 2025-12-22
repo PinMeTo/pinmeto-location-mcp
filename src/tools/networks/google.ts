@@ -178,21 +178,36 @@ async function getCachedOrFetchReviews(
       // Single review object - wrap in array
       reviews = [rawData as RawReview];
     } else {
-      // Unexpected object shape - log for debugging
+      // Unexpected object shape - return error, do NOT cache
       console.error(
         `[getCachedOrFetchReviews] Unexpected API response shape (object without recognized fields): ${JSON.stringify(rawData).slice(0, 200)}`
       );
-      reviews = [];
+      return {
+        ok: false,
+        error: {
+          code: 'UNKNOWN_ERROR' as const,
+          message:
+            'API returned unexpected data format. This may indicate an API change or server issue.',
+          retryable: true
+        }
+      };
     }
   } else {
-    // Unexpected non-object response - log for debugging
+    // Unexpected non-object response - return error, do NOT cache
     console.error(
       `[getCachedOrFetchReviews] Unexpected API response type: ${typeof rawData}, value: ${JSON.stringify(rawData).slice(0, 100)}`
     );
-    reviews = [];
+    return {
+      ok: false,
+      error: {
+        code: 'UNKNOWN_ERROR' as const,
+        message: `API returned unexpected response type: ${typeof rawData}. This may indicate an API change or server issue.`,
+        retryable: true
+      }
+    };
   }
 
-  // Cache all results (including empty - they're valid for locations with no reviews)
+  // Cache valid results (including empty arrays - they're valid for locations with no reviews)
   reviewsCache.set(cacheKey, {
     data: reviews,
     timestamp: Date.now()
