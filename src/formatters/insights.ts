@@ -1,5 +1,19 @@
 import { MARKDOWN_TABLE_MAX_ROWS } from '../helpers';
-import { Insight, FlatInsight, PeriodRange } from '../schemas/output';
+import {
+  Insight,
+  FlatInsight,
+  PeriodRange,
+  TimeAggregation,
+  CompareWith
+} from '../schemas/output';
+
+/**
+ * Options for formatting insights with metadata.
+ */
+export interface InsightsFormatOptions {
+  timeAggregation?: TimeAggregation;
+  compareWith?: CompareWith;
+}
 
 /**
  * Formats insights data as Markdown.
@@ -92,6 +106,7 @@ export function formatLocationInsightsAsMarkdown(data: Insight[], storeId: strin
 /**
  * Formats insights with embedded comparison data as Markdown.
  * Shows current vs prior period values with deltas.
+ * Includes metadata about aggregation and comparison settings.
  *
  * Comparison data is now flat on each value (priorValue, delta, deltaPercent).
  */
@@ -99,7 +114,8 @@ export function formatInsightsWithComparisonAsMarkdown(
   data: Insight[],
   periodRange: PeriodRange,
   priorPeriodRange: PeriodRange,
-  storeId?: string
+  storeId?: string,
+  options?: InsightsFormatOptions
 ): string {
   if (!data || data.length === 0) {
     return storeId
@@ -115,7 +131,15 @@ export function formatInsightsWithComparisonAsMarkdown(
 
   // Show period ranges
   md += `**Current Period:** ${periodRange.from} to ${periodRange.to}\n`;
-  md += `**Prior Period:** ${priorPeriodRange.from} to ${priorPeriodRange.to}\n\n`;
+  md += `**Prior Period:** ${priorPeriodRange.from} to ${priorPeriodRange.to}\n`;
+  // Show aggregation and comparison metadata
+  if (options?.timeAggregation) {
+    md += `**Aggregation:** ${options.timeAggregation}\n`;
+  }
+  if (options?.compareWith && options.compareWith !== 'none') {
+    md += `**Comparison:** ${formatCompareWith(options.compareWith)}\n`;
+  }
+  md += '\n';
 
   for (const insight of data) {
     md += `### ${formatMetricName(insight.metric)}\n\n`;
@@ -174,6 +198,20 @@ function formatMetricName(name: string): string {
 }
 
 /**
+ * Formats compare_with value for human-readable display.
+ */
+function formatCompareWith(compareWith: CompareWith): string {
+  switch (compareWith) {
+    case 'prior_period':
+      return 'Prior Period (MoM/QoQ)';
+    case 'prior_year':
+      return 'Prior Year (YoY)';
+    default:
+      return compareWith;
+  }
+}
+
+/**
  * Formats a number for display with locale-aware separators.
  * Returns '-' for invalid or missing values to handle malformed API responses.
  */
@@ -187,12 +225,14 @@ function formatNumber(value: unknown): string {
 /**
  * Formats flattened insights (from aggregation=total) as Markdown.
  * Simple table with Metric | Value | Prior | Change columns.
+ * Includes metadata about aggregation and comparison settings.
  */
 export function formatFlatInsightsAsMarkdown(
   data: FlatInsight[],
   periodRange: PeriodRange,
   priorPeriodRange?: PeriodRange,
-  storeId?: string
+  storeId?: string,
+  options?: InsightsFormatOptions
 ): string {
   if (!data || data.length === 0) {
     return storeId
@@ -210,6 +250,13 @@ export function formatFlatInsightsAsMarkdown(
   md += `**Period:** ${periodRange.from} to ${periodRange.to}\n`;
   if (priorPeriodRange) {
     md += `**Compared to:** ${priorPeriodRange.from} to ${priorPeriodRange.to}\n`;
+  }
+  // Show aggregation and comparison metadata
+  if (options?.timeAggregation) {
+    md += `**Aggregation:** ${options.timeAggregation}\n`;
+  }
+  if (options?.compareWith && options.compareWith !== 'none') {
+    md += `**Comparison:** ${formatCompareWith(options.compareWith)}\n`;
   }
   md += '\n';
 

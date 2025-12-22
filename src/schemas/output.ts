@@ -266,6 +266,35 @@ export const RatingsDataSchema = z.union([
  *
  * Comparison data (when compare_with is specified) is embedded flat on each insight/value.
  */
+/**
+ * Time aggregation levels - controls how metrics are grouped.
+ * Used in response metadata to indicate what aggregation was applied.
+ */
+export const TimeAggregationSchema = z.enum([
+  'daily',
+  'weekly',
+  'monthly',
+  'quarterly',
+  'half-yearly',
+  'yearly',
+  'total'
+]);
+
+export type TimeAggregation = z.infer<typeof TimeAggregationSchema>;
+
+/**
+ * Comparison period types - controls what prior period is compared against.
+ * Used in response metadata to indicate what comparison was applied.
+ * Values match the input parameter options.
+ */
+export const CompareWithSchema = z.enum([
+  'none',
+  'prior_period',
+  'prior_year'
+]);
+
+export type CompareWith = z.infer<typeof CompareWithSchema>;
+
 export const InsightsOutputSchema = {
   insights: z
     .union([z.array(InsightSchema), z.array(FlatInsightSchema)])
@@ -274,6 +303,12 @@ export const InsightsOutputSchema = {
       'Array of insights by metric. Flattened (no values array) when aggregation=total, multi-period otherwise (absent on error)'
     ),
   periodRange: PeriodRangeSchema.optional().describe('Date range for the current period data'),
+  timeAggregation: TimeAggregationSchema.optional().describe(
+    'Time aggregation level applied to the data (e.g., "total", "monthly", "daily")'
+  ),
+  compareWith: CompareWithSchema.optional().describe(
+    'Comparison period type used: "none", "previous_month", "previous_quarter", or "previous_year"'
+  ),
   priorPeriodRange: PeriodRangeSchema.optional().describe(
     'Date range for the prior period (present when compare_with is specified)'
   ),

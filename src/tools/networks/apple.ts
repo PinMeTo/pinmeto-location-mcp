@@ -140,6 +140,8 @@ export function getAppleInsights(server: PinMeToMcpServer) {
       const textContent = JSON.stringify({
         insights: outputData,
         periodRange,
+        timeAggregation: aggregation,
+        compareWith: compare_with,
         ...(priorPeriodRange && { priorPeriodRange }),
         ...(comparisonError && { comparisonError })
       });
@@ -149,6 +151,8 @@ export function getAppleInsights(server: PinMeToMcpServer) {
         structuredContent: {
           insights: outputData,
           periodRange,
+          timeAggregation: aggregation,
+          compareWith: compare_with,
           ...(priorPeriodRange && { priorPeriodRange }),
           ...(comparisonError && { comparisonError })
         }

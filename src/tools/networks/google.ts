@@ -30,7 +30,8 @@ import {
   formatKeywordsAsMarkdown,
   formatLocationKeywordsAsMarkdown,
   formatInsightsWithComparisonAsMarkdown,
-  formatFlatInsightsAsMarkdown
+  formatFlatInsightsAsMarkdown,
+  InsightsFormatOptions
 } from '../../formatters';
 
 // Shared date validation schemas
@@ -162,6 +163,10 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
 
       // Format text content
       let textContent: string;
+      const formatOptions: InsightsFormatOptions = {
+        timeAggregation: aggregation,
+        compareWith: compare_with
+      };
       if (response_format === 'markdown') {
         if (isTotal) {
           // Flattened output for total aggregation
@@ -169,7 +174,8 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
             outputData as FlatInsight[],
             periodRange,
             priorPeriodRange,
-            storeId
+            storeId,
+            formatOptions
           );
         } else if (priorPeriodRange) {
           // Multi-period with comparison
@@ -177,7 +183,8 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
             insightsData,
             periodRange,
             priorPeriodRange,
-            storeId
+            storeId,
+            formatOptions
           );
         } else {
           // Multi-period without comparison
@@ -189,6 +196,8 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
         textContent = JSON.stringify({
           insights: outputData,
           periodRange,
+          timeAggregation: aggregation,
+          compareWith: compare_with,
           ...(priorPeriodRange && { priorPeriodRange }),
           ...(comparisonError && { comparisonError }),
           ...(lagWarning && lagWarning)
@@ -200,6 +209,8 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
         structuredContent: {
           insights: outputData,
           periodRange,
+          timeAggregation: aggregation,
+          compareWith: compare_with,
           ...(priorPeriodRange && { priorPeriodRange }),
           ...(comparisonError && { comparisonError }),
           ...(lagWarning && lagWarning)

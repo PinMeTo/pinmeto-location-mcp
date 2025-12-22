@@ -151,6 +151,8 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
       const textContent = JSON.stringify({
         insights: outputData,
         periodRange,
+        timeAggregation: aggregation,
+        compareWith: compare_with,
         ...(priorPeriodRange && { priorPeriodRange }),
         ...(comparisonError && { comparisonError })
       });
@@ -160,6 +162,8 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
         structuredContent: {
           insights: outputData,
           periodRange,
+          timeAggregation: aggregation,
+          compareWith: compare_with,
           ...(priorPeriodRange && { priorPeriodRange }),
           ...(comparisonError && { comparisonError })
         }
@@ -259,6 +263,8 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
       const textContent = JSON.stringify({
         insights: outputData,
         periodRange,
+        timeAggregation: aggregation,
+        compareWith: compare_with,
         ...(priorPeriodRange && { priorPeriodRange }),
         ...(comparisonError && { comparisonError })
       });
@@ -268,6 +274,8 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
         structuredContent: {
           insights: outputData,
           periodRange,
+          timeAggregation: aggregation,
+          compareWith: compare_with,
           ...(priorPeriodRange && { priorPeriodRange }),
           ...(comparisonError && { comparisonError })
         }
