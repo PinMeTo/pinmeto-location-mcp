@@ -2247,11 +2247,11 @@ describe('Consolidated Network Tools', () => {
 
       expect(response.result).toBeDefined();
       expect(response.result.structuredContent).toBeDefined();
-      expect(response.result.structuredContent.data).toBeDefined();
+      expect(response.result.structuredContent.insights).toBeDefined();
       // Single-location mock returns ACTIONS_WEBSITE and VIEWS_SEARCH metrics
-      expect(response.result.structuredContent.data[0].key).toBe('ACTIONS_WEBSITE');
-      // With aggregation='total' (default), metrics are aggregated into one entry
-      expect(response.result.structuredContent.data[0].metrics.length).toBe(1);
+      expect(response.result.structuredContent.insights[0].metric).toBe('ACTIONS_WEBSITE');
+      // With aggregation='total' (default), output is auto-flattened (value directly on insight)
+      expect(response.result.structuredContent.insights[0].value).toBeDefined();
     });
 
     it('should call bulk API when storeId omitted', async () => {
@@ -2262,11 +2262,11 @@ describe('Consolidated Network Tools', () => {
 
       expect(response.result).toBeDefined();
       expect(response.result.structuredContent).toBeDefined();
-      expect(response.result.structuredContent.data).toBeDefined();
+      expect(response.result.structuredContent.insights).toBeDefined();
       // Bulk mock returns 2 metric types
-      expect(response.result.structuredContent.data.length).toBe(2);
-      // With aggregation='total' (default), multi-day metrics are aggregated
-      expect(response.result.structuredContent.data[0].metrics[0].value).toBe(125); // 50 + 75
+      expect(response.result.structuredContent.insights.length).toBe(2);
+      // With aggregation='total' (default), multi-day metrics are aggregated and flattened
+      expect(response.result.structuredContent.insights[0].value).toBe(125); // 50 + 75
     });
 
     it('should return NOT_FOUND error with storeId context when location does not exist', async () => {

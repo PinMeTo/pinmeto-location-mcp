@@ -4,9 +4,9 @@ import {
   embedComparison,
   checkGoogleDataLag,
   getPeriodLabel,
-  aggregateMetrics
+  aggregateInsights
 } from '../src/helpers';
-import type { InsightsData } from '../src/schemas/output';
+import type { Insight } from '../src/schemas/output';
 
 describe('Comparison Helper Functions', () => {
   describe('calculatePriorPeriod', () => {
@@ -99,105 +99,115 @@ describe('Comparison Helper Functions', () => {
 
   describe('embedComparison', () => {
     it('should compute positive delta correctly', () => {
-      const currentData: InsightsData[] = [
-        { key: 'views', metrics: [{ key: '2024', value: 150 }] }
+      const currentData: Insight[] = [
+        { metric: 'views', values: [{ period: '2024', value: 150 }] }
       ];
-      const priorData: InsightsData[] = [{ key: 'views', metrics: [{ key: '2023', value: 100 }] }];
+      const priorData: Insight[] = [
+        { metric: 'views', values: [{ period: '2023', value: 100 }] }
+      ];
 
       const result = embedComparison(currentData, priorData);
 
       expect(result).toHaveLength(1);
-      expect(result[0].key).toBe('views');
-      expect(result[0].metrics[0].value).toBe(150); // Current value stays in .value
-      expect(result[0].metrics[0].comparison?.prior).toBe(100);
-      expect(result[0].metrics[0].comparison?.delta).toBe(50);
-      expect(result[0].metrics[0].comparison?.deltaPercent).toBe(50);
+      expect(result[0].metric).toBe('views');
+      expect(result[0].values[0].value).toBe(150); // Current value stays in .value
+      expect(result[0].values[0].priorValue).toBe(100); // Flat, no wrapper
+      expect(result[0].values[0].delta).toBe(50);
+      expect(result[0].values[0].deltaPercent).toBe(50);
     });
 
     it('should compute negative delta correctly', () => {
-      const currentData: InsightsData[] = [{ key: 'views', metrics: [{ key: '2024', value: 80 }] }];
-      const priorData: InsightsData[] = [{ key: 'views', metrics: [{ key: '2023', value: 100 }] }];
+      const currentData: Insight[] = [
+        { metric: 'views', values: [{ period: '2024', value: 80 }] }
+      ];
+      const priorData: Insight[] = [{ metric: 'views', values: [{ period: '2023', value: 100 }] }];
 
       const result = embedComparison(currentData, priorData);
 
-      expect(result[0].metrics[0].comparison?.delta).toBe(-20);
-      expect(result[0].metrics[0].comparison?.deltaPercent).toBe(-20);
+      expect(result[0].values[0].delta).toBe(-20);
+      expect(result[0].values[0].deltaPercent).toBe(-20);
     });
 
     it('should return null deltaPercent when prior is 0', () => {
-      const currentData: InsightsData[] = [
-        { key: 'views', metrics: [{ key: '2024', value: 100 }] }
+      const currentData: Insight[] = [
+        { metric: 'views', values: [{ period: '2024', value: 100 }] }
       ];
-      const priorData: InsightsData[] = [{ key: 'views', metrics: [{ key: '2023', value: 0 }] }];
+      const priorData: Insight[] = [{ metric: 'views', values: [{ period: '2023', value: 0 }] }];
 
       const result = embedComparison(currentData, priorData);
 
-      expect(result[0].metrics[0].value).toBe(100); // Current value in .value
-      expect(result[0].metrics[0].comparison?.prior).toBe(0);
-      expect(result[0].metrics[0].comparison?.delta).toBe(100);
-      expect(result[0].metrics[0].comparison?.deltaPercent).toBeNull();
+      expect(result[0].values[0].value).toBe(100);
+      expect(result[0].values[0].priorValue).toBe(0);
+      expect(result[0].values[0].delta).toBe(100);
+      expect(result[0].values[0].deltaPercent).toBeNull();
     });
 
     it('should match metrics by index for multiple periods', () => {
-      const currentData: InsightsData[] = [
+      const currentData: Insight[] = [
         {
-          key: 'views',
-          metrics: [
-            { key: '2024-01', value: 100 },
-            { key: '2024-02', value: 200 }
+          metric: 'views',
+          values: [
+            { period: '2024-01', value: 100 },
+            { period: '2024-02', value: 200 }
           ]
         }
       ];
-      const priorData: InsightsData[] = [
+      const priorData: Insight[] = [
         {
-          key: 'views',
-          metrics: [
-            { key: '2023-01', value: 80 },
-            { key: '2023-02', value: 150 }
+          metric: 'views',
+          values: [
+            { period: '2023-01', value: 80 },
+            { period: '2023-02', value: 150 }
           ]
         }
       ];
 
       const result = embedComparison(currentData, priorData);
 
-      // First metric: 100 vs 80
-      expect(result[0].metrics[0].value).toBe(100);
-      expect(result[0].metrics[0].comparison?.prior).toBe(80);
-      expect(result[0].metrics[0].comparison?.delta).toBe(20);
+      // First value: 100 vs 80
+      expect(result[0].values[0].value).toBe(100);
+      expect(result[0].values[0].priorValue).toBe(80);
+      expect(result[0].values[0].delta).toBe(20);
 
-      // Second metric: 200 vs 150 (NOT 200 vs 80)
-      expect(result[0].metrics[1].value).toBe(200);
-      expect(result[0].metrics[1].comparison?.prior).toBe(150);
-      expect(result[0].metrics[1].comparison?.delta).toBe(50);
+      // Second value: 200 vs 150 (NOT 200 vs 80)
+      expect(result[0].values[1].value).toBe(200);
+      expect(result[0].values[1].priorValue).toBe(150);
+      expect(result[0].values[1].delta).toBe(50);
     });
 
     it('should handle missing prior dimension', () => {
-      const currentData: InsightsData[] = [
-        { key: 'views', metrics: [{ key: '2024', value: 100 }] }
+      const currentData: Insight[] = [
+        { metric: 'views', values: [{ period: '2024', value: 100 }] }
       ];
-      const priorData: InsightsData[] = [
-        { key: 'clicks', metrics: [{ key: '2023', value: 50 }] } // Different key
+      const priorData: Insight[] = [
+        { metric: 'clicks', values: [{ period: '2023', value: 50 }] } // Different metric
       ];
 
       const result = embedComparison(currentData, priorData);
 
       // Should use 0 for missing prior
-      expect(result[0].metrics[0].comparison?.prior).toBe(0);
-      expect(result[0].metrics[0].comparison?.delta).toBe(100);
+      expect(result[0].values[0].priorValue).toBe(0);
+      expect(result[0].values[0].delta).toBe(100);
     });
 
     it('should preserve labels', () => {
-      const currentData: InsightsData[] = [
-        { key: 'views', metrics: [{ key: '2024-01', value: 100, label: 'January 2024' }] }
+      const currentData: Insight[] = [
+        {
+          metric: 'views',
+          values: [{ period: '2024-01', periodLabel: 'January 2024', value: 100 }]
+        }
       ];
-      const priorData: InsightsData[] = [
-        { key: 'views', metrics: [{ key: '2023-01', value: 80, label: 'January 2023' }] }
+      const priorData: Insight[] = [
+        {
+          metric: 'views',
+          values: [{ period: '2023-01', periodLabel: 'January 2023', value: 80 }]
+        }
       ];
 
       const result = embedComparison(currentData, priorData);
 
-      expect(result[0].metrics[0].label).toBe('January 2024'); // Current label in .label
-      expect(result[0].metrics[0].comparison?.priorLabel).toBe('January 2023');
+      expect(result[0].values[0].periodLabel).toBe('January 2024'); // Current label
+      expect(result[0].values[0].priorPeriodLabel).toBe('January 2023'); // Prior label (flat)
     });
   });
 
@@ -318,47 +328,47 @@ describe('Comparison Helper Functions', () => {
     });
   });
 
-  describe('aggregateMetrics with total', () => {
-    it('should produce chronological date range from unsorted metrics', () => {
-      const unsortedData: InsightsData[] = [
+  describe('aggregateInsights with total', () => {
+    it('should produce chronological date range from unsorted values', () => {
+      const unsortedData: Insight[] = [
         {
-          key: 'VIEWS',
-          metrics: [
-            { key: '2024-05-15', value: 10 },
-            { key: '2024-01-10', value: 20 }, // Earliest
-            { key: '2024-03-20', value: 30 },
-            { key: '2024-12-25', value: 40 } // Latest
+          metric: 'VIEWS',
+          values: [
+            { period: '2024-05-15', value: 10 },
+            { period: '2024-01-10', value: 20 }, // Earliest
+            { period: '2024-03-20', value: 30 },
+            { period: '2024-12-25', value: 40 } // Latest
           ]
         }
       ];
 
-      const result = aggregateMetrics(unsortedData, 'total');
+      const result = aggregateInsights(unsortedData, 'total');
 
-      expect(result[0].metrics[0].key).toBe('2024-01-10 to 2024-12-25');
-      expect(result[0].metrics[0].label).toBe('Jan 10 - Dec 25, 2024');
-      expect(result[0].metrics[0].value).toBe(100);
+      expect(result[0].values[0].period).toBe('2024-01-10 to 2024-12-25');
+      expect(result[0].values[0].periodLabel).toBe('Jan 10 - Dec 25, 2024');
+      expect(result[0].values[0].value).toBe(100);
     });
 
-    it('should handle single metric', () => {
-      const singleData: InsightsData[] = [
+    it('should handle single value', () => {
+      const singleData: Insight[] = [
         {
-          key: 'CLICKS',
-          metrics: [{ key: '2024-06-15', value: 50 }]
+          metric: 'CLICKS',
+          values: [{ period: '2024-06-15', value: 50 }]
         }
       ];
 
-      const result = aggregateMetrics(singleData, 'total');
+      const result = aggregateInsights(singleData, 'total');
 
-      expect(result[0].metrics[0].key).toBe('2024-06-15 to 2024-06-15');
-      expect(result[0].metrics[0].value).toBe(50);
+      expect(result[0].values[0].period).toBe('2024-06-15 to 2024-06-15');
+      expect(result[0].values[0].value).toBe(50);
     });
 
-    it('should return empty metrics unchanged', () => {
-      const emptyData: InsightsData[] = [{ key: 'VIEWS', metrics: [] }];
+    it('should return empty values unchanged', () => {
+      const emptyData: Insight[] = [{ metric: 'VIEWS', values: [] }];
 
-      const result = aggregateMetrics(emptyData, 'total');
+      const result = aggregateInsights(emptyData, 'total');
 
-      expect(result[0].metrics).toHaveLength(0);
+      expect(result[0].values).toHaveLength(0);
     });
   });
 });

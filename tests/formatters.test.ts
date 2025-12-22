@@ -371,15 +371,15 @@ describe('Markdown Formatters', () => {
       it('should format insights data with tables', () => {
         const data = [
           {
-            key: 'views',
-            metrics: [
-              { key: '2024-01-01', value: 100 },
-              { key: '2024-01-02', value: 150 }
+            metric: 'views',
+            values: [
+              { period: '2024-01-01', value: 100 },
+              { period: '2024-01-02', value: 150 }
             ]
           },
           {
-            key: 'clicks',
-            metrics: [{ key: '2024-01-01 to 2024-01-31', value: 500 }]
+            metric: 'clicks',
+            values: [{ period: '2024-01-01 to 2024-01-31', value: 500 }]
           }
         ];
 
@@ -401,13 +401,25 @@ describe('Markdown Formatters', () => {
       it('should format metric names nicely', () => {
         const data = [
           {
-            key: 'total_clicks',
-            metrics: [{ key: 'total', value: 100 }]
+            metric: 'total_clicks',
+            values: [{ period: 'total', value: 100 }]
           }
         ];
 
         const result = formatInsightsAsMarkdown(data);
         expect(result).toContain('### Total Clicks');
+      });
+
+      it('should use periodLabel when available', () => {
+        const data = [
+          {
+            metric: 'views',
+            values: [{ period: '2024-01', periodLabel: 'January 2024', value: 100 }]
+          }
+        ];
+
+        const result = formatInsightsAsMarkdown(data);
+        expect(result).toContain('| January 2024 | 100 |');
       });
     });
 
@@ -415,8 +427,8 @@ describe('Markdown Formatters', () => {
       it('should include store ID in header', () => {
         const data = [
           {
-            key: 'views',
-            metrics: [{ key: '2024-01-01', value: 100 }]
+            metric: 'views',
+            values: [{ period: '2024-01-01', value: 100 }]
           }
         ];
 

@@ -1,14 +1,16 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
 import {
-  aggregateMetrics,
   AggregationPeriod,
   formatErrorResponse,
   formatContent,
   CompareWithType,
   calculatePriorPeriod,
   checkGoogleDataLag,
-  embedComparison
+  embedComparison,
+  aggregateInsights,
+  flattenInsights,
+  convertApiDataToInsights
 } from '../../helpers';
 import {
   InsightsOutputSchema,
@@ -16,8 +18,9 @@ import {
   KeywordsOutputSchema,
   ResponseFormatSchema,
   ResponseFormat,
-  ComparisonPeriod,
-  InsightsData
+  Insight,
+  FlatInsight,
+  PeriodRange
 } from '../../schemas/output';
 import {
   formatInsightsAsMarkdown,
@@ -26,7 +29,8 @@ import {
   formatLocationRatingsAsMarkdown,
   formatKeywordsAsMarkdown,
   formatLocationKeywordsAsMarkdown,
-  formatInsightsWithComparisonAsMarkdown
+  formatInsightsWithComparisonAsMarkdown,
+  formatFlatInsightsAsMarkdown
 } from '../../formatters';
 
 // Shared date validation schemas
@@ -120,10 +124,13 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
         return formatErrorResponse(result.error, context);
       }
 
-      let aggregatedData: InsightsData[] = aggregateMetrics(result.data, aggregation);
+      // Convert API response to new Insight[] structure
+      let insightsData: Insight[] = convertApiDataToInsights(result.data);
+      insightsData = aggregateInsights(insightsData, aggregation);
 
-      // Handle comparison if requested - embed comparison data directly into metrics
-      let comparisonPeriod: ComparisonPeriod | undefined;
+      // Handle comparison if requested - embed comparison data directly (flat, no wrapper)
+      let periodRange: PeriodRange = { from, to };
+      let priorPeriodRange: PeriodRange | undefined;
       let comparisonError: string | undefined;
 
       if (compare_with !== 'none') {
@@ -136,37 +143,53 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
         const priorResult = await server.makePinMeToRequest(priorUrl);
 
         if (priorResult.ok) {
-          const priorAggregated = aggregateMetrics(priorResult.data, aggregation);
-          // Embed comparison directly into each metric (no separate comparisonData array)
-          aggregatedData = embedComparison(aggregatedData, priorAggregated);
-          comparisonPeriod = {
-            current: { from, to },
-            prior: priorPeriod
-          };
+          let priorInsights = convertApiDataToInsights(priorResult.data);
+          priorInsights = aggregateInsights(priorInsights, aggregation);
+          // Embed comparison directly (flat fields, no nested comparison object)
+          insightsData = embedComparison(insightsData, priorInsights);
+          priorPeriodRange = priorPeriod;
         } else {
           // Surface comparison failure - current period data is still valuable
           comparisonError = `Comparison data unavailable (${priorPeriod.from} to ${priorPeriod.to}): ${priorResult.error.message}`;
         }
       }
 
+      // Auto-flatten when aggregation=total for simpler AI consumption
+      const isTotal = aggregation === 'total';
+      const outputData: Insight[] | FlatInsight[] = isTotal
+        ? flattenInsights(insightsData)
+        : insightsData;
+
       // Format text content
       let textContent: string;
       if (response_format === 'markdown') {
-        if (comparisonPeriod) {
+        if (isTotal) {
+          // Flattened output for total aggregation
+          textContent = formatFlatInsightsAsMarkdown(
+            outputData as FlatInsight[],
+            periodRange,
+            priorPeriodRange,
+            storeId
+          );
+        } else if (priorPeriodRange) {
+          // Multi-period with comparison
           textContent = formatInsightsWithComparisonAsMarkdown(
-            aggregatedData,
-            comparisonPeriod,
+            insightsData,
+            periodRange,
+            priorPeriodRange,
             storeId
           );
         } else {
+          // Multi-period without comparison
           textContent = storeId
-            ? formatLocationInsightsAsMarkdown(aggregatedData, storeId)
-            : formatInsightsAsMarkdown(aggregatedData);
+            ? formatLocationInsightsAsMarkdown(insightsData, storeId)
+            : formatInsightsAsMarkdown(insightsData);
         }
       } else {
         textContent = JSON.stringify({
-          data: aggregatedData,
-          ...(comparisonPeriod && { comparisonPeriod }),
+          insights: outputData,
+          periodRange,
+          ...(priorPeriodRange && { priorPeriodRange }),
           ...(comparisonError && { comparisonError }),
           ...(lagWarning && lagWarning)
         });
@@ -175,8 +198,9 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
       return {
         content: [{ type: 'text', text: textContent }],
         structuredContent: {
-          data: aggregatedData,
-          ...(comparisonPeriod && { comparisonPeriod }),
+          insights: outputData,
+          periodRange,
+          ...(priorPeriodRange && { priorPeriodRange }),
           ...(comparisonError && { comparisonError }),
           ...(lagWarning && lagWarning)
         }

@@ -1,4 +1,12 @@
-import { MetricData, InsightsData, ResponseFormat } from './schemas/output';
+import {
+  MetricData,
+  InsightsData,
+  ResponseFormat,
+  Insight,
+  InsightValue,
+  FlatInsight,
+  PeriodRange
+} from './schemas/output';
 import { ApiError } from './errors';
 
 /** Maximum rows to display in Markdown tables before truncating */
@@ -14,10 +22,30 @@ export type AggregationPeriod =
   | 'total';
 
 /**
- * Aggregates metrics data by the specified time period
- * @param data Array of insights data with daily metrics
+ * Aggregates insights data by the specified time period.
+ * Uses new field names: metric, values, period, periodLabel.
+ *
+ * @param data Array of insights data with daily values
  * @param period Aggregation period (daily, weekly, monthly, etc.)
- * @returns Aggregated data with the same structure
+ * @returns Aggregated data using Insight[] structure
+ */
+export function aggregateInsights(data: Insight[], period: AggregationPeriod = 'total'): Insight[] {
+  // Return unchanged if daily or no data
+  if (period === 'daily' || !data || data.length === 0) {
+    return data;
+  }
+
+  return data.map(insight => {
+    const aggregatedValues = aggregateValuesByPeriod(insight.values, period);
+    return {
+      metric: insight.metric,
+      values: aggregatedValues
+    };
+  });
+}
+
+/**
+ * @deprecated Use aggregateInsights instead. Kept for backwards compatibility.
  */
 export function aggregateMetrics(
   data: InsightsData[],
@@ -29,7 +57,7 @@ export function aggregateMetrics(
   }
 
   return data.map(insightData => {
-    const aggregatedMetrics = aggregateMetricsByPeriod(insightData.metrics, period);
+    const aggregatedMetrics = aggregateMetricsByPeriodLegacy(insightData.metrics, period);
     return {
       key: insightData.key,
       metrics: aggregatedMetrics
@@ -38,10 +66,63 @@ export function aggregateMetrics(
 }
 
 /**
- * Aggregates an array of metric data points by the specified period.
- * Always includes human-readable labels for each period.
+ * Aggregates an array of insight values by the specified period.
+ * Uses new field names: period, periodLabel.
  */
-function aggregateMetricsByPeriod(metrics: MetricData[], period: AggregationPeriod): MetricData[] {
+function aggregateValuesByPeriod(
+  values: InsightValue[],
+  period: AggregationPeriod
+): InsightValue[] {
+  if (values.length === 0) {
+    return values;
+  }
+
+  // Handle 'total' aggregation - sum all values
+  if (period === 'total') {
+    const totalValue = values.reduce((sum, v) => sum + v.value, 0);
+
+    // Find actual min and max dates (API returns unsorted data)
+    const dates = values.map(v => v.period).filter(p => p && p !== 'total');
+    const sortedDates = dates.sort((a, b) => a.localeCompare(b));
+    const firstDate = sortedDates[0] || 'total';
+    const lastDate = sortedDates[sortedDates.length - 1] || 'total';
+
+    const periodKey = `${firstDate} to ${lastDate}`;
+    return [
+      {
+        period: periodKey,
+        periodLabel: getPeriodLabel(periodKey),
+        value: totalValue
+      }
+    ];
+  }
+
+  // Group values by period
+  const groupedValues = new Map<string, number>();
+
+  for (const v of values) {
+    const periodKey = getPeriodKey(v.period, period);
+    const currentValue = groupedValues.get(periodKey) || 0;
+    groupedValues.set(periodKey, currentValue + v.value);
+  }
+
+  // Convert back to array format with labels and sort by date
+  return Array.from(groupedValues.entries())
+    .map(([periodKey, value]) => ({
+      period: periodKey,
+      periodLabel: getPeriodLabel(periodKey),
+      value
+    }))
+    .sort((a, b) => a.period.localeCompare(b.period));
+}
+
+/**
+ * @deprecated Use aggregateValuesByPeriod instead. Kept for backwards compatibility.
+ */
+function aggregateMetricsByPeriodLegacy(
+  metrics: MetricData[],
+  period: AggregationPeriod
+): MetricData[] {
   if (metrics.length === 0) {
     return metrics;
   }
@@ -51,17 +132,17 @@ function aggregateMetricsByPeriod(metrics: MetricData[], period: AggregationPeri
     const totalValue = metrics.reduce((sum, m) => sum + m.value, 0);
 
     // Find actual min and max dates (API returns unsorted data)
-    const dates = metrics.map(m => m.key).filter(k => k && k !== 'total');
+    const dates = metrics.map(m => m.period).filter(p => p && p !== 'total');
     const sortedDates = dates.sort((a, b) => a.localeCompare(b));
     const firstDate = sortedDates[0] || 'total';
     const lastDate = sortedDates[sortedDates.length - 1] || 'total';
 
-    const key = `${firstDate} to ${lastDate}`;
+    const periodKey = `${firstDate} to ${lastDate}`;
     return [
       {
-        key,
-        value: totalValue,
-        label: getPeriodLabel(key)
+        period: periodKey,
+        periodLabel: getPeriodLabel(periodKey),
+        value: totalValue
       }
     ];
   }
@@ -70,19 +151,19 @@ function aggregateMetricsByPeriod(metrics: MetricData[], period: AggregationPeri
   const groupedMetrics = new Map<string, number>();
 
   for (const metric of metrics) {
-    const periodKey = getPeriodKey(metric.key, period);
+    const periodKey = getPeriodKey(metric.period, period);
     const currentValue = groupedMetrics.get(periodKey) || 0;
     groupedMetrics.set(periodKey, currentValue + metric.value);
   }
 
   // Convert back to array format with labels and sort by date
   return Array.from(groupedMetrics.entries())
-    .map(([key, value]) => ({
-      key,
-      value,
-      label: getPeriodLabel(key)
+    .map(([periodKey, value]) => ({
+      period: periodKey,
+      periodLabel: getPeriodLabel(periodKey),
+      value
     }))
-    .sort((a, b) => a.key.localeCompare(b.key));
+    .sort((a, b) => a.period.localeCompare(b.period));
 }
 
 /**
@@ -370,22 +451,70 @@ export function checkGoogleDataLag(
 // ============================================================================
 
 /**
- * Embeds comparison data directly into metrics, avoiding duplication.
+ * Embeds comparison data directly into insights as flat fields, avoiding nested wrappers.
  *
- * Instead of returning a separate ComparisonInsightsData[] array that duplicates
- * current values, this function enriches the existing InsightsData[] by adding
- * a 'comparison' field to each metric containing prior period info.
+ * Instead of a nested 'comparison' object, comparison fields are added directly:
+ * - priorValue: The prior period's value
+ * - priorPeriod: The prior period identifier
+ * - priorPeriodLabel: Human-readable prior period label
+ * - delta: Absolute change (current - prior)
+ * - deltaPercent: Percentage change (null if prior is 0)
  *
- * @param currentData Current period insights data
+ * @param currentData Current period insights data (using new Insight[] type)
  * @param priorData Prior period insights data
- * @returns Current data with comparison embedded in each metric
+ * @returns Current data with flat comparison fields embedded in each value
  *
  * @example
- * // Before: metric = { key: "2024-01", value: 250, label: "Jan 2024" }
- * // After:  metric = { key: "2024-01", value: 250, label: "Jan 2024",
- * //                    comparison: { prior: 200, priorLabel: "Jan 2023", delta: 50, deltaPercent: 25 } }
+ * // Before: value = { period: "2024-01", value: 250, periodLabel: "Jan 2024" }
+ * // After:  value = { period: "2024-01", value: 250, periodLabel: "Jan 2024",
+ * //                   priorValue: 200, priorPeriod: "2023-12", priorPeriodLabel: "Dec 2023",
+ * //                   delta: 50, deltaPercent: 25 }
  */
-export function embedComparison(
+export function embedComparison(currentData: Insight[], priorData: Insight[]): Insight[] {
+  // Create a map of prior data by metric name for efficient lookup
+  const priorMap = new Map<string, InsightValue[]>();
+
+  for (const insight of priorData) {
+    priorMap.set(insight.metric, insight.values);
+  }
+
+  return currentData.map(currentInsight => {
+    const priorValues = priorMap.get(currentInsight.metric) || [];
+
+    const enrichedValues: InsightValue[] = currentInsight.values.map((currentValue, index) => {
+      // Match prior value by position index since period keys differ between periods
+      // e.g., current "2024-01" matches with prior "2023-12" by position
+      const priorValue = priorValues[index];
+      const priorValueNum = priorValue?.value ?? 0;
+
+      const delta = currentValue.value - priorValueNum;
+      const deltaPercent = priorValueNum !== 0 ? (delta / priorValueNum) * 100 : null;
+
+      return {
+        period: currentValue.period,
+        periodLabel: currentValue.periodLabel,
+        value: currentValue.value,
+        // Flat comparison fields (no nested wrapper)
+        priorValue: priorValueNum,
+        priorPeriod: priorValue?.period,
+        priorPeriodLabel: priorValue?.periodLabel,
+        delta,
+        deltaPercent
+      };
+    });
+
+    return {
+      metric: currentInsight.metric,
+      values: enrichedValues
+    };
+  });
+}
+
+/**
+ * @deprecated Use embedComparison with Insight[] instead.
+ * Legacy version for backwards compatibility during migration.
+ */
+export function embedComparisonLegacy(
   currentData: InsightsData[],
   priorData: InsightsData[]
 ): InsightsData[] {
@@ -395,19 +524,16 @@ export function embedComparison(
   for (const insight of priorData) {
     const metricsMap = new Map<string, MetricData>();
     for (const metric of insight.metrics) {
-      metricsMap.set(metric.key, metric);
+      metricsMap.set(metric.period, metric);
     }
     priorMap.set(insight.key, metricsMap);
   }
 
   return currentData.map(currentInsight => {
     const priorMetrics = priorMap.get(currentInsight.key);
-    // Convert to array for index-based matching (keys differ between periods)
     const priorMetricsArray = priorMetrics ? Array.from(priorMetrics.values()) : [];
 
     const enrichedMetrics: MetricData[] = currentInsight.metrics.map((currentMetric, index) => {
-      // Match prior metric by position index since date keys differ between periods
-      // e.g., current "2024-01" matches with prior "2023-12" by position
       const priorMetric = priorMetricsArray[index];
       const priorValue = priorMetric?.value ?? 0;
 
@@ -415,15 +541,14 @@ export function embedComparison(
       const deltaPercent = priorValue !== 0 ? (delta / priorValue) * 100 : null;
 
       return {
-        key: currentMetric.key,
+        period: currentMetric.period,
+        periodLabel: currentMetric.periodLabel,
         value: currentMetric.value,
-        label: currentMetric.label,
-        comparison: {
-          prior: priorValue,
-          priorLabel: priorMetric?.label,
-          delta,
-          deltaPercent
-        }
+        priorValue: priorValue,
+        priorPeriod: priorMetric?.period,
+        priorPeriodLabel: priorMetric?.periodLabel,
+        delta,
+        deltaPercent
       };
     });
 
@@ -432,6 +557,68 @@ export function embedComparison(
       metrics: enrichedMetrics
     };
   });
+}
+
+/**
+ * Flattens multi-period insights to single-value insights.
+ * Used when aggregation=total to provide simpler structure for AI consumption.
+ *
+ * Converts: { metric: "clicks", values: [{ period: "...", value: 250, ... }] }
+ * To:       { metric: "clicks", value: 250, priorValue: 200, delta: 50, deltaPercent: 25 }
+ *
+ * @param data Aggregated insights (should have single value per metric when aggregation=total)
+ * @returns Flattened insights array
+ */
+export function flattenInsights(data: Insight[]): FlatInsight[] {
+  return data.map(insight => {
+    // Take the first (and should be only) value when aggregation=total
+    const firstValue = insight.values[0];
+
+    if (!firstValue) {
+      return {
+        metric: insight.metric,
+        value: 0
+      };
+    }
+
+    // Build flat insight, only including comparison fields if they exist
+    const flatInsight: FlatInsight = {
+      metric: insight.metric,
+      value: firstValue.value
+    };
+
+    if (firstValue.priorValue !== undefined) {
+      flatInsight.priorValue = firstValue.priorValue;
+    }
+    if (firstValue.delta !== undefined) {
+      flatInsight.delta = firstValue.delta;
+    }
+    if (firstValue.deltaPercent !== undefined) {
+      flatInsight.deltaPercent = firstValue.deltaPercent;
+    }
+
+    return flatInsight;
+  });
+}
+
+/**
+ * Converts raw API response data to the new Insight[] structure.
+ * API returns data with 'key' and 'metrics', we convert to 'metric' and 'values'.
+ *
+ * @param apiData Raw API response array
+ * @returns Converted Insight[] array
+ */
+export function convertApiDataToInsights(
+  apiData: Array<{ key: string; metrics: Array<{ key: string; value: number }> }>
+): Insight[] {
+  return apiData.map(item => ({
+    metric: item.key,
+    values: item.metrics.map(m => ({
+      period: m.key,
+      periodLabel: getPeriodLabel(m.key),
+      value: m.value
+    }))
+  }));
 }
 
 /**
