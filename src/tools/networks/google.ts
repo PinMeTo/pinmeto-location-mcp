@@ -150,10 +150,8 @@ async function getCachedOrFetchReviews(
     const cached = reviewsCache.get(cacheKey);
     if (cached) {
       const ageMs = Date.now() - cached.timestamp;
-      // Don't serve empty cached results - always refetch
-      if (cached.data.length === 0) {
-        reviewsCache.delete(cacheKey);
-      } else if (ageMs < REVIEWS_CACHE_TTL_MS) {
+      if (ageMs < REVIEWS_CACHE_TTL_MS) {
+        // Serve from cache (including empty results - they're valid)
         return {
           ok: true,
           data: cached.data,
@@ -193,19 +191,25 @@ async function getCachedOrFetchReviews(
       // Single review object - wrap in array
       reviews = [rawData as RawReview];
     } else {
+      // Unexpected object shape - log for debugging
+      console.error(
+        `[getCachedOrFetchReviews] Unexpected API response shape (object without recognized fields): ${JSON.stringify(rawData).slice(0, 200)}`
+      );
       reviews = [];
     }
   } else {
+    // Unexpected non-object response - log for debugging
+    console.error(
+      `[getCachedOrFetchReviews] Unexpected API response type: ${typeof rawData}, value: ${JSON.stringify(rawData).slice(0, 100)}`
+    );
     reviews = [];
   }
 
-  // Only cache non-empty results to avoid caching transient failures
-  if (reviews.length > 0) {
-    reviewsCache.set(cacheKey, {
-      data: reviews,
-      timestamp: Date.now()
-    });
-  }
+  // Cache all results (including empty - they're valid for locations with no reviews)
+  reviewsCache.set(cacheKey, {
+    data: reviews,
+    timestamp: Date.now()
+  });
 
   return { ok: true, data: reviews, cached: false };
 }
@@ -416,8 +420,9 @@ function aggregateReviewsToRatings(reviews: RawReview[], singleStoreId?: string)
     };
   });
 
-  // Single location: return object without storeId array wrapper
-  if (singleStoreId || summaries.length === 1) {
+  // Single location query: return object without storeId field
+  // Only use single-object format when explicitly requested via singleStoreId
+  if (singleStoreId) {
     const summary = summaries[0];
     return {
       averageRating: summary.averageRating,
@@ -426,7 +431,7 @@ function aggregateReviewsToRatings(reviews: RawReview[], singleStoreId?: string)
     };
   }
 
-  // Multiple locations: return array
+  // Multi-location query: always return array (even if only one store has reviews)
   return summaries;
 }
 
