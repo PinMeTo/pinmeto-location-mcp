@@ -621,6 +621,54 @@ export function convertApiDataToInsights(
   }));
 }
 
+// ============================================================================
+// Insights Processing Pipeline
+// ============================================================================
+
+/**
+ * Result of processing insights with comparison.
+ */
+export interface ProcessedInsightsResult {
+  /** Processed insights (flattened if aggregation=total) */
+  outputData: Insight[] | FlatInsight[];
+  /** Whether the output is flattened (aggregation=total) */
+  isTotal: boolean;
+  /** The insights with comparison embedded (for markdown formatting when not flattened) */
+  insightsWithComparison: Insight[];
+}
+
+/**
+ * Finalizes insights processing: embeds comparison and applies flattening.
+ * Use this after you've fetched both current and prior period data.
+ *
+ * @param currentInsights Aggregated current period insights
+ * @param priorInsights Aggregated prior period insights (or undefined if no comparison)
+ * @param aggregation Time aggregation level
+ * @returns Processed insights result with outputData and formatting info
+ */
+export function finalizeInsights(
+  currentInsights: Insight[],
+  priorInsights: Insight[] | undefined,
+  aggregation: AggregationPeriod
+): ProcessedInsightsResult {
+  // Embed comparison if prior data available
+  const insightsWithComparison = priorInsights
+    ? embedComparison(currentInsights, priorInsights)
+    : currentInsights;
+
+  // Auto-flatten when aggregation=total for simpler AI consumption
+  const isTotal = aggregation === 'total';
+  const outputData: Insight[] | FlatInsight[] = isTotal
+    ? flattenInsights(insightsWithComparison)
+    : insightsWithComparison;
+
+  return {
+    outputData,
+    isTotal,
+    insightsWithComparison
+  };
+}
+
 /**
  * Formats an ApiError into a standard MCP-compliant tool response.
  * Provides consistent error formatting across all tools.

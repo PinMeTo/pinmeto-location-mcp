@@ -6,10 +6,9 @@ import {
   formatContent,
   CompareWithType,
   calculatePriorPeriod,
-  embedComparison,
   aggregateInsights,
-  flattenInsights,
-  convertApiDataToInsights
+  convertApiDataToInsights,
+  finalizeInsights
 } from '../../helpers';
 import {
   InsightsOutputSchema,
@@ -25,7 +24,9 @@ import {
   formatLocationInsightsAsMarkdown,
   formatRatingsAsMarkdown,
   formatLocationRatingsAsMarkdown,
-  formatInsightsWithComparisonAsMarkdown
+  formatInsightsWithComparisonAsMarkdown,
+  formatFlatInsightsAsMarkdown,
+  InsightsFormatOptions
 } from '../../formatters';
 
 // Shared date validation schema
@@ -112,11 +113,11 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
       }
 
       // Convert API response to new Insight[] structure
-      let insightsData: Insight[] = convertApiDataToInsights(result.data);
-      insightsData = aggregateInsights(insightsData, aggregation);
+      const currentInsights = aggregateInsights(convertApiDataToInsights(result.data), aggregation);
 
-      // Handle comparison if requested - embed comparison data directly (flat, no wrapper)
-      let periodRange: PeriodRange = { from, to };
+      // Handle comparison if requested
+      const periodRange: PeriodRange = { from, to };
+      let priorInsights: Insight[] | undefined;
       let priorPeriodRange: PeriodRange | undefined;
       let comparisonError: string | undefined;
 
@@ -130,10 +131,7 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
         const priorResult = await server.makePinMeToRequest(priorUrl);
 
         if (priorResult.ok) {
-          let priorInsights = convertApiDataToInsights(priorResult.data);
-          priorInsights = aggregateInsights(priorInsights, aggregation);
-          // Embed comparison directly (flat fields, no nested comparison object)
-          insightsData = embedComparison(insightsData, priorInsights);
+          priorInsights = aggregateInsights(convertApiDataToInsights(priorResult.data), aggregation);
           priorPeriodRange = priorPeriod;
         } else {
           // Surface comparison failure - current period data is still valuable
@@ -141,21 +139,54 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
         }
       }
 
-      // Auto-flatten when aggregation=total for simpler AI consumption
-      const isTotal = aggregation === 'total';
-      const outputData: Insight[] | FlatInsight[] = isTotal
-        ? flattenInsights(insightsData)
-        : insightsData;
+      // Finalize: embed comparison and flatten if total aggregation
+      const { outputData, isTotal, insightsWithComparison } = finalizeInsights(
+        currentInsights,
+        priorInsights,
+        aggregation
+      );
 
       // Format text content
-      const textContent = JSON.stringify({
-        insights: outputData,
-        periodRange,
+      let textContent: string;
+      const formatOptions: InsightsFormatOptions = {
         timeAggregation: aggregation,
-        compareWith: compare_with,
-        ...(priorPeriodRange && { priorPeriodRange }),
-        ...(comparisonError && { comparisonError })
-      });
+        compareWith: compare_with
+      };
+      if (response_format === 'markdown') {
+        if (isTotal) {
+          // Flattened output for total aggregation
+          textContent = formatFlatInsightsAsMarkdown(
+            outputData as FlatInsight[],
+            periodRange,
+            priorPeriodRange,
+            storeId,
+            formatOptions
+          );
+        } else if (priorPeriodRange) {
+          // Multi-period with comparison
+          textContent = formatInsightsWithComparisonAsMarkdown(
+            insightsWithComparison,
+            periodRange,
+            priorPeriodRange,
+            storeId,
+            formatOptions
+          );
+        } else {
+          // Multi-period without comparison
+          textContent = storeId
+            ? formatLocationInsightsAsMarkdown(insightsWithComparison, storeId)
+            : formatInsightsAsMarkdown(insightsWithComparison);
+        }
+      } else {
+        textContent = JSON.stringify({
+          insights: outputData,
+          periodRange,
+          timeAggregation: aggregation,
+          compareWith: compare_with,
+          ...(priorPeriodRange && { priorPeriodRange }),
+          ...(comparisonError && { comparisonError })
+        });
+      }
 
       return {
         content: [{ type: 'text', text: textContent }],
@@ -228,11 +259,11 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
       }
 
       // Convert API response to new Insight[] structure
-      let insightsData: Insight[] = convertApiDataToInsights(result.data);
-      insightsData = aggregateInsights(insightsData, aggregation);
+      const currentInsights = aggregateInsights(convertApiDataToInsights(result.data), aggregation);
 
-      // Handle comparison if requested - embed comparison data directly (flat, no wrapper)
-      let periodRange: PeriodRange = { from, to };
+      // Handle comparison if requested
+      const periodRange: PeriodRange = { from, to };
+      let priorInsights: Insight[] | undefined;
       let priorPeriodRange: PeriodRange | undefined;
       let comparisonError: string | undefined;
 
@@ -242,10 +273,7 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
         const priorResult = await server.makePinMeToRequest(priorUrl);
 
         if (priorResult.ok) {
-          let priorInsights = convertApiDataToInsights(priorResult.data);
-          priorInsights = aggregateInsights(priorInsights, aggregation);
-          // Embed comparison directly (flat fields, no nested comparison object)
-          insightsData = embedComparison(insightsData, priorInsights);
+          priorInsights = aggregateInsights(convertApiDataToInsights(priorResult.data), aggregation);
           priorPeriodRange = priorPeriod;
         } else {
           // Surface comparison failure - current period data is still valuable
@@ -253,21 +281,52 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
         }
       }
 
-      // Auto-flatten when aggregation=total for simpler AI consumption
-      const isTotal = aggregation === 'total';
-      const outputData: Insight[] | FlatInsight[] = isTotal
-        ? flattenInsights(insightsData)
-        : insightsData;
+      // Finalize: embed comparison and flatten if total aggregation
+      const { outputData, isTotal, insightsWithComparison } = finalizeInsights(
+        currentInsights,
+        priorInsights,
+        aggregation
+      );
 
       // Format text content
-      const textContent = JSON.stringify({
-        insights: outputData,
-        periodRange,
+      let textContent: string;
+      const formatOptions: InsightsFormatOptions = {
         timeAggregation: aggregation,
-        compareWith: compare_with,
-        ...(priorPeriodRange && { priorPeriodRange }),
-        ...(comparisonError && { comparisonError })
-      });
+        compareWith: compare_with
+      };
+      if (response_format === 'markdown') {
+        if (isTotal) {
+          // Flattened output for total aggregation
+          textContent = formatFlatInsightsAsMarkdown(
+            outputData as FlatInsight[],
+            periodRange,
+            priorPeriodRange,
+            undefined, // No storeId for brand page
+            formatOptions
+          );
+        } else if (priorPeriodRange) {
+          // Multi-period with comparison
+          textContent = formatInsightsWithComparisonAsMarkdown(
+            insightsWithComparison,
+            periodRange,
+            priorPeriodRange,
+            undefined, // No storeId for brand page
+            formatOptions
+          );
+        } else {
+          // Multi-period without comparison
+          textContent = formatInsightsAsMarkdown(insightsWithComparison);
+        }
+      } else {
+        textContent = JSON.stringify({
+          insights: outputData,
+          periodRange,
+          timeAggregation: aggregation,
+          compareWith: compare_with,
+          ...(priorPeriodRange && { priorPeriodRange }),
+          ...(comparisonError && { comparisonError })
+        });
+      }
 
       return {
         content: [{ type: 'text', text: textContent }],
