@@ -17,10 +17,14 @@ function truncateComment(comment: string | undefined, maxLength: number = COMMEN
 }
 
 /**
- * Escapes pipe characters in text for markdown table cells.
+ * Escapes special characters in text for markdown table cells.
+ * Escapes backslashes first, then pipes, then newlines.
  */
 function escapeTableCell(text: string): string {
-  return text.replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  return text
+    .replace(/\\/g, '\\\\')  // Escape backslashes first
+    .replace(/\|/g, '\\|')   // Then escape pipes
+    .replace(/\n/g, ' ');    // Replace newlines with spaces
 }
 
 /**
