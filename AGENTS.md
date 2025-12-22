@@ -166,6 +166,44 @@ bd close bd-a1b2 "Completed authentication"
 - [ ] Other documentation updated (if applicable)
 ```
 
+## AI Agent Workflow (MANDATORY)
+
+When an AI agent receives a task that requires implementation:
+
+1. **Plan First** - Analyze the task and create an implementation plan
+2. **Create Main Bead** - Create an epic/feature bead for the overall task with full description
+3. **Break Down Plan** - Create sub-task beads for each step of the plan using `--parent`
+4. **Then Implement** - Only start coding after all beads are created
+
+**Example workflow:**
+```bash
+# Step 1: Agent analyzes task and creates plan
+# Plan: 1) Add API endpoint, 2) Create UI component, 3) Write tests
+
+# Step 2: Create main bead
+bd create "Add search functionality" -t feature -p 2 \
+  -d "Implement search feature allowing users to find locations by name.
+
+## Completion Checklist
+- [ ] Implementation complete
+- [ ] Tests added and passing
+- [ ] Manual testing performed
+- [ ] README.md updated (if applicable)
+- [ ] Other documentation updated (if applicable)"
+
+# Step 3: Break down plan into sub-tasks (returns bd-xxxx)
+bd create "Add search API endpoint" -t task --parent bd-xxxx \
+  -d "Create GET /api/search endpoint with query parameter."
+bd create "Create search UI component" -t task --parent bd-xxxx \
+  -d "Build search input with results dropdown."
+bd create "Write search tests" -t task --parent bd-xxxx \
+  -d "Add unit and integration tests for search functionality."
+
+# Step 4: Now start implementing (create feature branch first!)
+```
+
+⚠️ **NEVER start implementing before creating beads for the plan**
+
 ## Feature Development Workflow (MANDATORY)
 
 Before starting ANY feature, bug fix, or enhancement, follow this workflow:
