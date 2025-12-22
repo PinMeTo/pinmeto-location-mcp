@@ -16,7 +16,7 @@
     "changeset": "changeset",
     "changeset:add": "changeset add",
     "release:prepare": "changeset status --verbose",
-    "release:version": "changeset version && node scripts/update-readme-badges.js",
+    "release:version": "changeset version && node scripts/format-changelog.js && node scripts/update-readme-badges.js",
     "release:draft": "npm test && npm run build && npx @anthropic-ai/mcpb pack && node scripts/create-gh-release.js",
     "release:publish": "gh release edit $(git describe --tags --abbrev=0) --draft=false"
   },
