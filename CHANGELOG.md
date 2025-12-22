@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.0] - 2025-12-22
+
+### Added
+
+- **Period Comparison Support** ([#30](https://github.com/PinMeTo/pinmeto-location-mcp/pull/30)): All insights tools (Google, Facebook, Apple) now support a `compare_with` parameter:
+  - `compare_with="prior_period"` - Compare with same-duration period immediately before (MoM for monthly, QoQ for quarterly)
+  - `compare_with="prior_year"` - Compare with same dates in previous year (YoY)
+  - Returns `priorValue`, `delta`, and `deltaPercent` for each metric
+- **Human-Readable Period Labels**: Aggregated metrics now include a `periodLabel` field:
+  - "2024-01" → "January 2024"
+  - "2024-Q1" → "Q1 2024"
+  - "2024-H1" → "H1 2024"
+- **Google Data Lag Warnings**: Google tools validate the `to` date and return a warning if data may be incomplete due to Google's ~10 day reporting lag
+- **Concrete Output Schemas** ([#27](https://github.com/PinMeTo/pinmeto-location-mcp/pull/27)): Replace z.unknown() with concrete Zod schemas for better type safety
+  - Add `AddressSchema`, `ContactSchema`, `OpenHoursSchema` for location data
+  - Add `KeywordDataSchema` for Google keywords API
+  - Add `RatingsSummarySchema`, `ReviewSchema`, `LocationRatingsSummarySchema` for ratings data
+- **Improved Error Messages** ([#28](https://github.com/PinMeTo/pinmeto-location-mcp/pull/28)): MCP-compliant error handling with actionable guidance
+  - Add `isError: true` flag and "Error:" prefix to all error responses
+  - Enhance network error specificity for timeout/DNS/connection failures
+  - Add Retry-After header parsing for rate limit errors
+
+### Changed
+
+- Enhanced markdown output with comparison tables (Period | Current | Prior | Change | % Change)
+- Migrate release tooling from release-it to Changesets
+- Add CI check to require changesets on pull requests
+
 ## [3.0.0] - 2025-12-21
 
 ### BREAKING CHANGES
