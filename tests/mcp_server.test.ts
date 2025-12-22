@@ -2,7 +2,7 @@ import axios from 'axios';
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { createMcpServer } from '../src/mcp_server';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { formatErrorResponse } from '../src/helpers';
+import { formatErrorResponse, isValidDate } from '../src/helpers';
 import { ApiError } from '../src/errors';
 
 const testAccountId = 'test_account';
@@ -2383,5 +2383,236 @@ describe('Consolidated Network Tools', () => {
       const actualToolNames = tools.map((t: any) => t.name).sort();
       expect(actualToolNames).toEqual(expectedToolNames.sort());
     });
+  });
+
+  describe('pinmeto_get_google_reviews', () => {
+    const setupReviewsMocks = () => {
+      vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+        if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+          return Promise.reject(new Error('Unauthorized'));
+        }
+
+        // Single location ratings/reviews (uses /ratings/google/{storeId} endpoint)
+        if (url.includes('/ratings/google/1337')) {
+          return Promise.resolve({
+            data: [
+              { storeId: '1337', rating: 5, comment: 'Great!', date: '2024-01-15', hasAnswer: true, reply: 'Thanks!', replyDate: '2024-01-16' },
+              { storeId: '1337', rating: 4, comment: 'Good', date: '2024-01-10', hasAnswer: false },
+              { storeId: '1337', rating: 3, comment: 'OK', date: '2024-01-05', hasAnswer: false },
+              { storeId: '1337', rating: 2, comment: 'Not great', date: '2024-01-03', hasAnswer: true, reply: 'Sorry', replyDate: '2024-01-04' },
+              { storeId: '1337', rating: 1, comment: 'Bad', date: '2024-01-01', hasAnswer: false }
+            ]
+          });
+        }
+
+        // Bulk ratings/reviews (uses /ratings/google endpoint without storeId)
+        if (url.includes('/ratings/google') && !url.includes('/ratings/google/')) {
+          return Promise.resolve({
+            data: [
+              { storeId: 'store-a', rating: 5, comment: 'Excellent', date: '2024-01-15', hasAnswer: false },
+              { storeId: 'store-a', rating: 4, comment: 'Good place', date: '2024-01-10', hasAnswer: true, reply: 'Thanks!', replyDate: '2024-01-11' },
+              { storeId: 'store-b', rating: 3, comment: 'Average', date: '2024-01-08', hasAnswer: false },
+              { storeId: 'store-b', rating: 2, comment: 'Meh', date: '2024-01-05', hasAnswer: false }
+            ]
+          });
+        }
+
+        // 404 for invalid storeId
+        if (url.includes('/ratings/google/invalid-id')) {
+          const error = Object.assign(new Error('Not Found'), {
+            isAxiosError: true,
+            response: { status: 404, data: { message: 'Location not found' } }
+          });
+          return Promise.reject(error);
+        }
+
+        return Promise.reject(new Error('Not found'));
+      });
+    };
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      setupReviewsMocks();
+    });
+
+    it('should return paginated reviews for single location', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_reviews', {
+        storeId: '1337',
+        from: '2024-01-01',
+        to: '2024-12-31',
+        limit: 3
+      });
+
+      expect(response.result).toBeDefined();
+      expect(response.result.structuredContent).toBeDefined();
+      expect(response.result.structuredContent.data).toBeDefined();
+      expect(response.result.structuredContent.data.length).toBe(3);
+      expect(response.result.structuredContent.totalCount).toBe(5);
+      expect(response.result.structuredContent.hasMore).toBe(true);
+    });
+
+    it('should filter reviews by minRating', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_reviews', {
+        storeId: '1337',
+        from: '2024-01-01',
+        to: '2024-12-31',
+        minRating: 4
+      });
+
+      expect(response.result.structuredContent.data).toBeDefined();
+      // Should only include ratings 4 and 5
+      expect(response.result.structuredContent.data.length).toBe(2);
+      expect(response.result.structuredContent.data.every((r: any) => r.rating >= 4)).toBe(true);
+    });
+
+    it('should filter reviews by maxRating', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_reviews', {
+        storeId: '1337',
+        from: '2024-01-01',
+        to: '2024-12-31',
+        maxRating: 2
+      });
+
+      expect(response.result.structuredContent.data).toBeDefined();
+      // Should only include ratings 1 and 2
+      expect(response.result.structuredContent.data.length).toBe(2);
+      expect(response.result.structuredContent.data.every((r: any) => r.rating <= 2)).toBe(true);
+    });
+
+    it('should filter reviews by hasResponse=true', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_reviews', {
+        storeId: '1337',
+        from: '2024-01-01',
+        to: '2024-12-31',
+        hasResponse: true
+      });
+
+      expect(response.result.structuredContent.data).toBeDefined();
+      // Should only include reviews with owner response
+      expect(response.result.structuredContent.data.length).toBe(2);
+      expect(response.result.structuredContent.data.every((r: any) => r.ownerResponse)).toBe(true);
+    });
+
+    it('should filter reviews by hasResponse=false', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_reviews', {
+        storeId: '1337',
+        from: '2024-01-01',
+        to: '2024-12-31',
+        hasResponse: false
+      });
+
+      expect(response.result.structuredContent.data).toBeDefined();
+      // Should only include reviews without owner response
+      expect(response.result.structuredContent.data.length).toBe(3);
+      expect(response.result.structuredContent.data.every((r: any) => !r.ownerResponse)).toBe(true);
+    });
+
+    it('should return error when minRating > maxRating', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_reviews', {
+        storeId: '1337',
+        from: '2024-01-01',
+        to: '2024-12-31',
+        minRating: 5,
+        maxRating: 2
+      });
+
+      expect(response.result.isError).toBe(true);
+      expect(response.result.structuredContent.errorCode).toBe('BAD_REQUEST');
+      expect(response.result.structuredContent.error).toContain('minRating');
+    });
+
+    it('should handle offset pagination', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_reviews', {
+        storeId: '1337',
+        from: '2024-01-01',
+        to: '2024-12-31',
+        limit: 2,
+        offset: 3
+      });
+
+      expect(response.result.structuredContent.data.length).toBe(2);
+      expect(response.result.structuredContent.offset).toBe(3);
+      expect(response.result.structuredContent.hasMore).toBe(false);
+    });
+
+    it('should return cacheInfo in response', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_reviews', {
+        storeId: '1337',
+        from: '2024-01-01',
+        to: '2024-12-31'
+      });
+
+      expect(response.result.structuredContent.cacheInfo).toBeDefined();
+      expect(response.result.structuredContent.cacheInfo.cached).toBeDefined();
+    });
+
+    it('should return bulk reviews when storeId omitted', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_reviews', {
+        from: '2024-01-01',
+        to: '2024-12-31'
+      });
+
+      expect(response.result.structuredContent.data).toBeDefined();
+      expect(response.result.structuredContent.data.length).toBe(4);
+      // Should include reviews from multiple stores
+      const storeIds = new Set(response.result.structuredContent.data.map((r: any) => r.storeId));
+      expect(storeIds.size).toBe(2);
+    });
+  });
+});
+
+// ============================================================================
+// isValidDate Unit Tests
+// ============================================================================
+
+describe('isValidDate', () => {
+  it('should accept valid dates', () => {
+    expect(isValidDate('2024-01-15')).toBe(true);
+    expect(isValidDate('2024-12-31')).toBe(true);
+    expect(isValidDate('2024-06-30')).toBe(true);
+  });
+
+  it('should reject invalid dates like June 31st', () => {
+    expect(isValidDate('2024-06-31')).toBe(false); // June has 30 days
+    expect(isValidDate('2024-04-31')).toBe(false); // April has 30 days
+    expect(isValidDate('2024-09-31')).toBe(false); // September has 30 days
+  });
+
+  it('should reject February 30 (never valid)', () => {
+    expect(isValidDate('2024-02-30')).toBe(false);
+    expect(isValidDate('2023-02-30')).toBe(false);
+  });
+
+  it('should handle leap year February 29', () => {
+    expect(isValidDate('2024-02-29')).toBe(true);  // 2024 is a leap year
+    expect(isValidDate('2020-02-29')).toBe(true);  // 2020 is a leap year
+  });
+
+  it('should reject non-leap year February 29', () => {
+    expect(isValidDate('2023-02-29')).toBe(false); // 2023 is not a leap year
+    expect(isValidDate('2025-02-29')).toBe(false); // 2025 is not a leap year
+  });
+
+  it('should reject malformed input with wrong number of parts', () => {
+    expect(isValidDate('2024-01')).toBe(false);
+    expect(isValidDate('2024')).toBe(false);
+    expect(isValidDate('2024-01-01-01')).toBe(false);
+    expect(isValidDate('')).toBe(false);
+  });
+
+  it('should reject non-numeric components', () => {
+    expect(isValidDate('2024-XX-01')).toBe(false);
+    expect(isValidDate('YYYY-01-01')).toBe(false);
+    expect(isValidDate('2024-01-DD')).toBe(false);
+  });
+
+  it('should reject invalid month values', () => {
+    expect(isValidDate('2024-13-01')).toBe(false); // Month 13
+    expect(isValidDate('2024-00-01')).toBe(false); // Month 0
+  });
+
+  it('should reject invalid day values', () => {
+    expect(isValidDate('2024-01-32')).toBe(false); // Day 32
+    expect(isValidDate('2024-01-00')).toBe(false); // Day 0
   });
 });

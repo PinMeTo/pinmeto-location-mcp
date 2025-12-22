@@ -15,9 +15,19 @@ export const MARKDOWN_TABLE_MAX_ROWS = 50;
 /**
  * Validates that a YYYY-MM-DD string represents a real calendar date.
  * Returns true if valid, false if invalid (e.g., 2024-06-31, 2024-02-30).
+ *
+ * Note: This function expects input that has already passed the YYYY-MM-DD
+ * regex validation. It handles malformed input gracefully but is designed
+ * to be used with DateSchema.refine() after regex validation.
  */
 export function isValidDate(dateStr: string): boolean {
-  const [year, month, day] = dateStr.split('-').map(Number);
+  // Handle malformed input explicitly
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return false;
+
+  const [year, month, day] = parts.map(Number);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return false;
+
   const date = new Date(year, month - 1, day);
   return (
     date.getFullYear() === year &&

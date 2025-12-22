@@ -105,10 +105,12 @@ const reviewsCache = new Map<string, ReviewsCacheEntry>();
 const REVIEWS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 /**
- * Build cache key for reviews
+ * Build cache key for reviews.
+ * Uses explicit prefixes to prevent collision if a storeId happens to be "all".
  */
 function buildReviewsCacheKey(accountId: string, storeId: string | undefined, from: string, to: string): string {
-  return `${accountId}-${storeId || 'all'}-${from}-${to}`;
+  const scope = storeId ? `store:${storeId}` : 'bulk:all';
+  return `${accountId}-${scope}-${from}-${to}`;
 }
 
 /**
@@ -425,7 +427,13 @@ function aggregateReviewsToRatings(reviews: RawReview[], singleStoreId?: string)
   // Single location query: return object without storeId field
   // Only use single-object format when explicitly requested via singleStoreId
   if (singleStoreId) {
-    const summary = summaries[0];
+    // Find the summary matching the requested storeId, or fall back to first
+    const summary = summaries.find(s => s.storeId === singleStoreId) || summaries[0];
+    if (summary.storeId !== singleStoreId) {
+      console.error(
+        `[aggregateReviewsToRatings] Requested storeId '${singleStoreId}' not found in results, using '${summary.storeId}'`
+      );
+    }
     return {
       averageRating: summary.averageRating,
       totalReviews: summary.totalReviews,
