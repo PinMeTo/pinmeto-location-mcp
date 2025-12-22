@@ -39,7 +39,8 @@ function formatResponseStatus(hasResponse: boolean): string {
 
 /**
  * Formats reviews data as Markdown with pagination info.
- * Handles both single location and all-locations response formats.
+ * Includes Store ID column for multi-location queries.
+ * For single location queries, use formatLocationReviewsAsMarkdown instead.
  */
 export function formatReviewsAsMarkdown(
   reviews: Review[],

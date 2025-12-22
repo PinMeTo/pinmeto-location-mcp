@@ -12,6 +12,20 @@ import { ApiError } from './errors';
 /** Maximum rows to display in Markdown tables before truncating */
 export const MARKDOWN_TABLE_MAX_ROWS = 50;
 
+/**
+ * Validates that a YYYY-MM-DD string represents a real calendar date.
+ * Returns true if valid, false if invalid (e.g., 2024-06-31, 2024-02-30).
+ */
+export function isValidDate(dateStr: string): boolean {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
+}
+
 export type AggregationPeriod =
   | 'daily'
   | 'weekly'

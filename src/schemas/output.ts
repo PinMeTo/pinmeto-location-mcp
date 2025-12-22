@@ -319,7 +319,7 @@ export const InsightsOutputSchema = {
     'Time aggregation level applied to the data (e.g., "total", "monthly", "daily")'
   ),
   compareWith: CompareWithSchema.optional().describe(
-    'Comparison period type used: "none", "previous_month", "previous_quarter", or "previous_year"'
+    'Comparison period type used: "none", "prior_period", or "prior_year"'
   ),
   priorPeriodRange: PeriodRangeSchema.optional().describe(
     'Date range for the prior period (present when compare_with is specified)'

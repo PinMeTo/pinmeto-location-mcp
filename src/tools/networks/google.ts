@@ -10,7 +10,8 @@ import {
   checkGoogleDataLag,
   aggregateInsights,
   convertApiDataToInsights,
-  finalizeInsights
+  finalizeInsights,
+  isValidDate
 } from '../../helpers';
 import {
   InsightsOutputSchema,
@@ -37,20 +38,6 @@ import {
   formatFlatInsightsAsMarkdown,
   InsightsFormatOptions
 } from '../../formatters';
-
-/**
- * Validates that a YYYY-MM-DD string represents a real calendar date.
- * Returns true if valid, false if invalid (e.g., 2024-06-31, 2024-02-30).
- */
-function isValidDate(dateStr: string): boolean {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
-}
 
 // Shared date validation schemas
 const DateSchema = z
@@ -603,6 +590,19 @@ export function getGoogleReviews(server: PinMeToMcpServer) {
       forceRefresh?: boolean;
       response_format?: ResponseFormat;
     }) => {
+      // Validate filter combination
+      if (minRating !== undefined && maxRating !== undefined && minRating > maxRating) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: 'Error: minRating cannot be greater than maxRating' }],
+          structuredContent: {
+            error: 'Error: minRating cannot be greater than maxRating',
+            errorCode: 'BAD_REQUEST',
+            retryable: false
+          }
+        };
+      }
+
       // Check for data lag warning
       const lagWarning = checkGoogleDataLag(to);
 
