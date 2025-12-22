@@ -23,9 +23,10 @@ import { Configs, getConfigs } from './configs';
 
 import { ServerOptions } from '@modelcontextprotocol/sdk/server';
 
-const pkg = JSON.parse(
-  readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')
-) as { name: string; version: string };
+const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')) as {
+  name: string;
+  version: string;
+};
 const PACKAGE_NAME = pkg.name;
 const PACKAGE_VERSION = pkg.version;
 const TOKEN_CACHE_SECONDS = 59 * 60;
@@ -88,8 +89,7 @@ export class PinMeToMcpServer extends McpServer {
       const result: ApiResult<PaginatedResponse> =
         await this.makePinMeToRequest<PaginatedResponse>(nextUrl);
       if (!result.ok) {
-        const pageContext =
-          allData.length > 0 ? `after ${allData.length} records` : '(first page)';
+        const pageContext = allData.length > 0 ? `after ${allData.length} records` : '(first page)';
         console.warn(
           `Couldn't fetch page ${pageContext}: ${result.error.code} - ${result.error.message}`
         );
@@ -176,10 +176,7 @@ export class PinMeToMcpServer extends McpServer {
         }
         if (status === 429) {
           console.error('Authentication failed: Rate limited (429)');
-          throw new AuthError(
-            'RATE_LIMITED',
-            'Authentication rate limited. Wait before retrying.'
-          );
+          throw new AuthError('RATE_LIMITED', 'Authentication rate limited. Wait before retrying.');
         }
         // Network errors during auth
         if (!e.response) {

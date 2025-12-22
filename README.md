@@ -268,3 +268,89 @@ Time aggregation works with all insights tools:
 4. Aggregated data is returned in the same format as daily data
 
 This client-side aggregation ensures compatibility with the PinMeTo API while dramatically reducing token consumption for AI interactions.
+
+---
+
+## Period Comparison (MoM, QoQ, YoY)
+
+All insights tools support **period comparison** to analyze trends over time. Compare current metrics against previous periods or the same period last year.
+
+### Comparison Options
+
+| Value | Description | Use Case |
+|-------|-------------|----------|
+| `none` (default) | No comparison | Standard metrics retrieval |
+| `prior_period` | Compare with immediately preceding period | Month-over-Month (MoM), Quarter-over-Quarter (QoQ) |
+| `prior_year` | Compare with same period last year | Year-over-Year (YoY) analysis |
+
+### Usage
+
+Add the `compare_with` parameter to any insights request:
+
+```json
+{
+  "storeId": "1337",
+  "from": "2024-01-01",
+  "to": "2024-01-31",
+  "compare_with": "prior_year"
+}
+```
+
+### Response with Comparison
+
+When comparison is enabled, each metric includes additional fields:
+
+```json
+{
+  "insights": [
+    {
+      "metric": "views",
+      "value": 1500,
+      "priorValue": 1200,
+      "delta": 300,
+      "deltaPercent": 25
+    }
+  ],
+  "periodRange": { "from": "2024-01-01", "to": "2024-01-31" },
+  "priorPeriodRange": { "from": "2023-01-01", "to": "2023-01-31" },
+  "timeAggregation": "total",
+  "compareWith": "prior_year"
+}
+```
+
+### Comparison Fields
+
+| Field | Description |
+|-------|-------------|
+| `priorValue` | Metric value from the comparison period |
+| `delta` | Absolute change (value - priorValue) |
+| `deltaPercent` | Percentage change, null if priorValue is 0 |
+| `priorPeriodRange` | Date range of the comparison period |
+
+### Examples
+
+**Year-over-Year comparison:**
+```json
+{
+  "from": "2024-01-01",
+  "to": "2024-01-31",
+  "compare_with": "prior_year"
+}
+```
+
+**Month-over-Month with monthly aggregation:**
+```json
+{
+  "from": "2024-01-01",
+  "to": "2024-12-31",
+  "aggregation": "monthly",
+  "compare_with": "prior_period"
+}
+```
+
+### Supported Tools
+
+Period comparison works with all insights tools:
+- Google: `pinmeto_get_google_insights`
+- Facebook: `pinmeto_get_facebook_insights`, `pinmeto_get_facebook_brandpage_insights`
+- Apple: `pinmeto_get_apple_insights`

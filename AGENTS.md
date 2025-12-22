@@ -314,10 +314,11 @@ export function getLocation(server: PinMeToMcpServer) {
 }
 ```
 
-**Time Aggregation** (`src/helpers.ts`) - Client-side metric aggregation to reduce token consumption:
-- Supports daily, weekly, monthly, quarterly, half-yearly, yearly, and total
-- Defaults to `total` (single aggregated value) for maximum token efficiency
-- Applied to all insights tools via `aggregateMetrics()` function
+**Time Aggregation & Comparison** (`src/helpers.ts`) - Client-side metric processing:
+- `aggregateInsights()` - Aggregate metrics by time period (daily, weekly, monthly, quarterly, half-yearly, yearly, total)
+- `calculatePriorPeriod()` - Calculate date ranges for MoM/QoQ/YoY comparisons
+- `finalizeInsights()` - Merge comparison data and format response with metadata
+- Defaults to `total` aggregation and `none` comparison for maximum token efficiency
 
 ### Directory Structure
 
@@ -362,17 +363,21 @@ All tools follow the MCP best practice naming pattern: `pinmeto_{action}_{networ
 | `pinmeto_get_location` | Single location by storeId |
 | `pinmeto_get_locations` | All locations (paginated, cached) |
 | `pinmeto_search_locations` | Search locations |
-| `pinmeto_get_google_insights` | Google metrics (storeId optional) |
+| `pinmeto_get_google_insights` | Google metrics with aggregation and period comparison |
 | `pinmeto_get_google_ratings` | Google ratings (storeId optional) |
 | `pinmeto_get_google_keywords` | Google keywords (storeId optional) |
-| `pinmeto_get_facebook_insights` | Facebook metrics (storeId optional) |
-| `pinmeto_get_facebook_brandpage_insights` | Facebook brand page metrics |
+| `pinmeto_get_facebook_insights` | Facebook metrics with aggregation and period comparison |
+| `pinmeto_get_facebook_brandpage_insights` | Facebook brand page metrics with aggregation and period comparison |
 | `pinmeto_get_facebook_ratings` | Facebook ratings (storeId optional) |
-| `pinmeto_get_apple_insights` | Apple metrics (storeId optional) |
+| `pinmeto_get_apple_insights` | Apple metrics with aggregation and period comparison |
 
 **Unified Single/Bulk Pattern**: Network tools accept an optional `storeId` parameter:
 - **Without storeId**: Fetch data for all locations
 - **With storeId**: Fetch data for a single location
+
+**Insights Tools Parameters**: All insights tools support these additional parameters:
+- `aggregation`: Time aggregation level (`total`, `daily`, `weekly`, `monthly`, `quarterly`, `half-yearly`, `yearly`)
+- `compare_with`: Period comparison mode (`none`, `prior_period`, `prior_year`)
 
 ## Adding New Tools
 
@@ -384,7 +389,7 @@ All tools follow the MCP best practice naming pattern: `pinmeto_{action}_{networ
 6. Implement handler using `server.makePinMeToRequest()` or `server.makePaginatedPinMeToRequest()`
 7. Use `formatContent()` helper to format response based on `response_format`
 8. Return both `content` (text) and `structuredContent` (typed data) from handler
-9. For insights tools, apply `aggregateMetrics()` before formatting
+9. For insights tools, use `aggregateInsights()` and `finalizeInsights()` helpers
 10. Add appropriate tool annotations (see Tool Annotations section below)
 11. Register tool in `createMcpServer()` function in `src/mcp_server.ts`
 
@@ -436,12 +441,57 @@ All tools define output schemas using Zod, enabling AI clients to understand and
 
 ### Available Output Schemas (`src/schemas/output.ts`)
 
-- **InsightsOutputSchema** - For Google, Facebook, and Apple insights tools
+- **InsightsOutputSchema** - For Google, Facebook, and Apple insights tools (supports aggregation and comparison)
 - **RatingsOutputSchema** - For ratings tools across all networks
 - **KeywordsOutputSchema** - For Google keywords tools
 - **LocationOutputSchema** - For single location retrieval
 - **LocationsOutputSchema** - For multiple locations with pagination status
 - **SearchResultOutputSchema** - For lightweight search results with pagination metadata
+
+### Insights Response Structure
+
+Insights tools return data with metadata about aggregation and comparison:
+
+```typescript
+// Total aggregation (default) - single value per metric
+{
+  insights: [
+    {
+      metric: "views",
+      value: 1500,
+      priorValue?: 1200,      // Only with compare_with
+      delta?: 300,            // Absolute change
+      deltaPercent?: 25       // Percentage change
+    }
+  ],
+  periodRange: { from: "2024-01-01", to: "2024-01-31" },
+  priorPeriodRange?: { from: "2023-01-01", to: "2023-01-31" },  // Only with compare_with
+  timeAggregation: "total",
+  compareWith: "prior_year"  // or "prior_period" or "none"
+}
+
+// Time series aggregation (daily, weekly, monthly, etc.)
+{
+  insights: [
+    {
+      metric: "views",
+      values: [
+        {
+          period: "2024-01",
+          periodLabel: "January 2024",
+          value: 500,
+          priorValue?: 400,
+          delta?: 100,
+          deltaPercent?: 25
+        }
+      ]
+    }
+  ],
+  periodRange: { from: "2024-01-01", to: "2024-12-31" },
+  timeAggregation: "monthly",
+  compareWith: "none"
+}
+```
 
 ### Output Pattern
 

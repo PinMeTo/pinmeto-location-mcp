@@ -27,7 +27,7 @@ function run(cmd, args, options = {}) {
     cwd: rootDir,
     encoding: 'utf8',
     stdio: options.silent ? 'pipe' : 'inherit',
-    ...options,
+    ...options
   });
 }
 
@@ -72,17 +72,12 @@ if (existsSync(changelogPath)) {
 
   // Match the section for this version (handles both [X.Y.Z] and X.Y.Z formats)
   const versionEscaped = version.replace(/\./g, '\\.');
-  const sectionRegex = new RegExp(
-    `## \\[?${versionEscaped}\\]?[^#]*?(?=## |$)`,
-    's'
-  );
+  const sectionRegex = new RegExp(`## \\[?${versionEscaped}\\]?[^#]*?(?=## |$)`, 's');
 
   const match = changelog.match(sectionRegex);
   if (match) {
     // Remove the version header line, keep the content
-    releaseNotes = match[0]
-      .replace(/^## \[?\d+\.\d+\.\d+\]?.*\n/, '')
-      .trim();
+    releaseNotes = match[0].replace(/^## \[?\d+\.\d+\.\d+\]?.*\n/, '').trim();
   }
 }
 

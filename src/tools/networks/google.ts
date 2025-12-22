@@ -1,12 +1,25 @@
 import { z } from 'zod';
 import { PinMeToMcpServer } from '../../mcp_server';
-import { aggregateMetrics, AggregationPeriod, formatErrorResponse, formatContent } from '../../helpers';
+import {
+  AggregationPeriod,
+  formatErrorResponse,
+  formatContent,
+  CompareWithType,
+  calculatePriorPeriod,
+  checkGoogleDataLag,
+  aggregateInsights,
+  convertApiDataToInsights,
+  finalizeInsights
+} from '../../helpers';
 import {
   InsightsOutputSchema,
   RatingsOutputSchema,
   KeywordsOutputSchema,
   ResponseFormatSchema,
-  ResponseFormat
+  ResponseFormat,
+  Insight,
+  FlatInsight,
+  PeriodRange
 } from '../../schemas/output';
 import {
   formatInsightsAsMarkdown,
@@ -14,7 +27,10 @@ import {
   formatRatingsAsMarkdown,
   formatLocationRatingsAsMarkdown,
   formatKeywordsAsMarkdown,
-  formatLocationKeywordsAsMarkdown
+  formatLocationKeywordsAsMarkdown,
+  formatInsightsWithComparisonAsMarkdown,
+  formatFlatInsightsAsMarkdown,
+  InsightsFormatOptions
 } from '../../formatters';
 
 // Shared date validation schemas
@@ -34,15 +50,32 @@ const AggregationSchema = z
     'Time aggregation: total (default, maximum token reduction), daily, weekly, monthly, quarterly, half-yearly, yearly'
   );
 
+const CompareWithSchema = z
+  .enum(['prior_period', 'prior_year', 'none'])
+  .optional()
+  .default('none')
+  .describe(
+    'Compare with: prior_period (MoM/QoQ for same-duration period before), prior_year (YoY for same dates last year), or none (default)'
+  );
+
 /**
  * Fetch Google insights for all locations, or a single location if storeId provided.
+ * Supports period comparisons (MoM, QoQ, YoY) via compare_with parameter.
  */
 export function getGoogleInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_google_insights',
     {
       description:
-        'Fetch Google metrics for all locations, or a single location if storeId provided. Supports time aggregation (default: total).\n\n' +
+        'Fetch Google metrics for all locations, or a single location if storeId provided. ' +
+        'Supports time aggregation (default: total) and period comparisons.\n\n' +
+        'Comparison Options:\n' +
+        '  - compare_with="prior_period": Compare with same-duration period before (MoM, QoQ)\n' +
+        '  - compare_with="prior_year": Compare with same dates last year (YoY)\n' +
+        '  - When comparison is active, each metric includes a comparison field with prior, delta, deltaPercent\n\n' +
+        'Data Lag Warning:\n' +
+        '  - Google data has ~10 day lag. Requests with recent end dates may return incomplete data.\n' +
+        '  - Check structuredContent.warning and warningCode for data completeness.\n\n' +
         'Error Handling:\n' +
         '  - Rate limit (429): errorCode="RATE_LIMITED", message includes retry timing\n' +
         '  - Not found (404): errorCode="NOT_FOUND" if storeId doesn\'t exist\n' +
@@ -52,6 +85,7 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
         from: DateSchema.describe('Start date (YYYY-MM-DD)'),
         to: DateSchema.describe('End date (YYYY-MM-DD)'),
         aggregation: AggregationSchema,
+        compare_with: CompareWithSchema,
         response_format: ResponseFormatSchema
       },
       outputSchema: InsightsOutputSchema,
@@ -64,15 +98,20 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
       from,
       to,
       aggregation = 'total',
+      compare_with = 'none',
       response_format = 'json'
     }: {
       storeId?: string;
       from: string;
       to: string;
       aggregation?: AggregationPeriod;
+      compare_with?: CompareWithType;
       response_format?: ResponseFormat;
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
+
+      // Check for data lag warning
+      const lagWarning = checkGoogleDataLag(to);
 
       const url = storeId
         ? `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/google?from=${from}&to=${to}`
@@ -85,17 +124,94 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
         return formatErrorResponse(result.error, context);
       }
 
-      const aggregatedData = aggregateMetrics(result.data, aggregation);
+      // Convert API response to new Insight[] structure
+      const currentInsights = aggregateInsights(convertApiDataToInsights(result.data), aggregation);
 
-      const textContent = storeId
-        ? (response_format === 'markdown'
-            ? formatLocationInsightsAsMarkdown(aggregatedData, storeId)
-            : JSON.stringify(aggregatedData))
-        : formatContent(aggregatedData, response_format, formatInsightsAsMarkdown);
+      // Handle comparison if requested
+      const periodRange: PeriodRange = { from, to };
+      let priorInsights: Insight[] | undefined;
+      let priorPeriodRange: PeriodRange | undefined;
+      let comparisonError: string | undefined;
+
+      if (compare_with !== 'none') {
+        const priorPeriod = calculatePriorPeriod(from, to, compare_with);
+
+        const priorUrl = storeId
+          ? `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/google?from=${priorPeriod.from}&to=${priorPeriod.to}`
+          : `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/google?from=${priorPeriod.from}&to=${priorPeriod.to}`;
+
+        const priorResult = await server.makePinMeToRequest(priorUrl);
+
+        if (priorResult.ok) {
+          priorInsights = aggregateInsights(convertApiDataToInsights(priorResult.data), aggregation);
+          priorPeriodRange = priorPeriod;
+        } else {
+          // Surface comparison failure - current period data is still valuable
+          comparisonError = `Comparison data unavailable (${priorPeriod.from} to ${priorPeriod.to}): ${priorResult.error.message}`;
+        }
+      }
+
+      // Finalize: embed comparison and flatten if total aggregation
+      const { outputData, isTotal, insightsWithComparison } = finalizeInsights(
+        currentInsights,
+        priorInsights,
+        aggregation
+      );
+
+      // Format text content
+      let textContent: string;
+      const formatOptions: InsightsFormatOptions = {
+        timeAggregation: aggregation,
+        compareWith: compare_with
+      };
+      if (response_format === 'markdown') {
+        if (isTotal) {
+          // Flattened output for total aggregation
+          textContent = formatFlatInsightsAsMarkdown(
+            outputData as FlatInsight[],
+            periodRange,
+            priorPeriodRange,
+            storeId,
+            formatOptions
+          );
+        } else if (priorPeriodRange) {
+          // Multi-period with comparison
+          textContent = formatInsightsWithComparisonAsMarkdown(
+            insightsWithComparison,
+            periodRange,
+            priorPeriodRange,
+            storeId,
+            formatOptions
+          );
+        } else {
+          // Multi-period without comparison
+          textContent = storeId
+            ? formatLocationInsightsAsMarkdown(insightsWithComparison, storeId)
+            : formatInsightsAsMarkdown(insightsWithComparison);
+        }
+      } else {
+        textContent = JSON.stringify({
+          insights: outputData,
+          periodRange,
+          timeAggregation: aggregation,
+          compareWith: compare_with,
+          ...(priorPeriodRange && { priorPeriodRange }),
+          ...(comparisonError && { comparisonError }),
+          ...(lagWarning && lagWarning)
+        });
+      }
 
       return {
         content: [{ type: 'text', text: textContent }],
-        structuredContent: { data: aggregatedData }
+        structuredContent: {
+          insights: outputData,
+          periodRange,
+          timeAggregation: aggregation,
+          compareWith: compare_with,
+          ...(priorPeriodRange && { priorPeriodRange }),
+          ...(comparisonError && { comparisonError }),
+          ...(lagWarning && lagWarning)
+        }
       };
     }
   );
@@ -110,6 +226,9 @@ export function getGoogleRatings(server: PinMeToMcpServer) {
     {
       description:
         'Fetch Google ratings for all locations, or a single location if storeId provided.\n\n' +
+        'Data Lag Warning:\n' +
+        '  - Google data has ~10 day lag. Requests with recent end dates may return incomplete data.\n' +
+        '  - Check structuredContent.warning and warningCode for data completeness.\n\n' +
         'Error Handling:\n' +
         '  - Rate limit (429): errorCode="RATE_LIMITED", message includes retry timing\n' +
         '  - Not found (404): errorCode="NOT_FOUND" if storeId doesn\'t exist\n' +
@@ -138,6 +257,9 @@ export function getGoogleRatings(server: PinMeToMcpServer) {
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
+      // Check for data lag warning
+      const lagWarning = checkGoogleDataLag(to);
+
       const url = storeId
         ? `${apiBaseUrl}/listings/v3/${accountId}/ratings/google/${storeId}?from=${from}&to=${to}`
         : `${apiBaseUrl}/listings/v3/${accountId}/ratings/google?from=${from}&to=${to}`;
@@ -150,14 +272,17 @@ export function getGoogleRatings(server: PinMeToMcpServer) {
       }
 
       const textContent = storeId
-        ? (response_format === 'markdown'
-            ? formatLocationRatingsAsMarkdown(result.data, storeId)
-            : JSON.stringify(result.data))
+        ? response_format === 'markdown'
+          ? formatLocationRatingsAsMarkdown(result.data, storeId)
+          : JSON.stringify(result.data)
         : formatContent(result.data, response_format, formatRatingsAsMarkdown);
 
       return {
         content: [{ type: 'text', text: textContent }],
-        structuredContent: { data: result.data }
+        structuredContent: {
+          data: result.data,
+          ...(lagWarning && lagWarning)
+        }
       };
     }
   );
@@ -172,6 +297,9 @@ export function getGoogleKeywords(server: PinMeToMcpServer) {
     {
       description:
         'Fetch Google keywords for all locations, or a single location if storeId provided.\n\n' +
+        'Data Lag Warning:\n' +
+        '  - Google data has ~10 day lag. Current month data may be incomplete.\n' +
+        '  - Check structuredContent.warning and warningCode for data completeness.\n\n' +
         'Error Handling:\n' +
         '  - Rate limit (429): errorCode="RATE_LIMITED", message includes retry timing\n' +
         '  - Not found (404): errorCode="NOT_FOUND" if storeId doesn\'t exist\n' +
@@ -200,6 +328,12 @@ export function getGoogleKeywords(server: PinMeToMcpServer) {
     }) => {
       const { apiBaseUrl, accountId } = server.configs;
 
+      // Check for data lag warning (convert month to last day of month for comparison)
+      const [year, month] = to.split('-').map(Number);
+      const lastDayOfMonth = new Date(year, month, 0).getDate();
+      const toDateStr = `${to}-${String(lastDayOfMonth).padStart(2, '0')}`;
+      const lagWarning = checkGoogleDataLag(toDateStr);
+
       const url = storeId
         ? `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords/${storeId}?from=${from}&to=${to}`
         : `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords?from=${from}&to=${to}`;
@@ -212,14 +346,17 @@ export function getGoogleKeywords(server: PinMeToMcpServer) {
       }
 
       const textContent = storeId
-        ? (response_format === 'markdown'
-            ? formatLocationKeywordsAsMarkdown(result.data, storeId)
-            : JSON.stringify(result.data))
+        ? response_format === 'markdown'
+          ? formatLocationKeywordsAsMarkdown(result.data, storeId)
+          : JSON.stringify(result.data)
         : formatContent(result.data, response_format, formatKeywordsAsMarkdown);
 
       return {
         content: [{ type: 'text', text: textContent }],
-        structuredContent: { data: result.data }
+        structuredContent: {
+          data: result.data,
+          ...(lagWarning && lagWarning)
+        }
       };
     }
   );
