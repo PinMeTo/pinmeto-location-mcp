@@ -13,7 +13,7 @@ import {
   finalizeInsights,
   isValidDate,
   // Review insights helpers
-  RawReview as InsightsRawReview,
+  RawReview,
   SanitizedReview,
   sanitizeReviews,
   estimateTokens,
@@ -168,20 +168,6 @@ const CompareWithSchema = z
 // ============================================================================
 // Reviews Cache - Shared between ratings and reviews tools
 // ============================================================================
-
-/**
- * Raw review data from PinMeTo API (before transformation to our schema)
- */
-interface RawReview {
-  storeId: string;
-  rating: number;
-  comment?: string;
-  date?: string;
-  hasAnswer?: boolean;
-  reply?: string;
-  replyDate?: string;
-  id?: string;
-}
 
 /**
  * Cache entry for reviews data
@@ -1061,6 +1047,9 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
       // Use storeIds to fetch from multiple locations or all if not specified
       let allReviews: RawReview[] = [];
 
+      // Track store fetch failures for error reporting
+      const storeFailures: Array<{ storeId: string; error: ApiError }> = [];
+
       if (storeIds && storeIds.length > 0) {
         // Fetch reviews for specific stores in parallel
         const fetchPromises = storeIds.map(storeId =>
@@ -1068,11 +1057,23 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         );
         const results = await Promise.all(fetchPromises);
 
-        for (const result of results) {
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i];
           if (result.ok) {
             allReviews.push(...result.data);
+          } else {
+            // Track failure with store ID for error reporting
+            storeFailures.push({ storeId: storeIds[i], error: result.error });
           }
-          // Silently skip failed stores - we can analyze what we have
+        }
+
+        // If ALL stores failed, return error with first failure details
+        if (storeIds.length > 0 && allReviews.length === 0 && storeFailures.length > 0) {
+          const failedStoreIds = storeFailures.map(f => f.storeId).join(', ');
+          return formatErrorResponse(
+            storeFailures[0].error,
+            `all requested stores (${failedStoreIds})`
+          );
         }
       } else {
         // Fetch all reviews
@@ -1256,18 +1257,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
       }
 
       // Sanitize reviews and apply sampling strategy
-      const sanitized = sanitizeReviews(
-        allReviews.map(r => ({
-          id: r.id,
-          storeId: r.storeId,
-          rating: r.rating,
-          comment: r.comment,
-          date: r.date || '',
-          hasAnswer: r.hasAnswer,
-          reply: r.reply,
-          replyDate: r.replyDate
-        }))
-      );
+      const sanitized = sanitizeReviews(allReviews);
 
       const reviewsToAnalyze = applySamplingStrategy(sanitized, samplingStrategy);
       const analyzedReviewCount = reviewsToAnalyze.length;
@@ -1286,10 +1276,14 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
 
         try {
           // Build the sampling function that wraps server.server.createMessage
+          // MCP Sampling Access Pattern:
+          // PinMeToMcpServer wraps the @modelcontextprotocol/sdk Server class.
+          // To use MCP Sampling (createMessage), we access the underlying SDK server.
+          // This uses 'as any' because PinMeToMcpServer doesn't expose .server publicly.
+          // Requires: @modelcontextprotocol/sdk >= 1.0.0 with sampling support.
           const samplingFn = async (
             request: ReturnType<typeof buildSamplingRequest>
           ): Promise<SamplingResponse> => {
-            // Access underlying SDK server for sampling
             const sdkServer = (server as any).server;
             if (!sdkServer || typeof sdkServer.createMessage !== 'function') {
               throw new Error('MCP Sampling not available');
@@ -1344,13 +1338,15 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
           }
         } catch (e) {
           // Sampling failed - fall back to statistical analysis
+          // Include error details in samplingNote for debugging
+          const errorMessage = e instanceof Error ? e.message : String(e);
           console.error('MCP Sampling failed, falling back to statistical analysis:', e);
           analysisMethod = 'statistical';
           analysisData =
             analysisType === 'comparison'
               ? performStatisticalLocationComparison(reviewsToAnalyze)
               : performStatisticalAnalysis(reviewsToAnalyze);
-          samplingNote = 'AI analysis failed, using statistical fallback';
+          samplingNote = `AI analysis failed (${errorMessage}), using statistical fallback. Set forceRefresh=true to retry.`;
         }
       } else {
         // Use statistical fallback
@@ -1366,6 +1362,19 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
       if (samplingStrategy !== 'full' && !samplingNote) {
         samplingNote = `Used ${samplingStrategy} sampling: analyzed ${analyzedReviewCount} of ${totalReviewCount} reviews`;
       }
+
+      // Add partial store failure warning if some (but not all) stores failed
+      if (storeFailures.length > 0 && allReviews.length > 0) {
+        const failureNote = `${storeFailures.length} of ${storeIds!.length} stores failed to fetch: ${storeFailures.map(f => f.storeId).join(', ')}`;
+        samplingNote = samplingNote ? `${samplingNote}. ${failureNote}` : failureNote;
+      }
+
+      // Determine single warning code (avoid overwrite by using priority)
+      const warningCode = samplingStrategy !== 'full'
+        ? 'SAMPLED_ANALYSIS' as const
+        : (samplingNote && analysisMethod === 'statistical')
+          ? 'SAMPLING_NOT_SUPPORTED' as const
+          : undefined;
 
       // Build metadata
       const metadata: ReviewInsightsMetadata = {
@@ -1398,8 +1407,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         structuredContent: {
           data: analysisData,
           metadata,
-          ...(samplingNote && analysisMethod === 'statistical' && { warningCode: 'SAMPLING_NOT_SUPPORTED' as const }),
-          ...(samplingStrategy !== 'full' && { warningCode: 'SAMPLED_ANALYSIS' as const })
+          ...(warningCode && { warningCode })
         }
       };
     }

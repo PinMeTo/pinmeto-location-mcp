@@ -31,6 +31,7 @@ export {
   processInBatches,
   DEFAULT_BATCH_SIZE,
   MAX_BATCHES,
+  BATCH_FAILURE_THRESHOLD,
   SamplingFunction,
   BatchProcessingResult
 } from './batching';

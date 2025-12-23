@@ -10,15 +10,28 @@ import { parseSamplingResponse, normalizeResponseData, SamplingResponse, Samplin
 
 /**
  * Default batch size for processing reviews.
- * ~300 reviews keeps us well under typical context limits.
+ * Rationale: 300 reviews × 150 tokens/review = ~45K tokens per batch.
+ * This leaves room for system prompts (~2K), response (~4K), and safety margin,
+ * staying well under Claude's 100K context window while maximizing batch efficiency.
  */
 export const DEFAULT_BATCH_SIZE = 300;
 
 /**
  * Maximum number of batches before requiring explicit confirmation.
- * Prevents runaway token usage.
+ * Rationale: 20 batches × 300 reviews = 6,000 reviews maximum.
+ * At ~50K tokens per batch (including response), 20 batches = ~1M tokens total.
+ * This caps costs at roughly $15-30 for a single analysis while covering most use cases.
  */
 export const MAX_BATCHES = 20;
+
+/**
+ * Failure threshold for batch processing (0-1).
+ * Rationale: 50% threshold balances resilience vs. resource waste.
+ * If >50% of batches fail, likely a systemic issue (auth, rate limits, bad data).
+ * Lower threshold (e.g., 25%) would abort too early on transient errors.
+ * Higher threshold (e.g., 75%) wastes resources on failing requests.
+ */
+export const BATCH_FAILURE_THRESHOLD = 0.5;
 
 /**
  * Function type for making sampling requests.
@@ -87,6 +100,18 @@ export async function processInBatches(
         : `Batch ${i + 1}: ${(e as Error).message}`;
       errors.push(errorMsg);
       console.error(`Batch ${i + 1}/${batches.length} failed:`, e);
+
+      // Check failure threshold - fail fast if too many batches are failing
+      const processedCount = i + 1;
+      const failureRate = errors.length / processedCount;
+      // Only check threshold after processing at least 2 batches to avoid premature abort
+      if (processedCount >= 2 && failureRate > BATCH_FAILURE_THRESHOLD) {
+        throw new Error(
+          `Batch processing aborted: ${errors.length}/${processedCount} batches failed ` +
+          `(${Math.round(failureRate * 100)}% failure rate exceeds ${BATCH_FAILURE_THRESHOLD * 100}% threshold). ` +
+          `Errors: ${errors.join('; ')}`
+        );
+      }
     }
   }
 

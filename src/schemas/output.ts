@@ -522,8 +522,8 @@ export type AnalysisMethod = z.infer<typeof AnalysisMethodSchema>;
  * Theme identified in reviews (positive or negative).
  */
 export const ReviewInsightsThemeSchema = z.object({
-  theme: z.string().describe('Theme or topic identified (e.g., "Service Speed", "Staff Friendliness")'),
-  frequency: z.number().describe('How often this theme appears in reviews'),
+  theme: z.string().min(1).describe('Theme or topic identified (e.g., "Service Speed", "Staff Friendliness")'),
+  frequency: z.number().int().nonnegative().describe('How often this theme appears in reviews'),
   severity: SeveritySchema.optional().describe('Severity level (for negative themes only)'),
   exampleQuote: z.string().optional().describe('Representative quote illustrating this theme')
 });
@@ -534,10 +534,10 @@ export type ReviewInsightsTheme = z.infer<typeof ReviewInsightsThemeSchema>;
  * Issue identified in negative reviews.
  */
 export const ReviewInsightsIssueSchema = z.object({
-  category: z.string().describe('Issue category (e.g., "Wait Times", "Cleanliness", "Staff")'),
-  description: z.string().describe('Description of the issue'),
+  category: z.string().min(1).describe('Issue category (e.g., "Wait Times", "Cleanliness", "Staff")'),
+  description: z.string().min(1).describe('Description of the issue'),
   severity: SeveritySchema.describe('Severity level of the issue'),
-  frequency: z.number().describe('How often this issue appears'),
+  frequency: z.number().int().nonnegative().describe('How often this issue appears'),
   affectedLocations: z.array(z.string()).optional().describe('Store IDs of affected locations'),
   suggestedAction: z.string().optional().describe('Recommended action to address the issue')
 });
@@ -548,10 +548,10 @@ export type ReviewInsightsIssue = z.infer<typeof ReviewInsightsIssueSchema>;
  * Location comparison data for multi-location analysis.
  */
 export const ReviewInsightsLocationComparisonSchema = z.object({
-  storeId: z.string().describe('Store identifier'),
+  storeId: z.string().min(1).describe('Store identifier'),
   locationName: z.string().optional().describe('Location name'),
-  averageRating: z.number().describe('Average rating for this location'),
-  reviewCount: z.number().describe('Number of reviews analyzed'),
+  averageRating: z.number().min(1).max(5).describe('Average rating for this location (1-5)'),
+  reviewCount: z.number().int().nonnegative().describe('Number of reviews analyzed'),
   sentiment: SentimentSchema.describe('Overall sentiment for this location'),
   strengths: z.array(z.string()).describe('Key strengths identified'),
   weaknesses: z.array(z.string()).describe('Key weaknesses identified')
@@ -566,16 +566,16 @@ export const ReviewInsightsTrendsSchema = z.object({
   direction: z.enum(['improving', 'stable', 'declining']).describe('Overall trend direction'),
   previousPeriod: z
     .object({
-      averageRating: z.number().describe('Average rating in prior period'),
+      averageRating: z.number().min(1).max(5).describe('Average rating in prior period (1-5)'),
       sentiment: SentimentSchema.describe('Overall sentiment in prior period'),
-      reviewCount: z.number().describe('Number of reviews in prior period')
+      reviewCount: z.number().int().nonnegative().describe('Number of reviews in prior period')
     })
     .describe('Prior period summary'),
   currentPeriod: z
     .object({
-      averageRating: z.number().describe('Average rating in current period'),
+      averageRating: z.number().min(1).max(5).describe('Average rating in current period (1-5)'),
       sentiment: SentimentSchema.describe('Overall sentiment in current period'),
-      reviewCount: z.number().describe('Number of reviews in current period')
+      reviewCount: z.number().int().nonnegative().describe('Number of reviews in current period')
     })
     .describe('Current period summary'),
   emergingIssues: z.array(z.string()).describe('New issues that emerged'),
@@ -588,18 +588,18 @@ export type ReviewInsightsTrends = z.infer<typeof ReviewInsightsTrendsSchema>;
  * Executive summary of review insights.
  */
 export const ReviewInsightsSummarySchema = z.object({
-  executiveSummary: z.string().describe('2-3 sentence summary of findings'),
+  executiveSummary: z.string().min(1).describe('2-3 sentence summary of findings'),
   overallSentiment: SentimentSchema.describe('Overall sentiment classification'),
-  averageRating: z.number().describe('Average rating across analyzed reviews'),
+  averageRating: z.number().min(1).max(5).describe('Average rating across analyzed reviews (1-5)'),
   sentimentDistribution: z
     .object({
-      positive: z.number().describe('Percentage of positive reviews'),
-      neutral: z.number().describe('Percentage of neutral reviews'),
-      negative: z.number().describe('Percentage of negative reviews')
+      positive: z.number().min(0).max(100).describe('Percentage of positive reviews (0-100)'),
+      neutral: z.number().min(0).max(100).describe('Percentage of neutral reviews (0-100)'),
+      negative: z.number().min(0).max(100).describe('Percentage of negative reviews (0-100)')
     })
     .describe('Sentiment breakdown by percentage'),
   ratingDistribution: z
-    .record(z.string(), z.number())
+    .record(z.string(), z.number().int().nonnegative())
     .describe('Rating distribution (e.g., {"5": 100, "4": 50})')
 });
 
@@ -632,13 +632,13 @@ export type ReviewInsightsData = z.infer<typeof ReviewInsightsDataSchema>;
  * Metadata for review insights response.
  */
 export const ReviewInsightsMetadataSchema = z.object({
-  locationCount: z.number().describe('Number of locations analyzed'),
-  totalReviewCount: z.number().describe('Total reviews matching query criteria'),
-  analyzedReviewCount: z.number().describe('Reviews actually analyzed (may differ if sampled)'),
+  locationCount: z.number().int().nonnegative().describe('Number of locations analyzed'),
+  totalReviewCount: z.number().int().nonnegative().describe('Total reviews matching query criteria'),
+  analyzedReviewCount: z.number().int().nonnegative().describe('Reviews actually analyzed (may differ if sampled)'),
   dateRange: DateRangeSchema.describe('Date range for the analysis'),
   analysisType: AnalysisTypeSchema.describe('Type of analysis performed'),
   analysisMethod: AnalysisMethodSchema.describe('How analysis was performed (ai_sampling or statistical)'),
-  generatedAt: z.string().describe('ISO timestamp when analysis was generated'),
+  generatedAt: z.string().min(1).describe('ISO timestamp when analysis was generated'),
   samplingStrategy: SamplingStrategySchema.optional().describe('Sampling strategy used (if applicable)'),
   samplingNote: z.string().optional().describe('Human-readable note about sampling (if applicable)'),
   cache: z
@@ -646,7 +646,7 @@ export const ReviewInsightsMetadataSchema = z.object({
       hit: z.boolean().describe('Whether result was served from cache'),
       cachedAt: z.string().optional().describe('ISO timestamp when cached'),
       expiresAt: z.string().optional().describe('ISO timestamp when cache expires'),
-      ttl: z.number().optional().describe('Cache TTL in seconds')
+      ttl: z.number().int().nonnegative().optional().describe('Cache TTL in seconds')
     })
     .optional()
     .describe('Cache information')
@@ -659,19 +659,19 @@ export type ReviewInsightsMetadata = z.infer<typeof ReviewInsightsMetadataSchema
  * Returned when review count exceeds threshold and confirmation is needed.
  */
 export const LargeDatasetWarningOptionSchema = z.object({
-  option: z.string().describe('Option identifier (e.g., "representative_sample", "proceed_full")'),
-  description: z.string().describe('Human-readable description of this option'),
-  estimatedTokens: z.number().describe('Estimated tokens for this option'),
+  option: z.string().min(1).describe('Option identifier (e.g., "representative_sample", "proceed_full")'),
+  description: z.string().min(1).describe('Human-readable description of this option'),
+  estimatedTokens: z.number().int().nonnegative().describe('Estimated tokens for this option'),
   parameters: z.record(z.unknown()).describe('Parameters to pass to proceed with this option')
 });
 
 export const LargeDatasetWarningSchema = z.object({
-  totalReviewCount: z.number().describe('Total reviews found'),
-  locationCount: z.number().describe('Number of locations'),
+  totalReviewCount: z.number().int().nonnegative().describe('Total reviews found'),
+  locationCount: z.number().int().nonnegative().describe('Number of locations'),
   dateRange: DateRangeSchema.describe('Date range requested'),
-  estimatedTokens: z.number().describe('Estimated tokens for full analysis'),
-  estimatedTokensFormatted: z.string().describe('Human-readable token estimate (e.g., "~1.3M tokens")'),
-  message: z.string().describe('Human-readable explanation'),
+  estimatedTokens: z.number().int().nonnegative().describe('Estimated tokens for full analysis'),
+  estimatedTokensFormatted: z.string().min(1).describe('Human-readable token estimate (e.g., "~1.3M tokens")'),
+  message: z.string().min(1).describe('Human-readable explanation'),
   options: z.array(LargeDatasetWarningOptionSchema).describe('Available options to proceed')
 });
 

@@ -21,6 +21,7 @@ import {
 } from '../src/helpers';
 import {
   buildSamplingRequest,
+  buildMergeRequest,
   parseSamplingResponse,
   normalizeResponseData,
   SamplingParseError
@@ -205,13 +206,38 @@ describe('Review Insights - Sampling Strategies', () => {
   });
 
   describe('selectRecentWeightedSample', () => {
+    // Helper to create date strings relative to now
+    const daysAgo = (days: number): string => {
+      const date = new Date();
+      date.setDate(date.getDate() - days);
+      return date.toISOString().split('T')[0];
+    };
+
     it('should prioritize recent reviews', () => {
-      const result = selectRecentWeightedSample(mockReviews, 5);
+      // Create reviews with dates relative to today for consistent testing
+      const recentWeightedReviews: SanitizedReview[] = [
+        // Recent reviews (within 3 months = 90 days)
+        { id: '1', storeId: 'store-1', rating: 5, text: 'Recent 1', date: daysAgo(7), hasOwnerResponse: false },
+        { id: '2', storeId: 'store-1', rating: 4, text: 'Recent 2', date: daysAgo(30), hasOwnerResponse: false },
+        { id: '3', storeId: 'store-1', rating: 3, text: 'Recent 3', date: daysAgo(60), hasOwnerResponse: false },
+        // Medium reviews (3-6 months = 91-180 days)
+        { id: '4', storeId: 'store-1', rating: 5, text: 'Medium 1', date: daysAgo(120), hasOwnerResponse: false },
+        { id: '5', storeId: 'store-1', rating: 4, text: 'Medium 2', date: daysAgo(150), hasOwnerResponse: false },
+        // Older reviews (>6 months = >180 days)
+        { id: '6', storeId: 'store-1', rating: 5, text: 'Old 1', date: daysAgo(200), hasOwnerResponse: false },
+        { id: '7', storeId: 'store-1', rating: 4, text: 'Old 2', date: daysAgo(250), hasOwnerResponse: false },
+        { id: '8', storeId: 'store-1', rating: 3, text: 'Old 3', date: daysAgo(300), hasOwnerResponse: false },
+        { id: '9', storeId: 'store-1', rating: 2, text: 'Old 4', date: daysAgo(350), hasOwnerResponse: false },
+        { id: '10', storeId: 'store-1', rating: 1, text: 'Old 5', date: daysAgo(400), hasOwnerResponse: false }
+      ];
+
+      const result = selectRecentWeightedSample(recentWeightedReviews, 5);
       expect(result.length).toBeLessThanOrEqual(5);
-      // Result should include some recent reviews (from late January)
-      const dates = result.map(r => r.date).sort();
-      // At least one review should be from the second half of the month
-      const hasRecentReview = dates.some(d => d >= '2024-01-15');
+
+      // With 60% weighting to recent (3 reviews), 25% to medium (2 reviews), 15% to older (5 reviews)
+      // We should get mostly recent reviews when sampling 5 from 10
+      const recentCutoff = daysAgo(90);
+      const hasRecentReview = result.some(r => r.date >= recentCutoff);
       expect(hasRecentReview).toBe(true);
     });
   });
@@ -410,6 +436,69 @@ describe('Review Insights - Sampling Request Builder', () => {
         analysisType: 'summary'
       });
       expect(request.temperature).toBeLessThan(0.5); // Low temperature for consistent analysis
+    });
+  });
+
+  describe('buildMergeRequest', () => {
+    const mockPartialResults: ReviewInsightsData[] = [
+      {
+        summary: {
+          executiveSummary: 'Batch 1 summary',
+          overallSentiment: 'positive',
+          averageRating: 4.5,
+          sentimentDistribution: { positive: 80, neutral: 15, negative: 5 },
+          ratingDistribution: { '5': 40, '4': 30, '3': 10, '2': 3, '1': 2 }
+        }
+      },
+      {
+        summary: {
+          executiveSummary: 'Batch 2 summary',
+          overallSentiment: 'positive',
+          averageRating: 4.2,
+          sentimentDistribution: { positive: 70, neutral: 20, negative: 10 },
+          ratingDistribution: { '5': 35, '4': 25, '3': 15, '2': 5, '1': 5 }
+        }
+      }
+    ];
+
+    it('should build a valid merge request', () => {
+      const request = buildMergeRequest(mockPartialResults, 'summary');
+      expect(request.messages).toHaveLength(1);
+      expect(request.messages[0].role).toBe('user');
+      expect(request.maxTokens).toBe(4000);
+      expect(request.systemPrompt).toBeDefined();
+    });
+
+    it('should include partial results count in message', () => {
+      const request = buildMergeRequest(mockPartialResults, 'summary');
+      const messageText = request.messages[0].content.text;
+      expect(messageText).toContain('2 partial analysis results');
+    });
+
+    it('should include merge instructions', () => {
+      const request = buildMergeRequest(mockPartialResults, 'summary');
+      const messageText = request.messages[0].content.text;
+      expect(messageText).toContain('Combine statistics');
+      expect(messageText).toContain('Deduplicate themes');
+      expect(messageText).toContain('Consolidate issues');
+    });
+
+    it('should serialize partial results in message', () => {
+      const request = buildMergeRequest(mockPartialResults, 'summary');
+      const messageText = request.messages[0].content.text;
+      expect(messageText).toContain('Batch 1 summary');
+      expect(messageText).toContain('Batch 2 summary');
+    });
+
+    it('should specify analysis type in response format', () => {
+      const request = buildMergeRequest(mockPartialResults, 'themes');
+      const messageText = request.messages[0].content.text;
+      expect(messageText).toContain('themes analysis');
+    });
+
+    it('should use lower temperature for merge operations', () => {
+      const request = buildMergeRequest(mockPartialResults, 'summary');
+      expect(request.temperature).toBe(0.2);
     });
   });
 });

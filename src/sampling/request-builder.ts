@@ -91,7 +91,10 @@ ${reviewsText}`;
     maxTokens,
     systemPrompt: ANALYSIS_SYSTEM_PROMPT,
     includeContext: 'none', // Don't include conversation history
-    temperature: 0.3 // Lower temperature for consistent, factual analysis
+    // Temperature 0.3: Low enough for consistent, reproducible analysis results
+    // while allowing some variation in phrasing. Higher values (0.7+) produce
+    // inconsistent theme categorization; lower (0.1) produces repetitive text.
+    temperature: 0.3
   };
 }
 
@@ -155,6 +158,9 @@ Ensure all numbers are recalculated for the combined dataset.`;
     maxTokens: 4000,
     systemPrompt: ANALYSIS_SYSTEM_PROMPT,
     includeContext: 'none',
-    temperature: 0.2 // Even lower for merge operations
+    // Temperature 0.2: Lower than analysis (0.3) because merging requires
+    // deterministic arithmetic (summing counts, averaging ratings).
+    // Creative variation here could produce inconsistent numeric results.
+    temperature: 0.2
   };
 }
