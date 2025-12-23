@@ -67,7 +67,8 @@ import {
   normalizeResponseData,
   processInBatches,
   SamplingResponse,
-  DEFAULT_BATCH_SIZE
+  DEFAULT_BATCH_SIZE,
+  PeriodContext
 } from '../../sampling';
 
 // Shared date validation schemas
@@ -77,6 +78,41 @@ const DateSchema = z
   .refine(isValidDate, {
     message: 'Invalid date - check month/day values (e.g., June has 30 days, not 31)'
   });
+
+/**
+ * Calculates period context for trends analysis by splitting the date range at the midpoint.
+ * The prior period is the first half, the current period is the second half.
+ *
+ * @param from Start date (YYYY-MM-DD)
+ * @param to End date (YYYY-MM-DD)
+ * @returns PeriodContext with explicit date boundaries
+ */
+function calculatePeriodContextForTrends(from: string, to: string): PeriodContext {
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+
+  // Calculate midpoint
+  const totalMs = toDate.getTime() - fromDate.getTime();
+  const midpointMs = fromDate.getTime() + totalMs / 2;
+  const midpointDate = new Date(midpointMs);
+
+  // Format as YYYY-MM-DD
+  const formatDate = (d: Date): string => d.toISOString().split('T')[0];
+
+  // Prior period ends the day before midpoint, current period starts at midpoint
+  const priorEnd = new Date(midpointMs - 24 * 60 * 60 * 1000); // Day before midpoint
+
+  return {
+    priorPeriod: {
+      from,
+      to: formatDate(priorEnd)
+    },
+    currentPeriod: {
+      from: formatDate(midpointDate),
+      to
+    }
+  };
+}
 
 const MonthSchema = z
   .string()
@@ -1230,12 +1266,16 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
             };
           };
 
+          // Calculate period context for trends analysis
+          const periodContext =
+            analysisType === 'trends' ? calculatePeriodContextForTrends(from, to) : undefined;
+
           // Check if we need batching
           if (analyzedReviewCount > DEFAULT_BATCH_SIZE) {
             // Process in batches
             const batchResult = await processInBatches(
               reviewsToAnalyze,
-              { analysisType, themes },
+              { analysisType, themes, periodContext },
               samplingFn
             );
             analysisData = batchResult.data;
@@ -1249,7 +1289,8 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
             const request = buildSamplingRequest(reviewsToAnalyze, {
               analysisType,
               themes,
-              maxQuotes: 5
+              maxQuotes: 5,
+              periodContext
             });
             const response = await samplingFn(request);
             const parsed = parseSamplingResponse(response, analysisType);

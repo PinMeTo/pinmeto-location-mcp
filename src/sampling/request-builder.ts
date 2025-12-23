@@ -4,7 +4,10 @@
 
 import { AnalysisType } from '../schemas/output';
 import { SanitizedReview } from '../helpers';
-import { getAnalysisPrompt, ANALYSIS_SYSTEM_PROMPT } from './prompts';
+import { getAnalysisPrompt, ANALYSIS_SYSTEM_PROMPT, PeriodContext } from './prompts';
+
+// Re-export for consumers who need to construct period context
+export type { PeriodContext };
 
 /**
  * Options for building a sampling request.
@@ -20,6 +23,8 @@ export interface SamplingRequestOptions {
   locationName?: string;
   /** Maximum tokens for response */
   maxTokens?: number;
+  /** Period context for trends analysis (defines current vs prior period boundaries) */
+  periodContext?: PeriodContext;
 }
 
 /**
@@ -51,13 +56,15 @@ export function buildSamplingRequest(
   reviews: SanitizedReview[],
   options: SamplingRequestOptions
 ): SamplingRequest {
-  const { analysisType, maxQuotes = 3, themes, locationName, maxTokens = 4000 } = options;
+  const { analysisType, maxQuotes = 3, themes, locationName, maxTokens = 4000, periodContext } =
+    options;
 
   // Get the analysis prompt
   const analysisPrompt = getAnalysisPrompt(analysisType, {
     maxQuotes,
     themes,
-    locationName
+    locationName,
+    periodContext
   });
 
   // Format reviews for the prompt

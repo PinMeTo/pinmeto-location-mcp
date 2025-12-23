@@ -14,7 +14,8 @@ export {
   buildSamplingRequest,
   buildMergeRequest,
   SamplingRequest,
-  SamplingRequestOptions
+  SamplingRequestOptions,
+  PeriodContext
 } from './request-builder';
 
 // Response parsing
