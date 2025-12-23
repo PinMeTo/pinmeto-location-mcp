@@ -539,6 +539,7 @@ export const ReviewInsightsIssueSchema = z.object({
   severity: SeveritySchema.describe('Severity level of the issue'),
   frequency: z.number().int().nonnegative().describe('How often this issue appears'),
   affectedLocations: z.array(z.string()).optional().describe('Store IDs of affected locations'),
+  exampleQuotes: z.array(z.string()).optional().describe('Representative quotes illustrating this issue'),
   suggestedAction: z.string().optional().describe('Recommended action to address the issue')
 });
 
@@ -553,17 +554,42 @@ export const ReviewInsightsLocationComparisonSchema = z.object({
   averageRating: z.number().min(1).max(5).describe('Average rating for this location (1-5)'),
   reviewCount: z.number().int().nonnegative().describe('Number of reviews analyzed'),
   sentiment: SentimentSchema.describe('Overall sentiment for this location'),
+  lowConfidence: z.boolean().optional().describe('True when location has few reviews (<10)'),
   strengths: z.array(z.string()).describe('Key strengths identified'),
-  weaknesses: z.array(z.string()).describe('Key weaknesses identified')
+  weaknesses: z.array(z.string()).describe('Key weaknesses identified'),
+  recommendations: z.array(z.string()).optional().describe('Specific actions to improve this location')
+});
+
+/**
+ * Best performer data for comparison analysis.
+ */
+export const ReviewInsightsBestPerformerSchema = z.object({
+  storeId: z.string().min(1).describe('Store identifier of the best performing location'),
+  reason: z.string().describe('Why this location performs best'),
+  bestPractices: z.array(z.string()).describe('Practices other locations should adopt')
 });
 
 export type ReviewInsightsLocationComparison = z.infer<typeof ReviewInsightsLocationComparisonSchema>;
+
+export type ReviewInsightsBestPerformer = z.infer<typeof ReviewInsightsBestPerformerSchema>;
+
+/**
+ * Prominence change for themes between periods.
+ */
+export const ReviewInsightsProminenceChangeSchema = z.object({
+  theme: z.string().min(1).describe('Theme name'),
+  trend: z.enum(['increasing', 'stable', 'decreasing']).describe('Direction of change'),
+  note: z.string().optional().describe('Brief explanation of the change')
+});
+
+export type ReviewInsightsProminenceChange = z.infer<typeof ReviewInsightsProminenceChangeSchema>;
 
 /**
  * Trends analysis comparing two time periods.
  */
 export const ReviewInsightsTrendsSchema = z.object({
-  direction: z.enum(['improving', 'stable', 'declining']).describe('Overall trend direction'),
+  direction: z.enum(['improving', 'stable', 'declining']).describe('Overall trend direction (based on ±0.2 rating threshold)'),
+  ratingChange: z.number().optional().describe('Rating change between periods (current - previous)'),
   previousPeriod: z
     .object({
       averageRating: z.number().min(1).max(5).describe('Average rating in prior period (1-5)'),
@@ -579,7 +605,8 @@ export const ReviewInsightsTrendsSchema = z.object({
     })
     .describe('Current period summary'),
   emergingIssues: z.array(z.string()).describe('New issues that emerged'),
-  resolvedIssues: z.array(z.string()).describe('Issues that were resolved')
+  resolvedIssues: z.array(z.string()).describe('Issues that were resolved'),
+  prominenceChanges: z.array(ReviewInsightsProminenceChangeSchema).optional().describe('Themes gaining or losing prominence')
 });
 
 export type ReviewInsightsTrends = z.infer<typeof ReviewInsightsTrendsSchema>;
@@ -600,7 +627,8 @@ export const ReviewInsightsSummarySchema = z.object({
     .describe('Sentiment breakdown by percentage'),
   ratingDistribution: z
     .record(z.string(), z.number().int().nonnegative())
-    .describe('Rating distribution (e.g., {"5": 100, "4": 50})')
+    .describe('Rating distribution (e.g., {"5": 100, "4": 50})'),
+  lowConfidence: z.boolean().optional().describe('True when sample size is small (<20 reviews)')
 });
 
 export type ReviewInsightsSummary = z.infer<typeof ReviewInsightsSummarySchema>;
@@ -623,6 +651,9 @@ export const ReviewInsightsDataSchema = z.object({
     .array(ReviewInsightsLocationComparisonSchema)
     .optional()
     .describe('Location comparison (for comparison analysis)'),
+  bestPerformer: ReviewInsightsBestPerformerSchema.optional().describe('Best performing location (for comparison analysis)'),
+  commonStrengths: z.array(z.string()).optional().describe('Strengths shared across locations (for comparison analysis)'),
+  commonWeaknesses: z.array(z.string()).optional().describe('Weaknesses shared across locations (for comparison analysis)'),
   trends: ReviewInsightsTrendsSchema.optional().describe('Trends analysis (for trends analysis)')
 });
 
