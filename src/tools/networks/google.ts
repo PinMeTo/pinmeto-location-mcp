@@ -1416,7 +1416,10 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
 
 /**
  * Check if MCP Sampling is supported by the connected client.
- * Returns true if sampling capability is available.
+ * Returns true only if the client explicitly advertised sampling capability
+ * during initialization. This avoids attempting sampling calls that would
+ * fail with -32601 "Method not found" on clients like Claude Desktop that
+ * don't support sampling.
  */
 async function checkSamplingSupport(server: PinMeToMcpServer): Promise<boolean> {
   try {
@@ -1426,13 +1429,25 @@ async function checkSamplingSupport(server: PinMeToMcpServer): Promise<boolean> 
       return false;
     }
 
-    // Check if createMessage method exists
+    // Check if createMessage method exists on the SDK
     if (typeof sdkServer.createMessage !== 'function') {
       return false;
     }
 
-    // The sampling capability is determined by the client during connection
-    // The server can attempt to use it and handle errors gracefully
+    // Check if getClientCapabilities method exists
+    if (typeof sdkServer.getClientCapabilities !== 'function') {
+      return false;
+    }
+
+    // Get the client's advertised capabilities from initialization
+    const clientCapabilities = sdkServer.getClientCapabilities();
+
+    // Client must have explicitly advertised sampling support
+    // If sampling is undefined, the client doesn't support it
+    if (!clientCapabilities?.sampling) {
+      return false;
+    }
+
     return true;
   } catch {
     return false;
