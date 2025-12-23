@@ -80,6 +80,37 @@ const DateSchema = z
   });
 
 /**
+ * Builds a human-readable location display name from location data.
+ * Combines name, locationDescriptor (if set), and city for unique identification.
+ *
+ * @param location Location data object
+ * @returns Display name like "H&M - Mall of Scandinavia, Stockholm" or "H&M, Stockholm"
+ */
+function buildLocationDisplayName(location: {
+  name?: string;
+  locationDescriptor?: string;
+  address?: { city?: string };
+}): string | undefined {
+  const { name, locationDescriptor, address } = location;
+
+  if (!name) return undefined;
+
+  const parts: string[] = [name];
+
+  // Add locationDescriptor if available (e.g., "Mall of Scandinavia")
+  if (locationDescriptor) {
+    parts[0] = `${name} - ${locationDescriptor}`;
+  }
+
+  // Add city if available
+  if (address?.city) {
+    parts.push(address.city);
+  }
+
+  return parts.join(', ');
+}
+
+/**
  * Calculates period context for trends analysis by splitting the date range at the midpoint.
  * The prior period is the first half, the current period is the second half.
  *
@@ -1064,6 +1095,20 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
       const uniqueStoreIds = new Set(allReviews.map(r => r.storeId));
       const locationCount = uniqueStoreIds.size;
 
+      // For single-location analysis, fetch location details to build a descriptive name
+      let locationName: string | undefined;
+      if (locationCount === 1) {
+        const singleStoreId = Array.from(uniqueStoreIds)[0];
+        const { locationsApiBaseUrl, accountId } = server.configs;
+        const locationUrl = `${locationsApiBaseUrl}/v4/${accountId}/locations/${singleStoreId}`;
+        const locationResult = await server.makePinMeToRequest(locationUrl);
+
+        if (locationResult.ok) {
+          locationName = buildLocationDisplayName(locationResult.data);
+        }
+        // If fetch fails, locationName stays undefined - analysis continues without it
+      }
+
       // Check if we have any reviews
       if (allReviews.length === 0) {
         const metadata: ReviewInsightsMetadata = {
@@ -1275,7 +1320,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
             // Process in batches
             const batchResult = await processInBatches(
               reviewsToAnalyze,
-              { analysisType, themes, periodContext },
+              { analysisType, themes, periodContext, locationName },
               samplingFn
             );
             analysisData = batchResult.data;
@@ -1290,7 +1335,8 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
               analysisType,
               themes,
               maxQuotes: 5,
-              periodContext
+              periodContext,
+              locationName
             });
             const response = await samplingFn(request);
             const parsed = parseSamplingResponse(response, analysisType);
