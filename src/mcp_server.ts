@@ -12,7 +12,13 @@ import { dirname, join } from 'path';
 import { ApiResult, ApiError, AuthError, mapAxiosErrorToApiError } from './errors';
 import { LocationCache } from './cache/location-cache';
 import { getLocations, getLocation, searchLocations } from './tools/locations/locations';
-import { getGoogleInsights, getGoogleRatings, getGoogleReviews, getGoogleKeywords } from './tools/networks/google';
+import {
+  getGoogleInsights,
+  getGoogleRatings,
+  getGoogleReviews,
+  getGoogleKeywords,
+  getGoogleReviewInsights
+} from './tools/networks/google';
 import {
   getFacebookInsights,
   getFacebookBrandpageInsights,
@@ -232,6 +238,7 @@ export function createMcpServer() {
   getGoogleRatings(mcpServer);
   getGoogleReviews(mcpServer);
   getGoogleKeywords(mcpServer);
+  getGoogleReviewInsights(mcpServer);
 
   // Facebook
   getFacebookInsights(mcpServer);

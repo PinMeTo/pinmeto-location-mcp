@@ -5,7 +5,9 @@ import {
   Insight,
   InsightValue,
   FlatInsight,
-  PeriodRange
+  PeriodRange,
+  SamplingStrategy,
+  AnalysisType
 } from './schemas/output';
 import { ApiError } from './errors';
 
@@ -749,4 +751,561 @@ export function formatContent<T>(
       return JSON.stringify(data);
     }
   }
+}
+
+// ============================================================================
+// Review Insights Helpers (MCP Sampling)
+// ============================================================================
+
+/**
+ * Raw review structure from PinMeTo API (before sanitization).
+ * Used internally for processing.
+ */
+export interface RawReview {
+  id?: string;
+  storeId: string;
+  rating: number;
+  comment?: string;
+  date: string;
+  hasAnswer?: boolean;
+  reply?: string;
+  replyDate?: string;
+}
+
+/**
+ * Sanitized review structure (PII removed) for sampling.
+ * Only contains data safe to send to AI for analysis.
+ */
+export interface SanitizedReview {
+  id: string;
+  storeId: string;
+  rating: number;
+  text: string;
+  date: string;
+  hasOwnerResponse: boolean;
+}
+
+/**
+ * Average tokens per review for estimation.
+ * Based on typical review length (~50-150 words) and tokenization overhead.
+ */
+export const TOKENS_PER_REVIEW = 150;
+
+/**
+ * Default thresholds for review insights processing.
+ */
+export const REVIEW_INSIGHTS_THRESHOLDS = {
+  /** Process immediately without warning */
+  immediateProcessing: 200,
+  /** Process but show token estimate in metadata */
+  warningRequired: 1000,
+  /** Require sampling or explicit confirmation */
+  forceSamplingRequired: 10000
+};
+
+/**
+ * Default sample size when using sampling strategies.
+ */
+export const DEFAULT_SAMPLE_SIZE = 500;
+
+/**
+ * Sanitizes review text by redacting potential PII.
+ * Removes/replaces phone numbers, email addresses, and common name patterns.
+ *
+ * @param text The review text to sanitize
+ * @returns Sanitized text with PII redacted
+ *
+ * @example
+ * sanitizeReviewText("Great service! Call me at 555-123-4567")
+ * // Returns: "Great service! Call me at [PHONE]"
+ */
+export function sanitizeReviewText(text: string): string {
+  if (!text) return '';
+
+  return (
+    text
+      // Phone numbers - international and US formats
+      // Matches: +1-234-567-8900, (555) 123-4567, 555.123.4567, +46 70 123 45 67
+      .replace(/(\+?[\d\s\-\.\(\)]{10,})/g, '[PHONE]')
+      // Email addresses
+      .replace(/[\w.\-+]+@[\w.\-]+\.\w{2,}/gi, '[EMAIL]')
+      // URLs (could contain tracking info)
+      .replace(/https?:\/\/[^\s]+/gi, '[URL]')
+      // Social media handles (@username)
+      .replace(/@[\w]+/g, '[HANDLE]')
+      // Clean up multiple consecutive [REDACTED] markers
+      .replace(/(\[(?:PHONE|EMAIL|URL|HANDLE)\]\s*)+/g, match => {
+        const types = match.match(/\[(PHONE|EMAIL|URL|HANDLE)\]/g) || [];
+        const unique = [...new Set(types)];
+        return unique.join(' ');
+      })
+  );
+}
+
+/**
+ * Sanitizes an array of raw reviews for safe AI processing.
+ * Removes PII and transforms to a minimal structure.
+ *
+ * @param reviews Array of raw reviews from API
+ * @returns Array of sanitized reviews safe for sampling
+ */
+export function sanitizeReviews(reviews: RawReview[]): SanitizedReview[] {
+  return reviews.map((review, index) => ({
+    id: review.id || `review-${index}`,
+    storeId: review.storeId,
+    rating: review.rating,
+    text: sanitizeReviewText(review.comment || ''),
+    date: review.date,
+    hasOwnerResponse: review.hasAnswer || !!review.reply
+  }));
+}
+
+/**
+ * Estimates the number of tokens for a set of reviews.
+ * Uses a conservative multiplier to account for prompt overhead.
+ *
+ * @param reviewCount Number of reviews
+ * @returns Estimated token count
+ */
+export function estimateTokens(reviewCount: number): number {
+  return reviewCount * TOKENS_PER_REVIEW;
+}
+
+/**
+ * Formats a token count as a human-readable string.
+ *
+ * @param tokens Token count
+ * @returns Formatted string (e.g., "~75K tokens", "~1.3M tokens")
+ */
+export function formatTokenEstimate(tokens: number): string {
+  if (tokens >= 1_000_000) {
+    return `~${(tokens / 1_000_000).toFixed(1)}M tokens`;
+  }
+  if (tokens >= 1_000) {
+    return `~${Math.round(tokens / 1_000)}K tokens`;
+  }
+  return `~${tokens} tokens`;
+}
+
+/**
+ * Selects a representative sample of reviews using stratified sampling.
+ * Ensures the sample reflects the overall distribution by:
+ * - Proportional representation by rating (1-5 stars)
+ * - Proportional representation by location
+ *
+ * @param reviews Array of reviews to sample from
+ * @param sampleSize Target sample size
+ * @returns Representative sample of reviews
+ */
+export function selectRepresentativeSample(
+  reviews: SanitizedReview[],
+  sampleSize: number = DEFAULT_SAMPLE_SIZE
+): SanitizedReview[] {
+  if (reviews.length <= sampleSize) {
+    return reviews;
+  }
+
+  // Calculate proportions by rating
+  const byRating: Map<number, SanitizedReview[]> = new Map();
+  for (const review of reviews) {
+    const rating = Math.round(review.rating);
+    if (!byRating.has(rating)) {
+      byRating.set(rating, []);
+    }
+    byRating.get(rating)!.push(review);
+  }
+
+  // Select proportionally from each rating bucket
+  const sample: SanitizedReview[] = [];
+  const totalReviews = reviews.length;
+
+  for (const [rating, ratingReviews] of byRating) {
+    // Calculate how many to take from this rating
+    const proportion = ratingReviews.length / totalReviews;
+    const count = Math.round(sampleSize * proportion);
+
+    // Shuffle and take the required count
+    const shuffled = shuffleArray([...ratingReviews]);
+    sample.push(...shuffled.slice(0, count));
+  }
+
+  // Adjust if we're over/under due to rounding
+  if (sample.length > sampleSize) {
+    return sample.slice(0, sampleSize);
+  }
+  if (sample.length < sampleSize) {
+    // Add more from the largest bucket
+    const largestBucket = Array.from(byRating.entries()).sort((a, b) => b[1].length - a[1].length)[0];
+    if (largestBucket) {
+      const remaining = sampleSize - sample.length;
+      const alreadyTaken = new Set(sample.map(r => r.id));
+      const additional = largestBucket[1].filter(r => !alreadyTaken.has(r.id)).slice(0, remaining);
+      sample.push(...additional);
+    }
+  }
+
+  return sample;
+}
+
+/**
+ * Selects a recent-weighted sample of reviews.
+ * Prioritizes recent reviews while maintaining some historical context:
+ * - 60% from last 3 months
+ * - 25% from 3-6 months ago
+ * - 15% from 6-12 months ago
+ *
+ * @param reviews Array of reviews to sample from
+ * @param sampleSize Target sample size
+ * @returns Recent-weighted sample of reviews
+ */
+export function selectRecentWeightedSample(
+  reviews: SanitizedReview[],
+  sampleSize: number = DEFAULT_SAMPLE_SIZE
+): SanitizedReview[] {
+  if (reviews.length <= sampleSize) {
+    return reviews;
+  }
+
+  const now = new Date();
+  const threeMonthsAgo = new Date(now);
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  const sixMonthsAgo = new Date(now);
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+  // Bucket reviews by recency
+  const recent: SanitizedReview[] = [];
+  const medium: SanitizedReview[] = [];
+  const older: SanitizedReview[] = [];
+
+  for (const review of reviews) {
+    const reviewDate = new Date(review.date);
+    if (reviewDate >= threeMonthsAgo) {
+      recent.push(review);
+    } else if (reviewDate >= sixMonthsAgo) {
+      medium.push(review);
+    } else {
+      older.push(review);
+    }
+  }
+
+  // Calculate target counts (60%, 25%, 15%)
+  const recentTarget = Math.round(sampleSize * 0.6);
+  const mediumTarget = Math.round(sampleSize * 0.25);
+  const olderTarget = sampleSize - recentTarget - mediumTarget;
+
+  // Take from each bucket (or all if less than target)
+  const sample: SanitizedReview[] = [];
+
+  // Recent
+  const shuffledRecent = shuffleArray([...recent]);
+  sample.push(...shuffledRecent.slice(0, Math.min(recentTarget, recent.length)));
+
+  // Medium
+  const shuffledMedium = shuffleArray([...medium]);
+  sample.push(...shuffledMedium.slice(0, Math.min(mediumTarget, medium.length)));
+
+  // Older
+  const shuffledOlder = shuffleArray([...older]);
+  sample.push(...shuffledOlder.slice(0, Math.min(olderTarget, older.length)));
+
+  // If we're under target, fill from the bucket with most remaining
+  if (sample.length < sampleSize) {
+    const remaining = sampleSize - sample.length;
+    const alreadyTaken = new Set(sample.map(r => r.id));
+
+    // Prioritize filling from recent first
+    const allRemaining = [
+      ...recent.filter(r => !alreadyTaken.has(r.id)),
+      ...medium.filter(r => !alreadyTaken.has(r.id)),
+      ...older.filter(r => !alreadyTaken.has(r.id))
+    ];
+
+    sample.push(...allRemaining.slice(0, remaining));
+  }
+
+  return sample;
+}
+
+/**
+ * Applies a sampling strategy to a set of reviews.
+ *
+ * @param reviews Array of reviews to sample
+ * @param strategy Sampling strategy to apply
+ * @param sampleSize Target sample size
+ * @returns Sampled reviews
+ */
+export function applySamplingStrategy(
+  reviews: SanitizedReview[],
+  strategy: SamplingStrategy,
+  sampleSize: number = DEFAULT_SAMPLE_SIZE
+): SanitizedReview[] {
+  switch (strategy) {
+    case 'full':
+      return reviews;
+    case 'representative':
+      return selectRepresentativeSample(reviews, sampleSize);
+    case 'recent_weighted':
+      return selectRecentWeightedSample(reviews, sampleSize);
+    default: {
+      const _exhaustive: never = strategy;
+      return reviews;
+    }
+  }
+}
+
+/**
+ * Fisher-Yates shuffle algorithm for randomizing array order.
+ * Used internally for sampling.
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+/**
+ * Builds a cache key for review insights.
+ * Includes all parameters that affect the analysis result.
+ *
+ * @param params Cache key parameters
+ * @returns Cache key string
+ */
+export function buildInsightsCacheKey(params: {
+  accountId: string;
+  storeId?: string;
+  storeIds?: string[];
+  from: string;
+  to: string;
+  analysisType: AnalysisType;
+  samplingStrategy?: SamplingStrategy;
+  sampleSize?: number;
+  minRating?: number;
+  maxRating?: number;
+  themes?: string[];
+}): string {
+  const parts = [
+    'review-insights',
+    params.accountId,
+    params.storeId || (params.storeIds?.sort().join(',') || 'all'),
+    params.from,
+    params.to,
+    params.analysisType,
+    params.minRating?.toString() || 'any',
+    params.maxRating?.toString() || 'any',
+    params.samplingStrategy || 'full',
+    params.sampleSize?.toString() || 'all',
+    params.themes?.sort().join(',') || 'all'
+  ];
+  return parts.join(':');
+}
+
+/**
+ * Determines the sentiment based on average rating.
+ * Used for statistical fallback when sampling is unavailable.
+ *
+ * @param avgRating Average rating (1-5)
+ * @returns Sentiment classification
+ */
+export function computeSentimentFromRating(avgRating: number): 'positive' | 'neutral' | 'negative' | 'mixed' {
+  if (avgRating >= 4.0) return 'positive';
+  if (avgRating >= 3.0) return 'neutral';
+  return 'negative';
+}
+
+/**
+ * Computes rating distribution from an array of reviews.
+ *
+ * @param reviews Array of reviews
+ * @returns Rating distribution object { "5": count, "4": count, ... }
+ */
+export function computeRatingDistribution(reviews: SanitizedReview[]): Record<string, number> {
+  const distribution: Record<string, number> = {};
+  for (const review of reviews) {
+    const key = String(Math.round(review.rating));
+    distribution[key] = (distribution[key] || 0) + 1;
+  }
+  return distribution;
+}
+
+/**
+ * Computes sentiment distribution percentages from reviews.
+ *
+ * @param reviews Array of reviews
+ * @returns Sentiment distribution percentages
+ */
+export function computeSentimentDistribution(reviews: SanitizedReview[]): {
+  positive: number;
+  neutral: number;
+  negative: number;
+} {
+  if (reviews.length === 0) {
+    return { positive: 0, neutral: 0, negative: 0 };
+  }
+
+  let positive = 0;
+  let neutral = 0;
+  let negative = 0;
+
+  for (const review of reviews) {
+    if (review.rating >= 4) {
+      positive++;
+    } else if (review.rating >= 3) {
+      neutral++;
+    } else {
+      negative++;
+    }
+  }
+
+  const total = reviews.length;
+  return {
+    positive: Math.round((positive / total) * 100),
+    neutral: Math.round((neutral / total) * 100),
+    negative: Math.round((negative / total) * 100)
+  };
+}
+
+// ============================================================================
+// Statistical Fallback Analysis
+// ============================================================================
+
+import { ReviewInsightsData, ReviewInsightsSummary } from './schemas/output';
+
+/**
+ * Computes average rating from reviews.
+ *
+ * @param reviews Array of reviews
+ * @returns Average rating rounded to 2 decimal places
+ */
+export function computeAverageRating(reviews: SanitizedReview[]): number {
+  if (reviews.length === 0) return 0;
+  const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+  return Math.round((sum / reviews.length) * 100) / 100;
+}
+
+/**
+ * Performs basic statistical analysis when MCP Sampling is unavailable.
+ * Provides a summary based purely on rating statistics without AI analysis.
+ *
+ * @param reviews Sanitized reviews to analyze
+ * @returns ReviewInsightsData with summary (themes/issues not available without AI)
+ */
+export function performStatisticalAnalysis(reviews: SanitizedReview[]): ReviewInsightsData {
+  if (reviews.length === 0) {
+    return {
+      summary: {
+        executiveSummary: 'No reviews found matching the specified criteria.',
+        overallSentiment: 'neutral',
+        averageRating: 0,
+        sentimentDistribution: { positive: 0, neutral: 0, negative: 0 },
+        ratingDistribution: {}
+      }
+    };
+  }
+
+  const avgRating = computeAverageRating(reviews);
+  const sentimentDist = computeSentimentDistribution(reviews);
+  const ratingDist = computeRatingDistribution(reviews);
+  const sentiment = computeSentimentFromRating(avgRating);
+
+  // Generate a basic executive summary
+  const executiveSummary = generateStatisticalSummary(
+    reviews.length,
+    avgRating,
+    sentimentDist,
+    ratingDist
+  );
+
+  return {
+    summary: {
+      executiveSummary,
+      overallSentiment: sentiment,
+      averageRating: avgRating,
+      sentimentDistribution: sentimentDist,
+      ratingDistribution: ratingDist
+    }
+  };
+}
+
+/**
+ * Generates a human-readable summary from statistical data.
+ */
+function generateStatisticalSummary(
+  reviewCount: number,
+  avgRating: number,
+  sentimentDist: { positive: number; neutral: number; negative: number },
+  ratingDist: Record<string, number>
+): string {
+  const parts: string[] = [];
+
+  // Overall assessment
+  if (avgRating >= 4.5) {
+    parts.push(`Excellent customer satisfaction with ${avgRating} average rating across ${reviewCount} reviews.`);
+  } else if (avgRating >= 4.0) {
+    parts.push(`Strong customer satisfaction with ${avgRating} average rating across ${reviewCount} reviews.`);
+  } else if (avgRating >= 3.5) {
+    parts.push(`Mixed customer feedback with ${avgRating} average rating across ${reviewCount} reviews.`);
+  } else if (avgRating >= 3.0) {
+    parts.push(`Below average satisfaction with ${avgRating} average rating across ${reviewCount} reviews.`);
+  } else {
+    parts.push(`Poor customer satisfaction with ${avgRating} average rating across ${reviewCount} reviews.`);
+  }
+
+  // Sentiment breakdown
+  if (sentimentDist.positive >= 70) {
+    parts.push(`${sentimentDist.positive}% of reviews are positive.`);
+  } else if (sentimentDist.negative >= 30) {
+    parts.push(`${sentimentDist.negative}% of reviews express concerns that may need attention.`);
+  }
+
+  // Note about AI analysis
+  parts.push('Note: Full theme and issue analysis requires MCP Sampling support.');
+
+  return parts.join(' ');
+}
+
+/**
+ * Performs statistical location comparison when MCP Sampling is unavailable.
+ *
+ * @param reviews Sanitized reviews to analyze
+ * @returns ReviewInsightsData with location comparison
+ */
+export function performStatisticalLocationComparison(
+  reviews: SanitizedReview[]
+): ReviewInsightsData {
+  // Group reviews by location
+  const byLocation = new Map<string, SanitizedReview[]>();
+  for (const review of reviews) {
+    if (!byLocation.has(review.storeId)) {
+      byLocation.set(review.storeId, []);
+    }
+    byLocation.get(review.storeId)!.push(review);
+  }
+
+  // Compute stats for each location
+  const locationComparison = Array.from(byLocation.entries()).map(([storeId, locationReviews]) => {
+    const avgRating = computeAverageRating(locationReviews);
+    const sentiment = computeSentimentFromRating(avgRating);
+
+    return {
+      storeId,
+      averageRating: avgRating,
+      reviewCount: locationReviews.length,
+      sentiment,
+      strengths: avgRating >= 4 ? ['High average rating'] : [],
+      weaknesses: avgRating < 3 ? ['Below average rating'] : []
+    };
+  });
+
+  // Sort by rating descending
+  locationComparison.sort((a, b) => b.averageRating - a.averageRating);
+
+  // Overall summary
+  const summary = performStatisticalAnalysis(reviews);
+
+  return {
+    summary: summary.summary,
+    locationComparison
+  };
 }
