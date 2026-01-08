@@ -11,7 +11,18 @@ import {
   aggregateInsights,
   convertApiDataToInsights,
   finalizeInsights,
-  isValidDate
+  isValidDate,
+  // Review insights helpers
+  RawReview,
+  SanitizedReview,
+  sanitizeReviews,
+  estimateTokens,
+  formatTokenEstimate,
+  applySamplingStrategy,
+  buildInsightsCacheKey,
+  performStatisticalAnalysis,
+  performStatisticalLocationComparison,
+  REVIEW_INSIGHTS_THRESHOLDS
 } from '../../helpers';
 import {
   InsightsOutputSchema,
@@ -23,7 +34,17 @@ import {
   Insight,
   FlatInsight,
   PeriodRange,
-  Review
+  Review,
+  // Review insights schemas
+  ReviewInsightsOutputSchema,
+  ReviewInsightsData,
+  ReviewInsightsMetadata,
+  LargeDatasetWarning,
+  AnalysisType,
+  AnalysisTypeSchema,
+  SamplingStrategy,
+  SamplingStrategySchema,
+  AnalysisMethod
 } from '../../schemas/output';
 import {
   formatInsightsAsMarkdown,
@@ -36,8 +57,19 @@ import {
   formatLocationKeywordsAsMarkdown,
   formatInsightsWithComparisonAsMarkdown,
   formatFlatInsightsAsMarkdown,
-  InsightsFormatOptions
+  InsightsFormatOptions,
+  formatReviewInsightsAsMarkdown,
+  formatLargeDatasetWarningAsMarkdown
 } from '../../formatters';
+import {
+  buildSamplingRequest,
+  parseSamplingResponse,
+  normalizeResponseData,
+  processInBatches,
+  SamplingResponse,
+  DEFAULT_BATCH_SIZE,
+  PeriodContext
+} from '../../sampling';
 
 // Shared date validation schemas
 const DateSchema = z
@@ -46,6 +78,72 @@ const DateSchema = z
   .refine(isValidDate, {
     message: 'Invalid date - check month/day values (e.g., June has 30 days, not 31)'
   });
+
+/**
+ * Builds a human-readable location display name from location data.
+ * Combines name, locationDescriptor (if set), and city for unique identification.
+ *
+ * @param location Location data object
+ * @returns Display name like "H&M - Mall of Scandinavia, Stockholm" or "H&M, Stockholm"
+ */
+function buildLocationDisplayName(location: {
+  name?: string;
+  locationDescriptor?: string;
+  address?: { city?: string };
+}): string | undefined {
+  const { name, locationDescriptor, address } = location;
+
+  if (!name) return undefined;
+
+  const parts: string[] = [name];
+
+  // Add locationDescriptor if available (e.g., "Mall of Scandinavia")
+  if (locationDescriptor) {
+    parts[0] = `${name} - ${locationDescriptor}`;
+  }
+
+  // Add city if available
+  if (address?.city) {
+    parts.push(address.city);
+  }
+
+  return parts.join(', ');
+}
+
+/**
+ * Calculates period context for trends analysis by splitting the date range at the midpoint.
+ * The prior period is the first half, the current period is the second half.
+ *
+ * @param from Start date (YYYY-MM-DD)
+ * @param to End date (YYYY-MM-DD)
+ * @returns PeriodContext with explicit date boundaries
+ */
+function calculatePeriodContextForTrends(from: string, to: string): PeriodContext {
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+
+  // Calculate midpoint
+  const totalMs = toDate.getTime() - fromDate.getTime();
+  const midpointMs = fromDate.getTime() + totalMs / 2;
+  const midpointDate = new Date(midpointMs);
+
+  // Format as YYYY-MM-DD
+  const formatDate = (d: Date): string => d.toISOString().split('T')[0];
+
+  // Prior period ends the day before midpoint, current period starts at midpoint
+  const priorEnd = new Date(midpointMs - 24 * 60 * 60 * 1000); // Day before midpoint
+
+  return {
+    priorPeriod: {
+      from,
+      to: formatDate(priorEnd)
+    },
+    currentPeriod: {
+      from: formatDate(midpointDate),
+      to
+    }
+  };
+}
 
 const MonthSchema = z
   .string()
@@ -70,20 +168,6 @@ const CompareWithSchema = z
 // ============================================================================
 // Reviews Cache - Shared between ratings and reviews tools
 // ============================================================================
-
-/**
- * Raw review data from PinMeTo API (before transformation to our schema)
- */
-interface RawReview {
-  storeId: string;
-  rating: number;
-  comment?: string;
-  date?: string;
-  hasAnswer?: boolean;
-  reply?: string;
-  replyDate?: string;
-  id?: string;
-}
 
 /**
  * Cache entry for reviews data
@@ -770,4 +854,602 @@ export function getGoogleKeywords(server: PinMeToMcpServer) {
       };
     }
   );
+}
+
+// ============================================================================
+// Review Insights Cache
+// ============================================================================
+
+/**
+ * Cache entry for review insights.
+ * Longer TTL than raw reviews since AI analysis is expensive.
+ */
+interface InsightsCacheEntry {
+  data: ReviewInsightsData;
+  metadata: ReviewInsightsMetadata;
+  timestamp: number;
+}
+
+/**
+ * Review insights cache - separate from raw reviews cache.
+ * Key format based on all analysis parameters.
+ */
+const insightsCache = new Map<string, InsightsCacheEntry>();
+
+/**
+ * Insights cache TTL in milliseconds (1 hour - longer than raw reviews since analysis is expensive)
+ */
+const INSIGHTS_CACHE_TTL_MS = 60 * 60 * 1000;
+
+// ============================================================================
+// Review Insights Tool
+// ============================================================================
+
+/**
+ * Fetch AI-powered insights from Google reviews using MCP Sampling.
+ * Falls back to statistical analysis when sampling is unavailable.
+ */
+export function getGoogleReviewInsights(server: PinMeToMcpServer) {
+  server.registerTool(
+    'pinmeto_get_google_review_insights',
+    {
+      description:
+        'Analyze Google reviews using AI to extract insights, themes, and issues.\n\n' +
+        'This tool uses MCP Sampling to process reviews server-side and return summarized insights ' +
+        'instead of raw review data. This is far more token-efficient than fetching raw reviews.\n\n' +
+        'Analysis Types:\n' +
+        '  - summary: Executive summary with sentiment analysis and key themes\n' +
+        '  - issues: Detailed breakdown of problems mentioned in negative reviews\n' +
+        '  - comparison: Compare performance across multiple locations\n' +
+        '  - trends: Compare current period with previous period\n' +
+        '  - themes: Deep dive into specific themes (provide themes parameter)\n\n' +
+        'Large Dataset Handling:\n' +
+        '  - <200 reviews: Processed immediately\n' +
+        '  - 200-1000: Processed with token estimate in metadata\n' +
+        '  - 1000-10000: Returns warning with options (set skipConfirmation=true to proceed)\n' +
+        '  - >10000: Requires sampling strategy (representative or recent_weighted)\n\n' +
+        'Sampling Strategies:\n' +
+        '  - full: Analyze all reviews (default for <10000 reviews)\n' +
+        '  - representative: Stratified sample by rating and location\n' +
+        '  - recent_weighted: Prioritize recent reviews\n\n' +
+        'Caching:\n' +
+        '  - AI-generated insights cached for 1 hour\n' +
+        '  - Use forceRefresh=true to bypass cache\n\n' +
+        'When NOT to use this tool:\n' +
+        '  - Need raw review text: Use pinmeto_get_google_reviews\n' +
+        '  - Need only aggregate stats: Use pinmeto_get_google_ratings\n' +
+        '  - Need specific review lookup: Use pinmeto_get_google_reviews with filters',
+      inputSchema: {
+        storeIds: z
+          .array(z.string())
+          .optional()
+          .describe('Optional store IDs to analyze (omit for all locations)'),
+        from: DateSchema.describe('Start date (YYYY-MM-DD)'),
+        to: DateSchema.describe('End date (YYYY-MM-DD)'),
+        analysisType: AnalysisTypeSchema.describe(
+          'Type of analysis: summary, issues, comparison, trends, or themes'
+        ),
+        samplingStrategy: SamplingStrategySchema.optional()
+          .default('full')
+          .describe('Sampling strategy: full (default), representative, or recent_weighted'),
+        skipConfirmation: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe('Skip large dataset confirmation (set true after receiving warning)'),
+        themes: z
+          .array(z.string())
+          .optional()
+          .describe('Specific themes to analyze (only for themes analysisType)'),
+        minRating: z.number().min(1).max(5).optional().describe('Minimum rating filter (1-5)'),
+        maxRating: z.number().min(1).max(5).optional().describe('Maximum rating filter (1-5)'),
+        forceRefresh: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe('Bypass cache and regenerate analysis'),
+        response_format: ResponseFormatSchema
+      },
+      outputSchema: ReviewInsightsOutputSchema,
+      annotations: {
+        readOnlyHint: true
+      }
+    },
+    async ({
+      storeIds,
+      from,
+      to,
+      analysisType,
+      samplingStrategy = 'full',
+      skipConfirmation = false,
+      themes,
+      minRating,
+      maxRating,
+      forceRefresh = false,
+      response_format = 'json'
+    }: {
+      storeIds?: string[];
+      from: string;
+      to: string;
+      analysisType: AnalysisType;
+      samplingStrategy?: SamplingStrategy;
+      skipConfirmation?: boolean;
+      themes?: string[];
+      minRating?: number;
+      maxRating?: number;
+      forceRefresh?: boolean;
+      response_format?: ResponseFormat;
+    }) => {
+      const { accountId } = server.configs;
+
+      // Validate filter combination
+      if (minRating !== undefined && maxRating !== undefined && minRating > maxRating) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: 'Error: minRating cannot be greater than maxRating' }],
+          structuredContent: {
+            error: 'Error: minRating cannot be greater than maxRating',
+            errorCode: 'BAD_REQUEST',
+            retryable: false
+          }
+        };
+      }
+
+      // Check cache first (unless forceRefresh)
+      const cacheKey = buildInsightsCacheKey({
+        accountId,
+        storeIds,
+        from,
+        to,
+        analysisType,
+        minRating,
+        maxRating,
+        samplingStrategy,
+        themes
+      });
+
+      if (!forceRefresh) {
+        const cached = insightsCache.get(cacheKey);
+        if (cached) {
+          const ageMs = Date.now() - cached.timestamp;
+          if (ageMs < INSIGHTS_CACHE_TTL_MS) {
+            // Serve from cache
+            const cachedMetadata: ReviewInsightsMetadata = {
+              ...cached.metadata,
+              cache: {
+                hit: true,
+                cachedAt: new Date(cached.timestamp).toISOString(),
+                expiresAt: new Date(cached.timestamp + INSIGHTS_CACHE_TTL_MS).toISOString(),
+                ttl: INSIGHTS_CACHE_TTL_MS / 1000
+              }
+            };
+
+            const textContent =
+              response_format === 'markdown'
+                ? formatReviewInsightsAsMarkdown(cached.data, cachedMetadata)
+                : JSON.stringify({ data: cached.data, metadata: cachedMetadata });
+
+            return {
+              content: [{ type: 'text', text: textContent }],
+              structuredContent: {
+                data: cached.data,
+                metadata: cachedMetadata
+              }
+            };
+          } else {
+            // Cache expired
+            insightsCache.delete(cacheKey);
+          }
+        }
+      }
+
+      // Fetch reviews for analysis
+      // Use storeIds to fetch from multiple locations or all if not specified
+      let allReviews: RawReview[] = [];
+
+      // Track store fetch failures for error reporting
+      const storeFailures: Array<{ storeId: string; error: ApiError }> = [];
+
+      if (storeIds && storeIds.length > 0) {
+        // Fetch reviews for specific stores in parallel
+        const fetchPromises = storeIds.map(storeId =>
+          getCachedOrFetchReviews(server, storeId, from, to, forceRefresh)
+        );
+        const results = await Promise.all(fetchPromises);
+
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i];
+          if (result.ok) {
+            allReviews.push(...result.data);
+          } else {
+            // Track failure with store ID for error reporting
+            storeFailures.push({ storeId: storeIds[i], error: result.error });
+          }
+        }
+
+        // If ALL stores failed, return error with first failure details
+        if (storeIds.length > 0 && allReviews.length === 0 && storeFailures.length > 0) {
+          const failedStoreIds = storeFailures.map(f => f.storeId).join(', ');
+          return formatErrorResponse(
+            storeFailures[0].error,
+            `all requested stores (${failedStoreIds})`
+          );
+        }
+      } else {
+        // Fetch all reviews
+        const result = await getCachedOrFetchReviews(server, undefined, from, to, forceRefresh);
+        if (!result.ok) {
+          return formatErrorResponse(result.error, `all Google reviews (${from} to ${to})`);
+        }
+        allReviews = result.data;
+      }
+
+      // Apply rating filters
+      if (minRating !== undefined) {
+        allReviews = allReviews.filter(r => r.rating >= minRating);
+      }
+      if (maxRating !== undefined) {
+        allReviews = allReviews.filter(r => r.rating <= maxRating);
+      }
+
+      // Get unique store count
+      const uniqueStoreIds = new Set(allReviews.map(r => r.storeId));
+      const locationCount = uniqueStoreIds.size;
+
+      // For single-location analysis, fetch location details to build a descriptive name
+      let locationName: string | undefined;
+      if (locationCount === 1) {
+        const singleStoreId = Array.from(uniqueStoreIds)[0];
+        const { locationsApiBaseUrl, accountId } = server.configs;
+        const locationUrl = `${locationsApiBaseUrl}/v4/${accountId}/locations/${singleStoreId}`;
+        const locationResult = await server.makePinMeToRequest(locationUrl);
+
+        if (locationResult.ok) {
+          locationName = buildLocationDisplayName(locationResult.data);
+        }
+        // If fetch fails, locationName stays undefined - analysis continues without it
+      }
+
+      // Check if we have any reviews
+      if (allReviews.length === 0) {
+        const metadata: ReviewInsightsMetadata = {
+          locationCount: 0,
+          totalReviewCount: 0,
+          analyzedReviewCount: 0,
+          dateRange: { from, to },
+          analysisType,
+          analysisMethod: 'statistical',
+          generatedAt: new Date().toISOString()
+        };
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text:
+                response_format === 'markdown'
+                  ? '# Review Insights\n\nNo reviews found matching the specified criteria.'
+                  : JSON.stringify({ data: null, metadata, warning: 'No reviews found' })
+            }
+          ],
+          structuredContent: {
+            data: null,
+            metadata,
+            warning: 'No reviews found matching the specified criteria.',
+            warningCode: 'INCOMPLETE_DATA'
+          }
+        };
+      }
+
+      const totalReviewCount = allReviews.length;
+      const estimatedTokensForFull = estimateTokens(totalReviewCount);
+
+      // Check thresholds and handle large dataset warning
+      const { warningRequired, forceSamplingRequired } = REVIEW_INSIGHTS_THRESHOLDS;
+
+      // Large dataset requiring explicit sampling strategy
+      if (totalReviewCount > forceSamplingRequired && samplingStrategy === 'full') {
+        const warning: LargeDatasetWarning = {
+          totalReviewCount,
+          locationCount,
+          dateRange: { from, to },
+          estimatedTokens: estimatedTokensForFull,
+          estimatedTokensFormatted: formatTokenEstimate(estimatedTokensForFull),
+          message: `Dataset contains ${totalReviewCount.toLocaleString()} reviews. ` +
+            `Full analysis would use ${formatTokenEstimate(estimatedTokensForFull)}. ` +
+            `Please select a sampling strategy.`,
+          options: [
+            {
+              option: 'representative_sample',
+              description:
+                'Stratified sample covering all ratings and locations proportionally',
+              estimatedTokens: estimateTokens(Math.min(totalReviewCount, 1000)),
+              parameters: {
+                samplingStrategy: 'representative',
+                skipConfirmation: true
+              }
+            },
+            {
+              option: 'recent_weighted',
+              description: 'Prioritize recent reviews with light historical sampling',
+              estimatedTokens: estimateTokens(Math.min(totalReviewCount, 1000)),
+              parameters: {
+                samplingStrategy: 'recent_weighted',
+                skipConfirmation: true
+              }
+            }
+          ]
+        };
+
+        const textContent =
+          response_format === 'markdown'
+            ? formatLargeDatasetWarningAsMarkdown(warning)
+            : JSON.stringify({ requiresConfirmation: true, largeDatasetWarning: warning });
+
+        return {
+          content: [{ type: 'text', text: textContent }],
+          structuredContent: {
+            requiresConfirmation: true,
+            largeDatasetWarning: warning,
+            warningCode: 'LARGE_DATASET_WARNING'
+          }
+        };
+      }
+
+      // Medium dataset requiring confirmation
+      if (
+        totalReviewCount > warningRequired &&
+        totalReviewCount <= forceSamplingRequired &&
+        !skipConfirmation &&
+        samplingStrategy === 'full'
+      ) {
+        const warning: LargeDatasetWarning = {
+          totalReviewCount,
+          locationCount,
+          dateRange: { from, to },
+          estimatedTokens: estimatedTokensForFull,
+          estimatedTokensFormatted: formatTokenEstimate(estimatedTokensForFull),
+          message: `Dataset contains ${totalReviewCount.toLocaleString()} reviews ` +
+            `(${formatTokenEstimate(estimatedTokensForFull)} estimated). ` +
+            `Confirm to proceed or select a sampling strategy.`,
+          options: [
+            {
+              option: 'proceed_full',
+              description: 'Analyze all reviews (may take longer and use more tokens)',
+              estimatedTokens: estimatedTokensForFull,
+              parameters: { skipConfirmation: true }
+            },
+            {
+              option: 'representative_sample',
+              description:
+                'Stratified sample covering all ratings and locations proportionally',
+              estimatedTokens: estimateTokens(Math.min(totalReviewCount, 500)),
+              parameters: {
+                samplingStrategy: 'representative',
+                skipConfirmation: true
+              }
+            },
+            {
+              option: 'recent_weighted',
+              description: 'Prioritize recent reviews with light historical sampling',
+              estimatedTokens: estimateTokens(Math.min(totalReviewCount, 500)),
+              parameters: {
+                samplingStrategy: 'recent_weighted',
+                skipConfirmation: true
+              }
+            }
+          ]
+        };
+
+        const textContent =
+          response_format === 'markdown'
+            ? formatLargeDatasetWarningAsMarkdown(warning)
+            : JSON.stringify({ requiresConfirmation: true, largeDatasetWarning: warning });
+
+        return {
+          content: [{ type: 'text', text: textContent }],
+          structuredContent: {
+            requiresConfirmation: true,
+            largeDatasetWarning: warning,
+            warningCode: 'LARGE_DATASET_WARNING'
+          }
+        };
+      }
+
+      // Sanitize reviews and apply sampling strategy
+      const sanitized = sanitizeReviews(allReviews);
+
+      const reviewsToAnalyze = applySamplingStrategy(sanitized, samplingStrategy);
+      const analyzedReviewCount = reviewsToAnalyze.length;
+
+      // Determine analysis method and perform analysis
+      let analysisData: ReviewInsightsData;
+      let analysisMethod: AnalysisMethod;
+      let samplingNote: string | undefined;
+
+      // Check if MCP Sampling is supported
+      const samplingSupported = await checkSamplingSupport(server);
+
+      if (samplingSupported) {
+        // Use AI-powered analysis via MCP Sampling
+        analysisMethod = 'ai_sampling';
+
+        try {
+          // Build the sampling function that wraps server.server.createMessage
+          // MCP Sampling Access Pattern:
+          // PinMeToMcpServer wraps the @modelcontextprotocol/sdk Server class.
+          // To use MCP Sampling (createMessage), we access the underlying SDK server.
+          // This uses 'as any' because PinMeToMcpServer doesn't expose .server publicly.
+          // Requires: @modelcontextprotocol/sdk >= 1.0.0 with sampling support.
+          const samplingFn = async (
+            request: ReturnType<typeof buildSamplingRequest>
+          ): Promise<SamplingResponse> => {
+            const sdkServer = (server as any).server;
+            if (!sdkServer || typeof sdkServer.createMessage !== 'function') {
+              throw new Error('MCP Sampling not available');
+            }
+
+            const response = await sdkServer.createMessage({
+              messages: request.messages,
+              maxTokens: request.maxTokens,
+              systemPrompt: request.systemPrompt,
+              includeContext: request.includeContext,
+              temperature: request.temperature
+            });
+
+            return {
+              role: 'assistant',
+              content: response.content,
+              model: response.model,
+              stopReason: response.stopReason
+            };
+          };
+
+          // Calculate period context for trends analysis
+          const periodContext =
+            analysisType === 'trends' ? calculatePeriodContextForTrends(from, to) : undefined;
+
+          // Check if we need batching
+          if (analyzedReviewCount > DEFAULT_BATCH_SIZE) {
+            // Process in batches
+            const batchResult = await processInBatches(
+              reviewsToAnalyze,
+              { analysisType, themes, periodContext, locationName },
+              samplingFn
+            );
+            analysisData = batchResult.data;
+
+            if (!batchResult.complete) {
+              samplingNote = `Analysis completed with ${batchResult.batchCount} batches. ` +
+                `Some batches may have had issues: ${batchResult.errors?.join('; ')}`;
+            }
+          } else {
+            // Single pass analysis
+            const request = buildSamplingRequest(reviewsToAnalyze, {
+              analysisType,
+              themes,
+              maxQuotes: 5,
+              periodContext,
+              locationName
+            });
+            const response = await samplingFn(request);
+            const parsed = parseSamplingResponse(response, analysisType);
+            analysisData = normalizeResponseData(parsed, analysisType);
+          }
+        } catch (e) {
+          // Sampling failed - fall back to statistical analysis
+          // Include error details in samplingNote for debugging
+          const errorMessage = e instanceof Error ? e.message : String(e);
+          console.error('MCP Sampling failed, falling back to statistical analysis:', e);
+          analysisMethod = 'statistical';
+          analysisData =
+            analysisType === 'comparison'
+              ? performStatisticalLocationComparison(reviewsToAnalyze)
+              : performStatisticalAnalysis(reviewsToAnalyze);
+          samplingNote = `AI analysis failed (${errorMessage}), using statistical fallback. Set forceRefresh=true to retry.`;
+        }
+      } else {
+        // Use statistical fallback
+        analysisMethod = 'statistical';
+        analysisData =
+          analysisType === 'comparison'
+            ? performStatisticalLocationComparison(reviewsToAnalyze)
+            : performStatisticalAnalysis(reviewsToAnalyze);
+        samplingNote = 'AI sampling not supported by client, using statistical analysis';
+      }
+
+      // Add sampling note for non-full strategies
+      if (samplingStrategy !== 'full' && !samplingNote) {
+        samplingNote = `Used ${samplingStrategy} sampling: analyzed ${analyzedReviewCount} of ${totalReviewCount} reviews`;
+      }
+
+      // Add partial store failure warning if some (but not all) stores failed
+      if (storeFailures.length > 0 && allReviews.length > 0) {
+        const failureNote = `${storeFailures.length} of ${storeIds!.length} stores failed to fetch: ${storeFailures.map(f => f.storeId).join(', ')}`;
+        samplingNote = samplingNote ? `${samplingNote}. ${failureNote}` : failureNote;
+      }
+
+      // Determine single warning code (avoid overwrite by using priority)
+      const warningCode = samplingStrategy !== 'full'
+        ? 'SAMPLED_ANALYSIS' as const
+        : (samplingNote && analysisMethod === 'statistical')
+          ? 'SAMPLING_NOT_SUPPORTED' as const
+          : undefined;
+
+      // Build metadata
+      const metadata: ReviewInsightsMetadata = {
+        locationCount,
+        totalReviewCount,
+        analyzedReviewCount,
+        dateRange: { from, to },
+        analysisType,
+        analysisMethod,
+        generatedAt: new Date().toISOString(),
+        ...(samplingStrategy !== 'full' && { samplingStrategy }),
+        ...(samplingNote && { samplingNote })
+      };
+
+      // Cache the result
+      insightsCache.set(cacheKey, {
+        data: analysisData,
+        metadata,
+        timestamp: Date.now()
+      });
+
+      // Format output
+      const textContent =
+        response_format === 'markdown'
+          ? formatReviewInsightsAsMarkdown(analysisData, metadata)
+          : JSON.stringify({ data: analysisData, metadata });
+
+      return {
+        content: [{ type: 'text', text: textContent }],
+        structuredContent: {
+          data: analysisData,
+          metadata,
+          ...(warningCode && { warningCode })
+        }
+      };
+    }
+  );
+}
+
+/**
+ * Check if MCP Sampling is supported by the connected client.
+ * Returns true only if the client explicitly advertised sampling capability
+ * during initialization. This avoids attempting sampling calls that would
+ * fail with -32601 "Method not found" on clients like Claude Desktop that
+ * don't support sampling.
+ */
+async function checkSamplingSupport(server: PinMeToMcpServer): Promise<boolean> {
+  try {
+    // Access underlying SDK server
+    const sdkServer = (server as any).server;
+    if (!sdkServer) {
+      return false;
+    }
+
+    // Check if createMessage method exists on the SDK
+    if (typeof sdkServer.createMessage !== 'function') {
+      return false;
+    }
+
+    // Check if getClientCapabilities method exists
+    if (typeof sdkServer.getClientCapabilities !== 'function') {
+      return false;
+    }
+
+    // Get the client's advertised capabilities from initialization
+    const clientCapabilities = sdkServer.getClientCapabilities();
+
+    // Client must have explicitly advertised sampling support
+    // If sampling is undefined, the client doesn't support it
+    if (!clientCapabilities?.sampling) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
 }
