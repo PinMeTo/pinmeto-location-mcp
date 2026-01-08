@@ -71,7 +71,8 @@ if (existsSync(changelogPath)) {
   const changelog = readFileSync(changelogPath, 'utf8');
 
   // Match the section for this version (handles both [X.Y.Z] and X.Y.Z formats)
-  const versionEscaped = version.replace(/\./g, '\\.');
+  // Escape all regex special characters to prevent injection
+  const versionEscaped = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const sectionRegex = new RegExp(`## \\[?${versionEscaped}\\]?[^#]*?(?=## |$)`, 's');
 
   const match = changelog.match(sectionRegex);
