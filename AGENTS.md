@@ -356,7 +356,7 @@ All tools follow the MCP best practice naming pattern: `pinmeto_{action}_{networ
 | `pinmeto_search_{resource}s` | `pinmeto_search_locations` | Search/discovery tools |
 | `pinmeto_get_{network}_{resource}` | `pinmeto_get_google_insights` | Network-specific data (single or all) |
 
-### Available Tools (11 total)
+### Available Tools (12 total)
 
 | Tool | Description |
 |------|-------------|
@@ -367,6 +367,7 @@ All tools follow the MCP best practice naming pattern: `pinmeto_{action}_{networ
 | `pinmeto_get_google_ratings` | Google rating aggregates (averageRating, totalReviews, distribution) |
 | `pinmeto_get_google_reviews` | Google reviews with pagination and filtering (for sentiment analysis) |
 | `pinmeto_get_google_keywords` | Google keywords (storeId optional) |
+| `pinmeto_get_google_review_insights` | AI-powered review analysis (requires MCP Sampling support) |
 | `pinmeto_get_facebook_insights` | Facebook metrics with aggregation and period comparison |
 | `pinmeto_get_facebook_brandpage_insights` | Facebook brand page metrics with aggregation and period comparison |
 | `pinmeto_get_facebook_ratings` | Facebook ratings (storeId optional) |

@@ -162,6 +162,7 @@ All tools use the `pinmeto_` prefix following MCP best practices.
 - `pinmeto_get_google_ratings` - Get Google rating aggregates: averageRating, totalReviews, distribution (all locations, or single if `storeId` provided)
 - `pinmeto_get_google_reviews` - Get Google reviews with pagination and filtering for sentiment analysis
 - `pinmeto_get_google_keywords` - Get Google keywords (all locations, or single if `storeId` provided)
+- `pinmeto_get_google_review_insights` - AI-powered analysis of Google reviews (summary, issues, trends, themes). **Requires MCP Sampling support in the client.**
 
 ### Facebook Tools
 - `pinmeto_get_facebook_insights` - Get Facebook insights (all locations, or single if `storeId` provided)
