@@ -1,0 +1,18 @@
+# Beads issue tracking (contains socket files)
+.beads/
+
+# Development files
+tests/
+*.test.ts
+.changeset/
+scripts/
+
+# Config files
+.env*
+tsconfig.json
+vitest.config.ts
+.prettierrc
+
+# Editor/IDE
+.vscode/
+.idea/

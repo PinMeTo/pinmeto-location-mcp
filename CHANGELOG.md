@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.0] - 2026-01-08
+
+### Added
+
+- Split Google ratings into separate ratings and reviews tools (`37cd73a`)
+
+### Fixed
+
+- fix: improve MCP Sampling detection to check client capabilities (`8cc39bf`)
+- Fix incomplete regex sanitization in release script (CodeQL alert #7) (`0854ca6`)
+- Fix high severity security vulnerabilities (CVE-2024-3127, CVE-2025-29927): (`d162bc6`)
+
 ## [3.1.0] - 2025-12-22
 
 ### Added
