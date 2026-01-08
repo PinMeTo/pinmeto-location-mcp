@@ -73,12 +73,14 @@ if (existsSync(changelogPath)) {
   // Match the section for this version (handles both [X.Y.Z] and X.Y.Z formats)
   // Escape all regex special characters to prevent injection
   const versionEscaped = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const sectionRegex = new RegExp(`## \\[?${versionEscaped}\\]?[^#]*?(?=## |$)`, 's');
+  // Match from version header until next ## section (not ###) or end of file
+  // Using [\s\S]*? to match any character including newlines, stopping at next ## (h2)
+  const sectionRegex = new RegExp(`## \\[?${versionEscaped}\\]?[^\\n]*\\n([\\s\\S]*?)(?=\\n## [^#]|$)`);
 
   const match = changelog.match(sectionRegex);
-  if (match) {
-    // Remove the version header line, keep the content
-    releaseNotes = match[0].replace(/^## \[?\d+\.\d+\.\d+\]?.*\n/, '').trim();
+  if (match && match[1]) {
+    // The capture group contains the content after the version header
+    releaseNotes = match[1].trim();
   }
 }
 
