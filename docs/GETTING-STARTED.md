@@ -8,11 +8,11 @@ Welcome to PinMeTo MCP. This guide helps you get up and running after installati
 
 After installing, verify that everything is working:
 
-1. **Open Claude Desktop**
+1. **Open your MCP client** (Claude Desktop, VS Code, Cursor, etc.)
 2. **Start a new conversation**
-3. **Ask Claude:** "Can you list my PinMeTo locations?"
+3. **Ask:** "Can you list my PinMeTo locations?"
 
-If Claude responds with your location data, you're all set.
+If you see your location data, you're all set.
 
 ---
 
@@ -109,7 +109,7 @@ Create a report of my top 10 performing locations
 You can access all data available in your PinMeTo account, including locations, insights from Google/Facebook/Apple, ratings, reviews, and search keywords.
 
 ### Is my data secure?
-Yes. The MCP connects directly to PinMeTo using your API credentials. Your data is never stored by the MCP server - it only passes through to Claude for analysis.
+Yes. The MCP connects directly to PinMeTo using your API credentials. Your data is never stored by the MCP server - it only passes through to your AI assistant for analysis.
 
 ### How current is the data?
 Data is fetched in real-time from PinMeTo. Insights data may have a 24-48 hour delay depending on the platform (Google, Facebook, Apple).
@@ -120,26 +120,26 @@ Each installation is configured with one set of credentials. To work with multip
 ### What if I don't have a PinMeTo account?
 You need an active PinMeTo account with API access. Visit [pinmeto.com](https://www.pinmeto.com/) to learn more about PinMeTo.
 
-### Does this work with Claude.ai (web)?
-This MCP is designed for Claude Desktop. Claude.ai (web version) does not currently support MCP servers.
+### Which AI clients are supported?
+This MCP works with any client that supports the [Model Context Protocol](https://modelcontextprotocol.io/), including Claude Desktop, VS Code, Cursor, and others. Web-based AI interfaces (like claude.ai) typically do not support MCP servers.
 
-### Can I modify my location data through Claude?
+### Can I modify my location data?
 No. The PinMeTo MCP is read-only. You can view and analyze data, but any changes must be made directly in the PinMeTo platform.
 
 ---
 
 ## Troubleshooting
 
-### "I don't see PinMeTo in Claude"
+### "I don't see PinMeTo in my AI client"
 
 **Possible causes:**
 1. Installation didn't complete successfully
-2. Claude Desktop needs to be restarted
+2. The client needs to be restarted
 
 **Solutions:**
-- Restart Claude Desktop completely (quit and reopen)
-- Re-run the installer (.mcpb file)
-- Check Claude Desktop Settings → Developer → MCP Servers
+- Restart your MCP client completely (quit and reopen)
+- Re-run the installer or verify your configuration
+- Check your client's MCP server settings (e.g., Claude Desktop: Settings → Developer → MCP Servers)
 
 ---
 
