@@ -66,6 +66,27 @@ All insights support time aggregation (daily, monthly, quarterly) and period com
 
 ---
 
+## Creating Reports
+
+Generate professional reports from your location data using the [PinMeTo Location Reports Skill](https://github.com/PinMeTo/pinmeto-location-reports-skill).
+
+### What It Does
+
+Transforms your multi-location analytics into formatted PDF and PowerPoint reports:
+- **Monthly, Quarterly, Half-Yearly, and Yearly reports**
+- Includes Google, Facebook, and Apple metrics
+- Review ratings and sentiment analysis
+- Search keyword performance
+- Data-driven strategic recommendations
+
+### Installation
+
+**Requirements:** This skill requires the PinMeTo MCP Server (installed above) to access your location data.
+
+Visit the [skill repository](https://github.com/PinMeTo/pinmeto-location-reports-skill) for installation instructions.
+
+---
+
 ## Documentation
 
 | Guide | Description |
