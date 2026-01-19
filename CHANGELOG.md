@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.1] - 2026-01-19
+
+### Fixed
+
+- Update hono transitive dependency to 4.11.4 to fix HIGH severity JWT algorithm confusion vulnerabilities in unused middleware (CVE-2026-22818, CVE-2026-22817) (`bcfe5d8`)
+- Restructure documentation for non-technical users with simplified README and dedicated docs folder (`2e21bbb`)
+
 ## [3.2.0] - 2026-01-08
 
 ### Added
