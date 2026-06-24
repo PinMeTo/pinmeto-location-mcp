@@ -1,17 +1,5 @@
 # Agent Instructions
 
-This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
-
-## Quick Reference
-
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
-bd sync               # Sync with git
-```
-
 ## Project Overview
 
 This is an MCP (Model Context Protocol) server that provides AI agents like Claude with access to PinMeTo's location management platform. It exposes tools for fetching location data, insights from Google/Facebook/Apple, ratings, and keywords.
@@ -54,7 +42,7 @@ npx changeset add          # Add a changeset for your changes
 git add .changeset/ && git commit -m "docs: add changeset"
 ```
 
-**⚠️ REQUIRED**: Every PR must include a changeset. CI will reject PRs without one.
+**⚠️ REQUIRED**: Every PR must include a changeset. CI will reject PRs without one. For changes that don't affect the published package (docs, internal tooling), add an empty changeset with `npx changeset add --empty`.
 
 **Version Guidelines**:
 - **patch**: Bug fixes, documentation, internal changes
@@ -78,160 +66,11 @@ npm run clean              # Remove build directory
 5. Review draft on GitHub, then run `npm run release:publish`
 6. Push: `git push && git push --tags`
 
-## Beads Workflow (CRITICAL)
+## Feature Development Workflow
 
-**Bead Statuses:**
-| Status | Description |
-|--------|-------------|
-| `open` | New/pending work, not yet started |
-| `in_progress` | Currently being worked on |
-| `blocked` | Waiting on dependency or external blocker |
-| `closed` | Completed |
+Before starting any feature, bug fix, or enhancement:
 
-**Hierarchical IDs** (for epics with tasks/sub-tasks):
-```
-bd-a3f8       # Epic
-bd-a3f8.1     # Task under epic
-bd-a3f8.1.1   # Sub-task under task
-```
-
-**Protected Branch Workflow:**
-
-This project uses a separate `beads-sync` branch for beads metadata:
-- Beads daemon auto-commits to `beads-sync` (not main)
-- Main branch stays protected from beads auto-commits
-- Beads changes are merged to main periodically
-
-```bash
-# Check sync status
-bd sync --status
-
-# Merge beads changes to main (when needed)
-bd sync --merge --dry-run  # Preview
-bd sync --merge            # Execute merge to main
-```
-
-**Important**: `bd sync` commits to `beads-sync` branch, NOT main. Code changes and beads changes are separate workflows.
-
-```bash
-# Create a main bead (epic or feature) with description (REQUIRED)
-bd create "Implement user authentication" -t epic -p 1 \
-  -d "Add OAuth2 authentication flow with JWT tokens. Includes login, logout, and session management.
-
-## Completion Checklist
-- [ ] Implementation complete
-- [ ] Tests added and passing
-- [ ] Manual testing performed
-- [ ] README.md updated (if applicable)
-- [ ] Other documentation updated (if applicable)"
-
-# Create sub-tasks under the main bead using --parent
-bd create "Set up OAuth2 provider" -t task --parent bd-xxxx \
-  -d "Configure OAuth2 provider settings and environment variables."
-bd create "Implement login endpoint" -t task --parent bd-xxxx \
-  -d "Create POST /auth/login endpoint with credential validation."
-bd create "Add session management" -t task --parent bd-xxxx \
-  -d "Implement JWT token generation and refresh logic."
-
-# Update issues
-bd update bd-a1b2 --status in_progress
-
-# Close issues
-bd close bd-a1b2 "Completed authentication"
-```
-
-**Critical Rules:**
-- Create a bead BEFORE starting any work (not after)
-- Create a feature branch BEFORE making any code changes
-- Do not set a bead to closed before its PR has been approved
-- When starting on a new bead, set it to in-progress and assign it to the current git user
-- Always create a new bead(s) for new tasks/issues/fixes so all changes are tracked
-- NEVER commit directly to main - always use feature branches and PRs
-
-**Bead Creation Rules:**
-- **ALWAYS include a description (`-d`)** - Never create a bead with just a title
-- **Use hierarchical structure** - Create a main bead (epic/feature) then sub-tasks with `--parent`
-- **Main beads must include a completion checklist** in the description
-- **Available types:** `bug|feature|task|epic|chore`
-
-**Main Bead Description Template:**
-```
-<Brief description of the feature/task>
-
-## Completion Checklist
-- [ ] Implementation complete
-- [ ] Tests added and passing
-- [ ] Manual testing performed
-- [ ] README.md updated (if applicable)
-- [ ] Other documentation updated (if applicable)
-```
-
-## AI Agent Workflow (MANDATORY)
-
-When an AI agent receives a task that requires implementation:
-
-1. **Plan First** - Analyze the task and create an implementation plan
-2. **Create Main Bead** - Create an epic/feature bead for the overall task with full description
-3. **Break Down Plan** - Create sub-task beads for each step of the plan using `--parent`
-4. **Then Implement** - Only start coding after all beads are created
-
-**Example workflow:**
-```bash
-# Step 1: Agent analyzes task and creates plan
-# Plan: 1) Add API endpoint, 2) Create UI component, 3) Write tests
-
-# Step 2: Create main bead
-bd create "Add search functionality" -t feature -p 2 \
-  -d "Implement search feature allowing users to find locations by name.
-
-## Completion Checklist
-- [ ] Implementation complete
-- [ ] Tests added and passing
-- [ ] Manual testing performed
-- [ ] README.md updated (if applicable)
-- [ ] Other documentation updated (if applicable)"
-
-# Step 3: Break down plan into sub-tasks (returns bd-xxxx)
-bd create "Add search API endpoint" -t task --parent bd-xxxx \
-  -d "Create GET /api/search endpoint with query parameter."
-bd create "Create search UI component" -t task --parent bd-xxxx \
-  -d "Build search input with results dropdown."
-bd create "Write search tests" -t task --parent bd-xxxx \
-  -d "Add unit and integration tests for search functionality."
-
-# Step 4: Now start implementing (create feature branch first!)
-```
-
-⚠️ **NEVER start implementing before creating beads for the plan**
-
-## Feature Development Workflow (MANDATORY)
-
-Before starting ANY feature, bug fix, or enhancement, follow this workflow:
-
-### Step 1: Create or Claim a Bead
-```bash
-# Create main bead with full description (types: bug|feature|task|epic|chore)
-bd create "Add user profile page" -t feature -p 2 \
-  -d "Create user profile page showing account details and settings.
-
-## Completion Checklist
-- [ ] Implementation complete
-- [ ] Tests added and passing
-- [ ] Manual testing performed
-- [ ] README.md updated (if applicable)
-- [ ] Other documentation updated (if applicable)"
-
-# Break down into sub-tasks using --parent
-bd create "Create profile API endpoint" -t task --parent <main-bead-id> \
-  -d "Add GET /api/user/profile endpoint returning user data."
-bd create "Build profile UI component" -t task --parent <main-bead-id> \
-  -d "Create React component for displaying profile information."
-
-# Or claim existing bead
-bd update <id> --status in_progress --assignee=$(git config user.name)
-```
-
-### Step 2: Create Feature Branch
+### Step 1: Create a Feature Branch
 ```bash
 # NEVER work directly on main
 git checkout main
@@ -244,39 +83,38 @@ git checkout -b <branch-name>  # e.g., feature/add-apple-ratings, fix/auth-timeo
 - `fix/<description>` - Bug fixes
 - `refactor/<description>` - Code refactoring
 - `docs/<description>` - Documentation only
+- `chore/<description>` - Tooling, dependencies, maintenance
 
-### Step 3: Do the Work
+### Step 2: Do the Work
 - Make commits to your feature branch
 - Run tests: `npm test`
 - Run build: `npm run build`
+- Add a changeset: `npx changeset add` (or `--empty` for non-release changes)
 
-### Step 4: Create Pull Request
+### Step 3: Create a Pull Request
 ```bash
-# Push branch and create PR
 git push -u origin <branch-name>
-gh pr create --title "feat: description" --body "Closes #<bead-id>"
+gh pr create --title "feat: description" --body "..."
 ```
 
-### Step 5: Get PR Approved
+### Step 4: Get the PR Approved
 - Request review
 - Address feedback
 - **NEVER merge without approval**
 
-### Step 6: Merge and Clean Up
+### Step 5: Merge and Clean Up
 ```bash
-# After PR approval
-gh pr merge --squash  # or via GitHub UI
+# After PR approval and passing CI
+gh pr merge --squash --delete-branch
 git checkout main
 git pull origin main
-bd close <id>
-bd sync
 ```
 
 ⚠️ **WORKFLOW CRITICAL RULES:**
 - NEVER commit directly to main without explicit user approval
 - ALWAYS create a feature branch for any code changes
-- ALWAYS create a bead BEFORE starting work
 - ALWAYS create a PR for features and fixes
+- Documentation-only changes MAY go to main with explicit user approval
 
 ## Architecture
 
@@ -763,105 +601,28 @@ Pagination:
 - Returns tuple of `[data[], areAllPagesFetched: boolean]`
 - Stops on empty page or missing nextUrl
 
-## Landing the Plane (Session Completion)
+## Session Completion
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+When ending a work session, work is NOT complete until `git push` succeeds.
 
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH AND CREATE PR** - This is MANDATORY:
+1. **Run quality gates** (if code changed) - Tests, linters, build
+2. **Add a changeset** (if not already present) - `npx changeset add` or `--empty`
+3. **Push and create PR**:
    ```bash
-   # If on feature branch (normal case):
+   # Feature branch (normal case):
    git push -u origin <branch-name>
-   gh pr create --title "..." --body "..."  # If PR doesn't exist
-   bd sync
+   gh pr create --title "..." --body "..."
 
-   # If on main (only for documentation-only changes with user approval):
+   # Main (only for documentation-only changes with user approval):
    git pull --rebase
-   bd sync
    git push
    git status  # MUST show "up to date with origin"
    ```
-5. **Sync beads metadata** (if beads were updated):
-   ```bash
-   bd sync              # Commits to beads-sync branch
-   bd sync --merge      # Optional: merge beads to main if desired
-   ```
-6. **Clean up** - Clear stashes, prune remote branches
-7. **Verify** - All changes committed AND pushed
-8. **Hand off** - Provide context for next session
+4. **Clean up** - Clear stashes, prune remote branches
+5. **Verify** - All changes committed AND pushed
 
-**CRITICAL RULES:**
+**Critical rules:**
 - Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
 - NEVER push directly to main for code changes - use feature branches and PRs
 - Documentation-only changes MAY go to main with explicit user approval
-- Always ask user before any direct main branch operations
-
-<!-- bv-agent-instructions-v1 -->
-
----
-
-## Beads Workflow Integration
-
-This project uses [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) for issue tracking. Issues are stored in `.beads/` and tracked in git.
-
-### Essential Commands
-
-```bash
-# View issues (launches TUI - avoid in automated sessions)
-bv
-
-# CLI commands for agents (use these instead)
-bd ready              # Show issues ready to work (no blockers)
-bd list --status=open # All open issues
-bd show <id>          # Full issue details with dependencies
-bd create --title="..." --type=task --priority=2
-bd update <id> --status=in_progress
-bd close <id> --reason="Completed"
-bd close <id1> <id2>  # Close multiple issues at once
-bd sync               # Commit and push changes
-```
-
-### Workflow Pattern
-
-1. **Start**: Run `bd ready` to find actionable work
-2. **Claim**: Use `bd update <id> --status=in_progress`
-3. **Work**: Implement the task
-4. **Complete**: Use `bd close <id>`
-5. **Sync**: Always run `bd sync` at session end
-
-### Key Concepts
-
-- **Dependencies**: Issues can block other issues. `bd ready` shows only unblocked work.
-- **Priority**: P0=critical, P1=high, P2=medium, P3=low, P4=backlog (use numbers, not words)
-- **Types**: task, bug, feature, epic, question, docs
-- **Blocking**: `bd dep add <issue> <depends-on>` to add dependencies
-
-### Session Protocol
-
-**Before ending any session, run this checklist:**
-
-```bash
-git status              # Check what changed
-git add <files>         # Stage code changes
-bd sync                 # Commit beads changes
-git commit -m "..."     # Commit code
-bd sync                 # Commit any new beads changes
-git push                # Push to remote
-```
-
-### Best Practices
-
-- Check `bd ready` at session start to find available work
-- Update status as you work (in_progress → closed)
-- Create new issues with `bd create` when you discover tasks
-- Use descriptive titles and set appropriate priority/type
-- Always `bd sync` before ending session
-
-<!-- end-bv-agent-instructions -->
+- Always ask the user before any direct main branch operations

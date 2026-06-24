@@ -141,7 +141,4 @@ vite.config.ts.timestamp-*
 .vite/
 *.mcpb
 
-.DS_Store*.sock
-
-# bv (beads viewer) local config and caches
-.bv/
+.DS_Store
