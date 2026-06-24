@@ -484,6 +484,59 @@ describe('Tool Annotations', () => {
   });
 });
 
+describe('Server Info (MCP 2025-11-25 Implementation fields)', () => {
+  it('should advertise description, websiteUrl, and icons in the initialize result', async () => {
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    // Capture responses from the server
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        responses.push(JSON.parse(chunk.toString()));
+      } catch {
+        // Not JSON, ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    const initResponse = responses.find(r => r.id === 0);
+    expect(initResponse).toBeDefined();
+    const serverInfo = initResponse.result.serverInfo;
+    expect(serverInfo).toBeDefined();
+
+    expect(typeof serverInfo.description).toBe('string');
+    expect(serverInfo.description.length).toBeGreaterThan(0);
+    expect(serverInfo.websiteUrl).toBe('https://www.pinmeto.com');
+
+    expect(Array.isArray(serverInfo.icons)).toBe(true);
+    expect(serverInfo.icons.length).toBe(1);
+    const icon = serverInfo.icons[0];
+    expect(icon.mimeType).toBe('image/png');
+    expect(icon.sizes).toEqual(['48x48']);
+    expect(icon.src.startsWith('data:image/png;base64,')).toBe(true);
+  });
+});
+
 describe('Output Schemas', () => {
   it('should include outputSchema in all tool definitions', async () => {
     const server = createMcpServer();
