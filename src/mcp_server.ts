@@ -27,7 +27,7 @@ import {
 import { getAppleInsights } from './tools/networks/apple';
 import { Configs, getConfigs } from './configs';
 
-import { ServerOptions } from '@modelcontextprotocol/sdk/server';
+import type { ServerOptions } from '@modelcontextprotocol/sdk/server';
 
 const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')) as {
   name: string;
