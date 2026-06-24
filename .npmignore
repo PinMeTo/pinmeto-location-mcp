@@ -1,6 +1,3 @@
-# Beads issue tracking (contains socket files)
-.beads/
-
 # Development files
 tests/
 *.test.ts
