@@ -37,7 +37,7 @@
   },
   "homepage": "https://github.com/PinMeTo/pinmeto-location-mcp#readme",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "axios": "^1.16.0",
     "zod": "^3.25.76"
   },
