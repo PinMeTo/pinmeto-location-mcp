@@ -485,7 +485,7 @@ describe('Tool Annotations', () => {
 });
 
 describe('Server Info (MCP 2025-11-25 Implementation fields)', () => {
-  it('should advertise description, websiteUrl, and icons in the initialize result', async () => {
+  it('should advertise description and websiteUrl in the initialize result', async () => {
     const server = createMcpServer();
     const testTransport = new StdioServerTransport();
 
@@ -527,13 +527,6 @@ describe('Server Info (MCP 2025-11-25 Implementation fields)', () => {
     expect(typeof serverInfo.description).toBe('string');
     expect(serverInfo.description.length).toBeGreaterThan(0);
     expect(serverInfo.websiteUrl).toBe('https://www.pinmeto.com');
-
-    expect(Array.isArray(serverInfo.icons)).toBe(true);
-    expect(serverInfo.icons.length).toBe(1);
-    const icon = serverInfo.icons[0];
-    expect(icon.mimeType).toBe('image/png');
-    expect(icon.sizes).toEqual(['48x48']);
-    expect(icon.src.startsWith('data:image/png;base64,')).toBe(true);
   });
 });
 

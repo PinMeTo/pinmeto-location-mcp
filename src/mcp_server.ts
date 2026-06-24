@@ -26,7 +26,6 @@ import {
 } from './tools/networks/facebook';
 import { getAppleInsights } from './tools/networks/apple';
 import { Configs, getConfigs } from './configs';
-import { PINMETO_ICONS } from './icons';
 
 import type { ServerOptions } from '@modelcontextprotocol/sdk/server';
 
@@ -211,7 +210,6 @@ export function createMcpServer() {
       'Read-only access to the PinMeTo location management platform: locations, ' +
       'plus Google/Facebook/Apple insights, ratings, reviews, and keywords.',
     websiteUrl: 'https://www.pinmeto.com',
-    icons: PINMETO_ICONS,
     capabilities: {
       resources: {},
       tools: {}
