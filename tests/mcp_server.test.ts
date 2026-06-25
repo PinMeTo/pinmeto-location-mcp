@@ -484,6 +484,65 @@ describe('Tool Annotations', () => {
   });
 });
 
+describe('Server Info (MCP 2025-11-25 Implementation fields)', () => {
+  it('should advertise description and websiteUrl in the initialize result', async () => {
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    // Capture responses from the server, resolving once the initialize reply lands
+    // (avoids a racey fixed sleep that can flake on slow CI).
+    const responses: any[] = [];
+    let resolveInitResponse!: () => void;
+    const initResponseSeen = new Promise<void>(resolve => {
+      resolveInitResponse = resolve;
+    });
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        const message = JSON.parse(chunk.toString());
+        responses.push(message);
+        if (message.id === 0) {
+          resolveInitResponse();
+        }
+      } catch {
+        // Not JSON, ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    // try/finally guarantees stdout is restored even if the body throws, so a failure
+    // here can't cascade into unrelated tests sharing the worker.
+    try {
+      await server.connect(testTransport);
+
+      testTransport.onmessage?.({
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-06-18',
+          capabilities: {},
+          clientInfo: { name: 'test-client', version: '0.0.0' }
+        },
+        jsonrpc: '2.0',
+        id: 0
+      });
+
+      await initResponseSeen;
+    } finally {
+      process.stdout.write = originalWrite;
+      await testTransport.close();
+    }
+
+    const initResponse = responses.find(r => r.id === 0);
+    expect(initResponse).toBeDefined();
+    const serverInfo = initResponse.result.serverInfo;
+    expect(serverInfo).toBeDefined();
+
+    expect(typeof serverInfo.description).toBe('string');
+    expect(serverInfo.description.length).toBeGreaterThan(0);
+    expect(serverInfo.websiteUrl).toBe('https://www.pinmeto.com');
+  });
+});
+
 describe('Output Schemas', () => {
   it('should include outputSchema in all tool definitions', async () => {
     const server = createMcpServer();

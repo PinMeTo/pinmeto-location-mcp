@@ -204,6 +204,12 @@ export function createMcpServer() {
   const serverInfo = {
     name: 'PinMeTo Location MCP',
     version: PACKAGE_VERSION,
+    // Human-readable description (MCP 2025-11-25 Implementation.description): gives
+    // clients context during initialization and aligns with the registry server.json format.
+    description:
+      'Read-only access to the PinMeTo location management platform: locations, ' +
+      'plus Google/Facebook/Apple insights, ratings, reviews, and keywords.',
+    websiteUrl: 'https://www.pinmeto.com',
     capabilities: {
       resources: {},
       tools: {}
