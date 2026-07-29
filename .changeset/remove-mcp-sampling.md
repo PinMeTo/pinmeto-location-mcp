@@ -42,7 +42,16 @@ Output schema changes for consumers of `structuredContent.metadata`:
   `LARGE_DATASET_WARNING`, and `INCOMPLETE_DATA` are unchanged.
 - A new optional `analysisNote` field carries notes about the analysis itself.
   `samplingNote` stays reserved for notes about which reviews were analyzed
-  (subset strategy, partial store failures).
+  (subset strategy, partial store failures). It appears on
+  `metadata.analysisNote` for completed analyses, and at the top level of the
+  response on the large-dataset confirmation paths, which return before any
+  analysis runs and so carry no metadata.
+
+`warningCode` still reports the single most actionable condition per response —
+`LARGE_DATASET_WARNING` and `INCOMPLETE_DATA` are not displaced by
+`UNDIFFERENTIATED_ANALYSIS_TYPE`, since callers key off the former to drive the
+confirmation re-call. The analysisType caveat travels in `analysisNote` on those
+paths instead of replacing the code.
 
 Note that `samplingStrategy` / `samplingNote` and the `full` /
 `representative` / `recent_weighted` options are **unrelated** to MCP Sampling —

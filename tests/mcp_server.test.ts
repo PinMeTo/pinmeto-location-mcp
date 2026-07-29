@@ -2790,6 +2790,78 @@ describe('Consolidated Network Tools', () => {
       expect(sc.warningCode).toBe('INCOMPLETE_DATA');
     });
 
+    // The confirmation paths return before any analysis runs and carry no
+    // metadata object, so the caveat has to ride at the top level or the
+    // caller only discovers it after a second round trip.
+    it.each([
+      ['medium dataset requiring confirmation', 1500],
+      ['large dataset requiring a sampling strategy', 10500]
+    ])('should carry the analysis note through the %s', async (_label, reviewCount) => {
+      vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+        if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+          return Promise.reject(new Error('Unauthorized'));
+        }
+        if (url.includes('/ratings/google')) {
+          return Promise.resolve({
+            data: Array.from({ length: reviewCount }, (_, i) => ({
+              storeId: `store-${i % 3}`,
+              rating: (i % 5) + 1,
+              comment: `Review number ${i}`,
+              date: '2024-01-15'
+            }))
+          });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'themes',
+        forceRefresh: true
+      });
+
+      const sc = response.result.structuredContent;
+      expect(sc.requiresConfirmation).toBe(true);
+      // The confirmation handshake must keep its own code - the caller keys
+      // off it to know a re-call is required.
+      expect(sc.warningCode).toBe('LARGE_DATASET_WARNING');
+      // ...and the caveat rides alongside rather than replacing it
+      expect(sc.analysisNote).toContain('themes');
+      // Visible in the text too, so the model sees it without parsing
+      expect(response.result.content[0].text).toContain('themes');
+    });
+
+    it('should not add an analysis note to confirmations for supported types', async () => {
+      vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+        if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+          return Promise.reject(new Error('Unauthorized'));
+        }
+        if (url.includes('/ratings/google')) {
+          return Promise.resolve({
+            data: Array.from({ length: 1500 }, (_, i) => ({
+              storeId: `store-${i % 3}`,
+              rating: (i % 5) + 1,
+              comment: `Review number ${i}`,
+              date: '2024-01-15'
+            }))
+          });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'summary',
+        forceRefresh: true
+      });
+
+      const sc = response.result.structuredContent;
+      expect(sc.warningCode).toBe('LARGE_DATASET_WARNING');
+      expect(sc.analysisNote).toBeUndefined();
+    });
+
     it('should keep the analysis note when no reviews match', async () => {
       const response = await callNetworkTool('pinmeto_get_google_review_insights', {
         from: '2024-01-01',

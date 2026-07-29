@@ -1118,17 +1118,27 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
           ]
         };
 
-        const textContent =
+        // Surface the analysisType caveat here too. warningCode stays
+        // LARGE_DATASET_WARNING because the caller keys off it to know a
+        // re-call is required - but without this note they would only learn
+        // their analysisType is undifferentiated after that second round trip.
+        const baseText =
           response_format === 'markdown'
             ? formatLargeDatasetWarningAsMarkdown(warning)
-            : JSON.stringify({ requiresConfirmation: true, largeDatasetWarning: warning });
+            : JSON.stringify({
+                requiresConfirmation: true,
+                largeDatasetWarning: warning,
+                ...(analysisNote && { analysisNote })
+              });
+        const textContent = analysisNote ? `${baseText}\n\nNote: ${analysisNote}.` : baseText;
 
         return {
           content: [{ type: 'text', text: textContent }],
           structuredContent: {
             requiresConfirmation: true,
             largeDatasetWarning: warning,
-            warningCode: 'LARGE_DATASET_WARNING'
+            warningCode: 'LARGE_DATASET_WARNING',
+            ...(analysisNote && { analysisNote })
           }
         };
       }
@@ -1178,17 +1188,27 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
           ]
         };
 
-        const textContent =
+        // Surface the analysisType caveat here too. warningCode stays
+        // LARGE_DATASET_WARNING because the caller keys off it to know a
+        // re-call is required - but without this note they would only learn
+        // their analysisType is undifferentiated after that second round trip.
+        const baseText =
           response_format === 'markdown'
             ? formatLargeDatasetWarningAsMarkdown(warning)
-            : JSON.stringify({ requiresConfirmation: true, largeDatasetWarning: warning });
+            : JSON.stringify({
+                requiresConfirmation: true,
+                largeDatasetWarning: warning,
+                ...(analysisNote && { analysisNote })
+              });
+        const textContent = analysisNote ? `${baseText}\n\nNote: ${analysisNote}.` : baseText;
 
         return {
           content: [{ type: 'text', text: textContent }],
           structuredContent: {
             requiresConfirmation: true,
             largeDatasetWarning: warning,
-            warningCode: 'LARGE_DATASET_WARNING'
+            warningCode: 'LARGE_DATASET_WARNING',
+            ...(analysisNote && { analysisNote })
           }
         };
       }

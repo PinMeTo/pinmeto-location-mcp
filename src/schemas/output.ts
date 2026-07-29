@@ -746,6 +746,13 @@ export const ReviewInsightsOutputSchema = {
   largeDatasetWarning: LargeDatasetWarningSchema.optional().describe(
     'Large dataset details and options (when requiresConfirmation is true)'
   ),
+  // Mirrors metadata.analysisNote for responses that carry no metadata - the
+  // confirmation paths return before any analysis runs, but the caller still
+  // needs to know their analysisType is undifferentiated before re-calling.
+  analysisNote: z
+    .string()
+    .optional()
+    .describe('Note about the analysis itself, present when there is no metadata to carry it'),
   // Standard warning/error fields
   warning: z.string().optional().describe('Warning message'),
   warningCode: ReviewInsightsWarningCodeSchema.optional().describe('Warning code for programmatic handling'),
