@@ -478,7 +478,7 @@ export const SearchResultOutputSchema = {
 };
 
 // ============================================================================
-// Review Insights Schemas (MCP Sampling)
+// Review Insights Schemas
 // ============================================================================
 
 /**
@@ -513,8 +513,12 @@ export type Severity = z.infer<typeof SeveritySchema>;
 
 /**
  * Analysis method indicator - how the analysis was performed.
+ *
+ * Only 'statistical' remains. The 'ai_sampling' variant was dropped along with
+ * MCP Sampling support; the field is kept so existing consumers of
+ * structuredContent.metadata keep parsing.
  */
-export const AnalysisMethodSchema = z.enum(['ai_sampling', 'statistical']);
+export const AnalysisMethodSchema = z.enum(['statistical']);
 
 export type AnalysisMethod = z.infer<typeof AnalysisMethodSchema>;
 
@@ -668,10 +672,10 @@ export const ReviewInsightsMetadataSchema = z.object({
   analyzedReviewCount: z.number().int().nonnegative().describe('Reviews actually analyzed (may differ if sampled)'),
   dateRange: DateRangeSchema.describe('Date range for the analysis'),
   analysisType: AnalysisTypeSchema.describe('Type of analysis performed'),
-  analysisMethod: AnalysisMethodSchema.describe('How analysis was performed (ai_sampling or statistical)'),
+  analysisMethod: AnalysisMethodSchema.describe('How analysis was performed (always statistical)'),
   generatedAt: z.string().min(1).describe('ISO timestamp when analysis was generated'),
-  samplingStrategy: SamplingStrategySchema.optional().describe('Sampling strategy used (if applicable)'),
-  samplingNote: z.string().optional().describe('Human-readable note about sampling (if applicable)'),
+  samplingStrategy: SamplingStrategySchema.optional().describe('Which reviews were selected for analysis (if not all)'),
+  samplingNote: z.string().optional().describe('Human-readable note about review selection or partial failures'),
   cache: z
     .object({
       hit: z.boolean().describe('Whether result was served from cache'),
@@ -714,7 +718,6 @@ export type LargeDatasetWarning = z.infer<typeof LargeDatasetWarningSchema>;
 export const ReviewInsightsWarningCodeSchema = z.enum([
   'LARGE_DATASET_WARNING',
   'SAMPLED_ANALYSIS',
-  'SAMPLING_NOT_SUPPORTED',
   'INCOMPLETE_DATA'
 ]);
 
@@ -722,7 +725,7 @@ export type ReviewInsightsWarningCode = z.infer<typeof ReviewInsightsWarningCode
 
 /**
  * Output schema for review insights tool.
- * Returns AI-analyzed insights from reviews using MCP Sampling.
+ * Returns statistical insights computed over review text.
  */
 export const ReviewInsightsOutputSchema = {
   data: ReviewInsightsDataSchema.optional().describe('Analysis results (absent on error or warning)'),

@@ -1,10 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import {
-  InitializeRequestSchema,
-  SUPPORTED_PROTOCOL_VERSIONS,
-  LATEST_PROTOCOL_VERSION,
-  Implementation
-} from '@modelcontextprotocol/sdk/types.js';
+import { Implementation } from '@modelcontextprotocol/sdk/types.js';
 import axios, { isAxiosError } from 'axios';
 import { readFileSync } from 'fs';
 import os from 'os';
@@ -37,6 +32,8 @@ const PACKAGE_NAME = pkg.name;
 const PACKAGE_VERSION = pkg.version;
 const TOKEN_CACHE_SECONDS = 59 * 60;
 
+const SERVER_UA_PART = `${PACKAGE_NAME}-${PACKAGE_VERSION} (${os.type()}; ${os.arch()}; ${os.release()})`;
+
 export class PinMeToMcpServer extends McpServer {
   private _configs: Configs;
   private _locationCache: LocationCache;
@@ -65,12 +62,28 @@ export class PinMeToMcpServer extends McpServer {
     return await this.makePaginatedPinMeToRequest(url);
   }
 
+  /**
+   * Builds the User-Agent for outbound PinMeTo API calls, prefixed with the
+   * connected client's identity when it is known.
+   *
+   * Resolved per request rather than cached at connection time: MCP 2026-07-28
+   * removes the initialize handshake and moves client identity into each
+   * request's `_meta`, so there is no single moment at which to latch it. When
+   * we migrate to that revision, only this method needs to change.
+   */
+  private _userAgent(): string {
+    const clientInfo = this.server.getClientVersion();
+    if (!clientInfo) return SERVER_UA_PART;
+    return `${clientInfo.name}/${clientInfo.version} ${SERVER_UA_PART}`;
+  }
+
   public async makePinMeToRequest<T = any>(url: string): Promise<ApiResult<T>> {
     try {
       const token = await this._getPinMeToAccessToken();
       const headers = {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
+        'User-Agent': this._userAgent()
       };
 
       const response = await axios.get(url, { headers, timeout: 30000 });
@@ -201,31 +214,13 @@ export class PinMeToMcpServer extends McpServer {
 }
 
 export function createMcpServer() {
-  const serverInfo = {
+  // Capabilities are derived from what we register below, so the SDK's own
+  // initialize handler advertises them. Overriding that handler would force us
+  // to hand-maintain the list, and previously advertised a `resources`
+  // capability this server never implemented.
+  const mcpServer = new PinMeToMcpServer({
     name: 'PinMeTo Location MCP',
-    version: PACKAGE_VERSION,
-    capabilities: {
-      resources: {},
-      tools: {}
-    }
-  };
-  const mcpServer = new PinMeToMcpServer(serverInfo);
-
-  mcpServer.server.setRequestHandler(InitializeRequestSchema, async request => {
-    // Set a custom User-Agent for all axios requests
-    axios.defaults.headers.common['User-Agent'] =
-      `${request.params.clientInfo.name}/${request.params.clientInfo.version} ${PACKAGE_NAME}-${PACKAGE_VERSION} (${os.type()}; ${os.arch()}; ${os.release()})`;
-
-    const requestedVersion = request.params.protocolVersion;
-    const protocolVersion = SUPPORTED_PROTOCOL_VERSIONS.includes(requestedVersion)
-      ? requestedVersion
-      : LATEST_PROTOCOL_VERSION;
-
-    return {
-      protocolVersion,
-      capabilities: serverInfo.capabilities,
-      serverInfo
-    };
+    version: PACKAGE_VERSION
   });
 
   // Locations

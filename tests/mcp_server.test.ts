@@ -1164,15 +1164,66 @@ describe('Initialize Handler', () => {
     expect(initResponse).toBeDefined();
     expect(initResponse.result).toBeDefined();
 
-    // Verify server returns its OWN capabilities (resources, tools)
-    // NOT the empty client capabilities
+    // Verify server returns its OWN capabilities, NOT the empty client ones.
+    // These are derived by the SDK from what createMcpServer() registers, so
+    // `tools` is present and `resources` is absent - this server registers no
+    // resources and must not claim to serve them.
     expect(initResponse.result.capabilities).toBeDefined();
-    expect(initResponse.result.capabilities).toHaveProperty('resources');
     expect(initResponse.result.capabilities).toHaveProperty('tools');
+    expect(initResponse.result.capabilities).not.toHaveProperty('resources');
 
     // Verify serverInfo is also returned
     expect(initResponse.result.serverInfo).toBeDefined();
     expect(initResponse.result.serverInfo.name).toBe('PinMeTo Location MCP');
+  });
+});
+
+describe('User-Agent', () => {
+  it('should send the server identity when no client has connected', async () => {
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: { data: [] } });
+
+    const server = createMcpServer();
+    await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
+
+    const [, config] = vi.mocked(axios.get).mock.calls.at(-1) as [string, any];
+    expect(config.headers['User-Agent']).toMatch(/^@pinmeto\/pinmeto-location-mcp-\d/);
+  });
+
+  it('should prefix the connected client identity per request', async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { data: [] } });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
+    await testTransport.close();
+
+    const [, config] = vi.mocked(axios.get).mock.calls.at(-1) as [string, any];
+    expect(config.headers['User-Agent']).toMatch(
+      /^test-client\/0\.0\.0 @pinmeto\/pinmeto-location-mcp-\d/
+    );
+  });
+
+  it('should not mutate global axios defaults', async () => {
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: { data: [] } });
+
+    const server = createMcpServer();
+    await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
+
+    expect(axios.defaults.headers.common['User-Agent']).toBeUndefined();
   });
 });
 

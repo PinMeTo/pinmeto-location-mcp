@@ -61,15 +61,6 @@ import {
   formatReviewInsightsAsMarkdown,
   formatLargeDatasetWarningAsMarkdown
 } from '../../formatters';
-import {
-  buildSamplingRequest,
-  parseSamplingResponse,
-  normalizeResponseData,
-  processInBatches,
-  SamplingResponse,
-  DEFAULT_BATCH_SIZE,
-  PeriodContext
-} from '../../sampling';
 
 // Shared date validation schemas
 const DateSchema = z
@@ -78,72 +69,6 @@ const DateSchema = z
   .refine(isValidDate, {
     message: 'Invalid date - check month/day values (e.g., June has 30 days, not 31)'
   });
-
-/**
- * Builds a human-readable location display name from location data.
- * Combines name, locationDescriptor (if set), and city for unique identification.
- *
- * @param location Location data object
- * @returns Display name like "H&M - Mall of Scandinavia, Stockholm" or "H&M, Stockholm"
- */
-function buildLocationDisplayName(location: {
-  name?: string;
-  locationDescriptor?: string;
-  address?: { city?: string };
-}): string | undefined {
-  const { name, locationDescriptor, address } = location;
-
-  if (!name) return undefined;
-
-  const parts: string[] = [name];
-
-  // Add locationDescriptor if available (e.g., "Mall of Scandinavia")
-  if (locationDescriptor) {
-    parts[0] = `${name} - ${locationDescriptor}`;
-  }
-
-  // Add city if available
-  if (address?.city) {
-    parts.push(address.city);
-  }
-
-  return parts.join(', ');
-}
-
-/**
- * Calculates period context for trends analysis by splitting the date range at the midpoint.
- * The prior period is the first half, the current period is the second half.
- *
- * @param from Start date (YYYY-MM-DD)
- * @param to End date (YYYY-MM-DD)
- * @returns PeriodContext with explicit date boundaries
- */
-function calculatePeriodContextForTrends(from: string, to: string): PeriodContext {
-  const fromDate = new Date(from);
-  const toDate = new Date(to);
-
-  // Calculate midpoint
-  const totalMs = toDate.getTime() - fromDate.getTime();
-  const midpointMs = fromDate.getTime() + totalMs / 2;
-  const midpointDate = new Date(midpointMs);
-
-  // Format as YYYY-MM-DD
-  const formatDate = (d: Date): string => d.toISOString().split('T')[0];
-
-  // Prior period ends the day before midpoint, current period starts at midpoint
-  const priorEnd = new Date(midpointMs - 24 * 60 * 60 * 1000); // Day before midpoint
-
-  return {
-    priorPeriod: {
-      from,
-      to: formatDate(priorEnd)
-    },
-    currentPeriod: {
-      from: formatDate(midpointDate),
-      to
-    }
-  };
-}
 
 const MonthSchema = z
   .string()
@@ -862,7 +787,7 @@ export function getGoogleKeywords(server: PinMeToMcpServer) {
 
 /**
  * Cache entry for review insights.
- * Longer TTL than raw reviews since AI analysis is expensive.
+ * Longer TTL than raw reviews since the analysis pass is expensive.
  */
 interface InsightsCacheEntry {
   data: ReviewInsightsData;
@@ -886,34 +811,36 @@ const INSIGHTS_CACHE_TTL_MS = 60 * 60 * 1000;
 // ============================================================================
 
 /**
- * Fetch AI-powered insights from Google reviews using MCP Sampling.
- * Falls back to statistical analysis when sampling is unavailable.
+ * Compute statistical insights over Google reviews (ratings, sentiment
+ * distribution, recurring themes) without returning the raw review text.
  */
 export function getGoogleReviewInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_google_review_insights',
     {
       description:
-        'Analyze Google reviews using AI to extract insights, themes, and issues.\n\n' +
-        'This tool uses MCP Sampling to process reviews server-side and return summarized insights ' +
-        'instead of raw review data. This is far more token-efficient than fetching raw reviews.\n\n' +
+        'Summarize Google reviews into sentiment, rating distribution, and recurring themes.\n\n' +
+        'Computes aggregate statistics over review text server-side and returns the summary ' +
+        'instead of the raw reviews, which is far more token-efficient than fetching them. ' +
+        'The returned data is descriptive, not LLM-written prose: read it and draw your own ' +
+        'conclusions for the user.\n\n' +
         'Analysis Types:\n' +
-        '  - summary: Executive summary with sentiment analysis and key themes\n' +
-        '  - issues: Detailed breakdown of problems mentioned in negative reviews\n' +
-        '  - comparison: Compare performance across multiple locations\n' +
-        '  - trends: Compare current period with previous period\n' +
-        '  - themes: Deep dive into specific themes (provide themes parameter)\n\n' +
+        '  - summary: Sentiment breakdown, average rating, and key themes\n' +
+        '  - issues: Themes concentrated in negative reviews\n' +
+        '  - comparison: Per-location metrics side by side\n' +
+        '  - trends: Current period against the previous period\n' +
+        '  - themes: Focus on specific themes (provide themes parameter)\n\n' +
         'Large Dataset Handling:\n' +
         '  - <200 reviews: Processed immediately\n' +
         '  - 200-1000: Processed with token estimate in metadata\n' +
         '  - 1000-10000: Returns warning with options (set skipConfirmation=true to proceed)\n' +
         '  - >10000: Requires sampling strategy (representative or recent_weighted)\n\n' +
-        'Sampling Strategies:\n' +
+        'Sampling Strategies (which reviews get analyzed):\n' +
         '  - full: Analyze all reviews (default for <10000 reviews)\n' +
         '  - representative: Stratified sample by rating and location\n' +
         '  - recent_weighted: Prioritize recent reviews\n\n' +
         'Caching:\n' +
-        '  - AI-generated insights cached for 1 hour\n' +
+        '  - Results cached for 1 hour\n' +
         '  - Use forceRefresh=true to bypass cache\n\n' +
         'When NOT to use this tool:\n' +
         '  - Need raw review text: Use pinmeto_get_google_reviews\n' +
@@ -1096,20 +1023,6 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
       const uniqueStoreIds = new Set(allReviews.map(r => r.storeId));
       const locationCount = uniqueStoreIds.size;
 
-      // For single-location analysis, fetch location details to build a descriptive name
-      let locationName: string | undefined;
-      if (locationCount === 1) {
-        const singleStoreId = Array.from(uniqueStoreIds)[0];
-        const { locationsApiBaseUrl, accountId } = server.configs;
-        const locationUrl = `${locationsApiBaseUrl}/v4/${accountId}/locations/${singleStoreId}`;
-        const locationResult = await server.makePinMeToRequest(locationUrl);
-
-        if (locationResult.ok) {
-          locationName = buildLocationDisplayName(locationResult.data);
-        }
-        // If fetch fails, locationName stays undefined - analysis continues without it
-      }
-
       // Check if we have any reviews
       if (allReviews.length === 0) {
         const metadata: ReviewInsightsMetadata = {
@@ -1262,101 +1175,17 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
       const reviewsToAnalyze = applySamplingStrategy(sanitized, samplingStrategy);
       const analyzedReviewCount = reviewsToAnalyze.length;
 
-      // Determine analysis method and perform analysis
-      let analysisData: ReviewInsightsData;
-      let analysisMethod: AnalysisMethod;
+      // Analysis is statistical: ratings, sentiment, distributions and keyword
+      // themes computed in-process. This tool previously delegated to MCP
+      // Sampling for LLM-written summaries, but Sampling is deprecated as of
+      // MCP 2026-07-28 and no client our customers use ever implemented it, so
+      // the fallback was the only path that ever ran.
+      const analysisMethod: AnalysisMethod = 'statistical';
+      const analysisData: ReviewInsightsData =
+        analysisType === 'comparison'
+          ? performStatisticalLocationComparison(reviewsToAnalyze)
+          : performStatisticalAnalysis(reviewsToAnalyze);
       let samplingNote: string | undefined;
-
-      // Check if MCP Sampling is supported
-      const samplingSupported = await checkSamplingSupport(server);
-
-      if (samplingSupported) {
-        // Use AI-powered analysis via MCP Sampling
-        analysisMethod = 'ai_sampling';
-
-        try {
-          // Build the sampling function that wraps server.server.createMessage
-          // MCP Sampling Access Pattern:
-          // PinMeToMcpServer wraps the @modelcontextprotocol/sdk Server class.
-          // To use MCP Sampling (createMessage), we access the underlying SDK server.
-          // This uses 'as any' because PinMeToMcpServer doesn't expose .server publicly.
-          // Requires: @modelcontextprotocol/sdk >= 1.0.0 with sampling support.
-          const samplingFn = async (
-            request: ReturnType<typeof buildSamplingRequest>
-          ): Promise<SamplingResponse> => {
-            const sdkServer = (server as any).server;
-            if (!sdkServer || typeof sdkServer.createMessage !== 'function') {
-              throw new Error('MCP Sampling not available');
-            }
-
-            const response = await sdkServer.createMessage({
-              messages: request.messages,
-              maxTokens: request.maxTokens,
-              systemPrompt: request.systemPrompt,
-              includeContext: request.includeContext,
-              temperature: request.temperature
-            });
-
-            return {
-              role: 'assistant',
-              content: response.content,
-              model: response.model,
-              stopReason: response.stopReason
-            };
-          };
-
-          // Calculate period context for trends analysis
-          const periodContext =
-            analysisType === 'trends' ? calculatePeriodContextForTrends(from, to) : undefined;
-
-          // Check if we need batching
-          if (analyzedReviewCount > DEFAULT_BATCH_SIZE) {
-            // Process in batches
-            const batchResult = await processInBatches(
-              reviewsToAnalyze,
-              { analysisType, themes, periodContext, locationName },
-              samplingFn
-            );
-            analysisData = batchResult.data;
-
-            if (!batchResult.complete) {
-              samplingNote = `Analysis completed with ${batchResult.batchCount} batches. ` +
-                `Some batches may have had issues: ${batchResult.errors?.join('; ')}`;
-            }
-          } else {
-            // Single pass analysis
-            const request = buildSamplingRequest(reviewsToAnalyze, {
-              analysisType,
-              themes,
-              maxQuotes: 5,
-              periodContext,
-              locationName
-            });
-            const response = await samplingFn(request);
-            const parsed = parseSamplingResponse(response, analysisType);
-            analysisData = normalizeResponseData(parsed, analysisType);
-          }
-        } catch (e) {
-          // Sampling failed - fall back to statistical analysis
-          // Include error details in samplingNote for debugging
-          const errorMessage = e instanceof Error ? e.message : String(e);
-          console.error('MCP Sampling failed, falling back to statistical analysis:', e);
-          analysisMethod = 'statistical';
-          analysisData =
-            analysisType === 'comparison'
-              ? performStatisticalLocationComparison(reviewsToAnalyze)
-              : performStatisticalAnalysis(reviewsToAnalyze);
-          samplingNote = `AI analysis failed (${errorMessage}), using statistical fallback. Set forceRefresh=true to retry.`;
-        }
-      } else {
-        // Use statistical fallback
-        analysisMethod = 'statistical';
-        analysisData =
-          analysisType === 'comparison'
-            ? performStatisticalLocationComparison(reviewsToAnalyze)
-            : performStatisticalAnalysis(reviewsToAnalyze);
-        samplingNote = 'AI sampling not supported by client, using statistical analysis';
-      }
 
       // Add sampling note for non-full strategies
       if (samplingStrategy !== 'full' && !samplingNote) {
@@ -1369,12 +1198,8 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         samplingNote = samplingNote ? `${samplingNote}. ${failureNote}` : failureNote;
       }
 
-      // Determine single warning code (avoid overwrite by using priority)
-      const warningCode = samplingStrategy !== 'full'
-        ? 'SAMPLED_ANALYSIS' as const
-        : (samplingNote && analysisMethod === 'statistical')
-          ? 'SAMPLING_NOT_SUPPORTED' as const
-          : undefined;
+      // Flag that only a subset of the matched reviews was actually analyzed
+      const warningCode = samplingStrategy !== 'full' ? ('SAMPLED_ANALYSIS' as const) : undefined;
 
       // Build metadata
       const metadata: ReviewInsightsMetadata = {
@@ -1412,44 +1237,4 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
       };
     }
   );
-}
-
-/**
- * Check if MCP Sampling is supported by the connected client.
- * Returns true only if the client explicitly advertised sampling capability
- * during initialization. This avoids attempting sampling calls that would
- * fail with -32601 "Method not found" on clients like Claude Desktop that
- * don't support sampling.
- */
-async function checkSamplingSupport(server: PinMeToMcpServer): Promise<boolean> {
-  try {
-    // Access underlying SDK server
-    const sdkServer = (server as any).server;
-    if (!sdkServer) {
-      return false;
-    }
-
-    // Check if createMessage method exists on the SDK
-    if (typeof sdkServer.createMessage !== 'function') {
-      return false;
-    }
-
-    // Check if getClientCapabilities method exists
-    if (typeof sdkServer.getClientCapabilities !== 'function') {
-      return false;
-    }
-
-    // Get the client's advertised capabilities from initialization
-    const clientCapabilities = sdkServer.getClientCapabilities();
-
-    // Client must have explicitly advertised sampling support
-    // If sampling is undefined, the client doesn't support it
-    if (!clientCapabilities?.sampling) {
-      return false;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
 }
