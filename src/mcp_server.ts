@@ -34,6 +34,28 @@ const TOKEN_CACHE_SECONDS = 59 * 60;
 
 const SERVER_UA_PART = `${PACKAGE_NAME}-${PACKAGE_VERSION} (${os.type()}; ${os.arch()}; ${os.release()})`;
 
+/** Max characters kept from each client-supplied User-Agent component. */
+const UA_COMPONENT_MAX_LENGTH = 64;
+
+/**
+ * Strips anything an HTTP header cannot carry from a peer-supplied string.
+ *
+ * `clientInfo` comes off the wire, and Node rejects header values containing
+ * control characters or anything outside Latin-1 with `ERR_INVALID_CHAR` - a
+ * client named with an em dash would otherwise fail every outbound API call
+ * for the whole session. Restricted to printable ASCII, which is all a
+ * User-Agent token needs, and length-capped so a long name can't crowd out the
+ * server identity that follows it.
+ */
+function sanitizeUserAgentComponent(value: string | undefined): string {
+  if (!value) return '';
+  return value
+    .replace(/[^\x20-\x7E]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, UA_COMPONENT_MAX_LENGTH);
+}
+
 export class PinMeToMcpServer extends McpServer {
   private _configs: Configs;
   private _locationCache: LocationCache;
@@ -73,8 +95,10 @@ export class PinMeToMcpServer extends McpServer {
    */
   private _userAgent(): string {
     const clientInfo = this.server.getClientVersion();
-    if (!clientInfo) return SERVER_UA_PART;
-    return `${clientInfo.name}/${clientInfo.version} ${SERVER_UA_PART}`;
+    const name = sanitizeUserAgentComponent(clientInfo?.name);
+    if (!name) return SERVER_UA_PART;
+    const version = sanitizeUserAgentComponent(clientInfo?.version) || 'unknown';
+    return `${name}/${version} ${SERVER_UA_PART}`;
   }
 
   public async makePinMeToRequest<T = any>(url: string): Promise<ApiResult<T>> {

@@ -819,17 +819,19 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
     'pinmeto_get_google_review_insights',
     {
       description:
-        'Summarize Google reviews into sentiment, rating distribution, and recurring themes.\n\n' +
-        'Computes aggregate statistics over review text server-side and returns the summary ' +
+        'Summarize Google reviews into rating and sentiment statistics.\n\n' +
+        'Computes aggregates over the matched reviews server-side and returns the summary ' +
         'instead of the raw reviews, which is far more token-efficient than fetching them. ' +
-        'The returned data is descriptive, not LLM-written prose: read it and draw your own ' +
-        'conclusions for the user.\n\n' +
+        'The returned data is descriptive statistics, not LLM-written prose: read it and ' +
+        'draw your own conclusions for the user.\n\n' +
         'Analysis Types:\n' +
-        '  - summary: Sentiment breakdown, average rating, and key themes\n' +
-        '  - issues: Themes concentrated in negative reviews\n' +
-        '  - comparison: Per-location metrics side by side\n' +
-        '  - trends: Current period against the previous period\n' +
-        '  - themes: Focus on specific themes (provide themes parameter)\n\n' +
+        '  - summary: Average rating, sentiment breakdown, rating distribution\n' +
+        '  - comparison: The above, plus per-location metrics ranked by rating\n' +
+        '  - issues, trends, themes: Accepted, but currently return the same payload as\n' +
+        '    summary. No theme extraction, issue clustering, or period comparison is\n' +
+        '    performed, and the response is flagged with warningCode\n' +
+        '    UNDIFFERENTIATED_ANALYSIS_TYPE. To analyze review text, fetch\n' +
+        '    pinmeto_get_google_reviews and read it yourself.\n\n' +
         'Large Dataset Handling:\n' +
         '  - <200 reviews: Processed immediately\n' +
         '  - 200-1000: Processed with token estimate in metadata\n' +
@@ -867,7 +869,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         themes: z
           .array(z.string())
           .optional()
-          .describe('Specific themes to analyze (only for themes analysisType)'),
+          .describe('Currently ignored - no theme extraction is performed'),
         minRating: z.number().min(1).max(5).optional().describe('Minimum rating filter (1-5)'),
         maxRating: z.number().min(1).max(5).optional().describe('Maximum rating filter (1-5)'),
         forceRefresh: z
@@ -1198,8 +1200,27 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         samplingNote = samplingNote ? `${samplingNote}. ${failureNote}` : failureNote;
       }
 
-      // Flag that only a subset of the matched reviews was actually analyzed
-      const warningCode = samplingStrategy !== 'full' ? ('SAMPLED_ANALYSIS' as const) : undefined;
+      // Only 'summary' and 'comparison' produce distinct output. Every other
+      // analysisType resolves to the same summary payload, so say so rather
+      // than returning something other than what was asked for in silence.
+      if (analysisType !== 'summary' && analysisType !== 'comparison') {
+        const undifferentiatedNote =
+          `analysisType '${analysisType}' currently returns the same payload as 'summary' - ` +
+          `no theme extraction, issue clustering, or period comparison is performed. ` +
+          `Fetch pinmeto_get_google_reviews to analyze review text directly`;
+        samplingNote = samplingNote
+          ? `${samplingNote}. ${undifferentiatedNote}`
+          : undifferentiatedNote;
+      }
+
+      // Single warning code by priority: not getting the requested analysis at
+      // all outranks having analyzed only a subset of reviews.
+      const warningCode =
+        analysisType !== 'summary' && analysisType !== 'comparison'
+          ? ('UNDIFFERENTIATED_ANALYSIS_TYPE' as const)
+          : samplingStrategy !== 'full'
+            ? ('SAMPLED_ANALYSIS' as const)
+            : undefined;
 
       // Build metadata
       const metadata: ReviewInsightsMetadata = {

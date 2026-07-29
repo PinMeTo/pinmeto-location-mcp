@@ -13,16 +13,26 @@ additionally deprecates Sampling outright (alongside Roots and Logging), so the
 code path had no future.
 
 The tool keeps working and keeps its full input schema. It now always returns
-statistical insights: average rating, rating and sentiment distributions,
-per-location comparison, and keyword-derived themes. Its description no longer
-claims AI analysis, so agents will summarize the returned data themselves rather
-than expecting prose.
+statistical insights: average rating, rating and sentiment distributions, and
+per-location comparison. Its description no longer claims AI analysis, so agents
+will summarize the returned data themselves rather than expecting prose.
+
+**Only `summary` and `comparison` produce distinct output.** No theme
+extraction, issue clustering, or period comparison is performed, so
+`analysisType` values of `issues`, `trends`, and `themes` return the same
+payload as `summary`, and the `themes` parameter is ignored. This was already
+true whenever Sampling was unavailable — i.e. always, in practice — but it was
+previously masked by the `SAMPLING_NOT_SUPPORTED` warning. Those requests are
+now explicitly flagged with the new `UNDIFFERENTIATED_ANALYSIS_TYPE` warning
+code and a `samplingNote` saying so, rather than silently answering a different
+question.
 
 Output schema changes for consumers of `structuredContent.metadata`:
 
 - `analysisMethod` is now always `"statistical"`; the `"ai_sampling"` variant is
   gone. The field is retained so existing parsers keep working.
-- The `SAMPLING_NOT_SUPPORTED` warning code is removed. `SAMPLED_ANALYSIS`,
+- The `SAMPLING_NOT_SUPPORTED` warning code is removed and
+  `UNDIFFERENTIATED_ANALYSIS_TYPE` is added. `SAMPLED_ANALYSIS`,
   `LARGE_DATASET_WARNING`, and `INCOMPLETE_DATA` are unchanged.
 
 Note that `samplingStrategy` / `samplingNote` and the `full` /

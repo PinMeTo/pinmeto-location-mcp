@@ -718,6 +718,7 @@ export type LargeDatasetWarning = z.infer<typeof LargeDatasetWarningSchema>;
 export const ReviewInsightsWarningCodeSchema = z.enum([
   'LARGE_DATASET_WARNING',
   'SAMPLED_ANALYSIS',
+  'UNDIFFERENTIATED_ANALYSIS_TYPE',
   'INCOMPLETE_DATA'
 ]);
 

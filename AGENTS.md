@@ -102,6 +102,7 @@ These are easy to get wrong from reading the call sites alone:
 - **Client identity is resolved per request** in `PinMeToMcpServer._userAgent()`, not latched at connection time and never written to `axios.defaults`. MCP `2026-07-28` removes the initialize handshake and moves client identity into each request's `_meta`, so that method is the single seam to change when we migrate.
 - **MCP Sampling, Roots, and Logging are deprecated** as of MCP `2026-07-28`. Sampling support was removed in v4.0.0 — no client our customers use implemented it. Don't reintroduce them. Log to stderr (already the convention here); that *is* the recommended replacement for the Logging feature.
 - **"Sampling" in this codebase now means review subsetting only** (`applySamplingStrategy`, `samplingStrategy`, `samplingNote`) — choosing which reviews to analyze. It has nothing to do with MCP Sampling.
+- **`pinmeto_get_google_review_insights` only differentiates `summary` and `comparison`.** `performStatisticalAnalysis()` populates *only* `summary`; `performStatisticalLocationComparison()` adds `locationComparison`. Nothing populates `themes`, `issues`, or `trends`, and the `themes` parameter is ignored. Those `analysisType` values are accepted and flagged with `UNDIFFERENTIATED_ANALYSIS_TYPE`. If you implement real extraction, remove the flag and the description caveat together.
 
 ## Testing
 

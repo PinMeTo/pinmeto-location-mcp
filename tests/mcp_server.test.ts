@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { createMcpServer } from '../src/mcp_server';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { formatErrorResponse, isValidDate } from '../src/helpers';
@@ -1224,6 +1224,72 @@ describe('User-Agent', () => {
     await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
 
     expect(axios.defaults.headers.common['User-Agent']).toBeUndefined();
+  });
+
+  // Node throws ERR_INVALID_CHAR for header values outside Latin-1 or containing
+  // control characters, which would break every request for the whole session.
+  it.each([
+    ['em dash', 'Claude\u2014Desktop', '1.0'],
+    ['newline injection', 'Evil\r\nX-Injected: 1', '1.0'],
+    ['emoji', 'Client\ud83d\ude80', '2.0'],
+    ['bad version', 'Client', '1.0\u20140']
+  ])('should produce a header-safe User-Agent for %s', async (_label, name, version) => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { data: [] } });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name, version }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
+    await testTransport.close();
+
+    const [, config] = vi.mocked(axios.get).mock.calls.at(-1) as [string, any];
+    const ua = config.headers['User-Agent'];
+
+    // Printable ASCII only - this is exactly what Node validates
+    expect(ua).toMatch(/^[\x20-\x7E]+$/);
+    // And it must actually be accepted as a header value
+    expect(() => new Headers({ 'User-Agent': ua })).not.toThrow();
+    expect(ua).toContain('@pinmeto/pinmeto-location-mcp');
+  });
+
+  it('should cap an overlong client name so the server identity survives', async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { data: [] } });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'x'.repeat(5000), version: '1.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
+    await testTransport.close();
+
+    const [, config] = vi.mocked(axios.get).mock.calls.at(-1) as [string, any];
+    expect(config.headers['User-Agent'].length).toBeLessThan(200);
+    expect(config.headers['User-Agent']).toContain('@pinmeto/pinmeto-location-mcp');
   });
 });
 
@@ -2610,6 +2676,71 @@ describe('Consolidated Network Tools', () => {
       const storeIds = new Set(response.result.structuredContent.data.map((r: any) => r.storeId));
       expect(storeIds.size).toBe(2);
     });
+  });
+
+  describe('pinmeto_get_google_review_insights', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+        if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+          return Promise.reject(new Error('Unauthorized'));
+        }
+        if (url.includes('/ratings/google')) {
+          return Promise.resolve({
+            data: [
+              { storeId: 'store-a', rating: 5, comment: 'Excellent', date: '2024-01-15' },
+              { storeId: 'store-a', rating: 4, comment: 'Good place', date: '2024-01-10' },
+              { storeId: 'store-b', rating: 2, comment: 'Slow service', date: '2024-01-08' }
+            ]
+          });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+    });
+
+    it('should not warn for summary, which is genuinely differentiated', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'summary'
+      });
+
+      const sc = response.result.structuredContent;
+      expect(sc.data.summary).toBeDefined();
+      expect(sc.warningCode).toBeUndefined();
+    });
+
+    it('should return locationComparison for comparison without warning', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'comparison'
+      });
+
+      const sc = response.result.structuredContent;
+      expect(sc.data.locationComparison).toBeDefined();
+      expect(sc.data.locationComparison.length).toBe(2);
+      expect(sc.warningCode).toBeUndefined();
+    });
+
+    // issues/trends/themes all collapse to the same summary payload. The tool
+    // must say so rather than quietly answering a different question.
+    for (const analysisType of ['issues', 'trends', 'themes']) {
+      it(`should flag '${analysisType}' as undifferentiated`, async () => {
+        const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+          from: '2024-01-01',
+          to: '2024-12-31',
+          analysisType
+        });
+
+        const sc = response.result.structuredContent;
+        expect(sc.warningCode).toBe('UNDIFFERENTIATED_ANALYSIS_TYPE');
+        expect(sc.metadata.samplingNote).toContain(analysisType);
+        // The promised field is genuinely absent - the warning is not cosmetic
+        expect(sc.data[analysisType]).toBeUndefined();
+        expect(sc.data.summary).toBeDefined();
+      });
+    }
   });
 });
 
