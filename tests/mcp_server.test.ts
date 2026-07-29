@@ -2738,12 +2738,39 @@ describe('Consolidated Network Tools', () => {
 
         const sc = response.result.structuredContent;
         expect(sc.warningCode).toBe('UNDIFFERENTIATED_ANALYSIS_TYPE');
-        expect(sc.metadata.samplingNote).toContain(analysisType);
+        expect(sc.metadata.analysisNote).toContain(analysisType);
+        // samplingNote is reserved for review-subset behavior
+        expect(sc.metadata.samplingNote).toBeUndefined();
         // The promised field is genuinely absent - the warning is not cosmetic
         expect(sc.data[analysisType]).toBeUndefined();
         expect(sc.data.summary).toBeDefined();
       });
     }
+
+    // A cache hit must not look like a cleaner result than the fresh response
+    // it stands in for. The cache key includes analysisType and
+    // samplingStrategy, so warnings would otherwise vanish on the second call.
+    it('should replay the warning on a cache hit', async () => {
+      const args = {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'themes'
+      };
+
+      // insightsCache is module-level and outlives each test, so the first
+      // call must explicitly bypass it to be genuinely fresh.
+      const fresh = await callNetworkTool('pinmeto_get_google_review_insights', {
+        ...args,
+        forceRefresh: true
+      });
+      expect(fresh.result.structuredContent.warningCode).toBe('UNDIFFERENTIATED_ANALYSIS_TYPE');
+      expect(fresh.result.structuredContent.metadata.cache?.hit).toBeFalsy();
+
+      const cached = await callNetworkTool('pinmeto_get_google_review_insights', args);
+      expect(cached.result.structuredContent.metadata.cache?.hit).toBe(true);
+      expect(cached.result.structuredContent.warningCode).toBe('UNDIFFERENTIATED_ANALYSIS_TYPE');
+      expect(cached.result.structuredContent.metadata.analysisNote).toContain('themes');
+    });
 
     // The no-reviews path returns `data: null`. When the output schema declared
     // `data` optional rather than nullable, the SDK rejected that response and
@@ -2761,6 +2788,22 @@ describe('Consolidated Network Tools', () => {
       const sc = response.result.structuredContent;
       expect(sc.data).toBeNull();
       expect(sc.warningCode).toBe('INCOMPLETE_DATA');
+    });
+
+    it('should keep the analysis note when no reviews match', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'trends',
+        forceRefresh: true,
+        storeIds: ['empty-store']
+      });
+
+      const sc = response.result.structuredContent;
+      // Absent data outranks the caveat for the single warningCode slot...
+      expect(sc.warningCode).toBe('INCOMPLETE_DATA');
+      // ...but the caveat itself must survive
+      expect(sc.metadata.analysisNote).toContain('trends');
     });
   });
 });

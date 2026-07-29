@@ -676,6 +676,7 @@ export const ReviewInsightsMetadataSchema = z.object({
   generatedAt: z.string().min(1).describe('ISO timestamp when analysis was generated'),
   samplingStrategy: SamplingStrategySchema.optional().describe('Which reviews were selected for analysis (if not all)'),
   samplingNote: z.string().optional().describe('Human-readable note about review selection or partial failures'),
+  analysisNote: z.string().optional().describe('Human-readable note about the analysis itself, e.g. an analysisType that is not differentiated'),
   cache: z
     .object({
       hit: z.boolean().describe('Whether result was served from cache'),

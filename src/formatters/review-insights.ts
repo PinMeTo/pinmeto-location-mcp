@@ -76,6 +76,10 @@ function formatMetadataSection(metadata: ReviewInsightsMetadata): string {
     md += `**Note:** ${metadata.samplingNote}\n`;
   }
 
+  if (metadata.analysisNote) {
+    md += `**Analysis Note:** ${metadata.analysisNote}\n`;
+  }
+
   if (metadata.cache?.hit) {
     md += `**Cached:** Yes (expires ${metadata.cache.expiresAt || 'soon'})\n`;
   }

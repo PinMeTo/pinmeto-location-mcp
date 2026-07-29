@@ -24,8 +24,14 @@ payload as `summary`, and the `themes` parameter is ignored. This was already
 true whenever Sampling was unavailable — i.e. always, in practice — but it was
 previously masked by the `SAMPLING_NOT_SUPPORTED` warning. Those requests are
 now explicitly flagged with the new `UNDIFFERENTIATED_ANALYSIS_TYPE` warning
-code and a `samplingNote` saying so, rather than silently answering a different
+code and an `analysisNote` saying so, rather than silently answering a different
 question.
+
+One related bug fixed alongside that flag: **cache hits dropped the warning.**
+`InsightsCacheEntry` did not store `warningCode`, so the second identical
+request inside the 1-hour TTL returned no warning at all. This also affected the
+pre-existing `SAMPLED_ANALYSIS` warning, which had always been lost on cache
+hits.
 
 Output schema changes for consumers of `structuredContent.metadata`:
 
@@ -34,6 +40,9 @@ Output schema changes for consumers of `structuredContent.metadata`:
 - The `SAMPLING_NOT_SUPPORTED` warning code is removed and
   `UNDIFFERENTIATED_ANALYSIS_TYPE` is added. `SAMPLED_ANALYSIS`,
   `LARGE_DATASET_WARNING`, and `INCOMPLETE_DATA` are unchanged.
+- A new optional `analysisNote` field carries notes about the analysis itself.
+  `samplingNote` stays reserved for notes about which reviews were analyzed
+  (subset strategy, partial store failures).
 
 Note that `samplingStrategy` / `samplingNote` and the `full` /
 `representative` / `recent_weighted` options are **unrelated** to MCP Sampling —

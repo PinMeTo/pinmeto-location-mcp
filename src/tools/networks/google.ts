@@ -39,6 +39,7 @@ import {
   ReviewInsightsOutputSchema,
   ReviewInsightsData,
   ReviewInsightsMetadata,
+  ReviewInsightsWarningCode,
   LargeDatasetWarning,
   AnalysisType,
   AnalysisTypeSchema,
@@ -792,6 +793,12 @@ export function getGoogleKeywords(server: PinMeToMcpServer) {
 interface InsightsCacheEntry {
   data: ReviewInsightsData;
   metadata: ReviewInsightsMetadata;
+  /**
+   * Stored so cache hits return the same warning as the fresh response.
+   * Without it, the second identical request within the TTL silently drops
+   * SAMPLED_ANALYSIS / UNDIFFERENTIATED_ANALYSIS_TYPE.
+   */
+  warningCode?: ReviewInsightsWarningCode;
   timestamp: number;
 }
 
@@ -924,6 +931,17 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         };
       }
 
+      // Only 'summary' and 'comparison' produce distinct output. Every other
+      // analysisType resolves to the same summary payload, so say so rather
+      // than returning something other than what was asked for in silence.
+      // Resolved before the cache lookup so every return path can carry it.
+      const isUndifferentiated = analysisType !== 'summary' && analysisType !== 'comparison';
+      const analysisNote = isUndifferentiated
+        ? `analysisType '${analysisType}' currently returns the same payload as 'summary' - ` +
+          `no theme extraction, issue clustering, or period comparison is performed. ` +
+          `Fetch pinmeto_get_google_reviews to analyze review text directly`
+        : undefined;
+
       // Check cache first (unless forceRefresh)
       const cacheKey = buildInsightsCacheKey({
         accountId,
@@ -962,7 +980,8 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
               content: [{ type: 'text', text: textContent }],
               structuredContent: {
                 data: cached.data,
-                metadata: cachedMetadata
+                metadata: cachedMetadata,
+                ...(cached.warningCode && { warningCode: cached.warningCode })
               }
             };
           } else {
@@ -1034,7 +1053,10 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
           dateRange: { from, to },
           analysisType,
           analysisMethod: 'statistical',
-          generatedAt: new Date().toISOString()
+          generatedAt: new Date().toISOString(),
+          // Absent data outranks the analysisType caveat for warningCode, so
+          // carry the caveat in metadata rather than dropping it entirely.
+          ...(analysisNote && { analysisNote })
         };
 
         return {
@@ -1200,27 +1222,13 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         samplingNote = samplingNote ? `${samplingNote}. ${failureNote}` : failureNote;
       }
 
-      // Only 'summary' and 'comparison' produce distinct output. Every other
-      // analysisType resolves to the same summary payload, so say so rather
-      // than returning something other than what was asked for in silence.
-      if (analysisType !== 'summary' && analysisType !== 'comparison') {
-        const undifferentiatedNote =
-          `analysisType '${analysisType}' currently returns the same payload as 'summary' - ` +
-          `no theme extraction, issue clustering, or period comparison is performed. ` +
-          `Fetch pinmeto_get_google_reviews to analyze review text directly`;
-        samplingNote = samplingNote
-          ? `${samplingNote}. ${undifferentiatedNote}`
-          : undifferentiatedNote;
-      }
-
       // Single warning code by priority: not getting the requested analysis at
       // all outranks having analyzed only a subset of reviews.
-      const warningCode =
-        analysisType !== 'summary' && analysisType !== 'comparison'
-          ? ('UNDIFFERENTIATED_ANALYSIS_TYPE' as const)
-          : samplingStrategy !== 'full'
-            ? ('SAMPLED_ANALYSIS' as const)
-            : undefined;
+      const warningCode: ReviewInsightsWarningCode | undefined = isUndifferentiated
+        ? 'UNDIFFERENTIATED_ANALYSIS_TYPE'
+        : samplingStrategy !== 'full'
+          ? 'SAMPLED_ANALYSIS'
+          : undefined;
 
       // Build metadata
       const metadata: ReviewInsightsMetadata = {
@@ -1232,13 +1240,16 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         analysisMethod,
         generatedAt: new Date().toISOString(),
         ...(samplingStrategy !== 'full' && { samplingStrategy }),
-        ...(samplingNote && { samplingNote })
+        ...(samplingNote && { samplingNote }),
+        ...(analysisNote && { analysisNote })
       };
 
-      // Cache the result
+      // Cache the result, warning included - a cache hit must not look like a
+      // cleaner result than the fresh response it stands in for.
       insightsCache.set(cacheKey, {
         data: analysisData,
         metadata,
+        warningCode,
         timestamp: Date.now()
       });
 
