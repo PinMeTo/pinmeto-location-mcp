@@ -92,8 +92,8 @@ Every tool in this server sets `readOnlyHint: true` — the server only fetches 
 
 These are easy to get wrong from reading the call sites alone:
 
-- `makePinMeToRequest()` returns `null` on error (logged to stderr) rather than throwing. Callers must handle `null`.
-- `makePaginatedPinMeToRequest()` returns a tuple `[data[], areAllPagesFetched]`. Check the flag — `false` means the results are truncated, not that the dataset is empty.
+- `makePinMeToRequest()` never throws and never returns `null`. It returns an `ApiResult<T>` discriminated union (`src/errors.ts`): `{ ok: true, data }` or `{ ok: false, error }`. Narrow on `ok` before touching `data`; failures are also logged to stderr.
+- `makePaginatedPinMeToRequest()` returns a **three**-element tuple: `[data[], areAllPagesFetched, lastError]`. Destructuring only the first two silently drops the error. `areAllPagesFetched: false` means pagination broke off partway, so partial data alongside a non-null `lastError` is the expected shape — not an empty dataset.
 - Insights tools default to `total` aggregation and `none` comparison. This is deliberate, for token efficiency — don't "helpfully" change the defaults to time series.
 
 ## Testing
