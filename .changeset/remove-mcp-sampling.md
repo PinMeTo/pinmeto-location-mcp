@@ -39,6 +39,15 @@ Note that `samplingStrategy` / `samplingNote` and the `full` /
 `representative` / `recent_weighted` options are **unrelated** to MCP Sampling —
 they select *which reviews* get analyzed and are unchanged.
 
+### Unrelated pre-existing fix: zero-review queries failed outright
+
+Independent of the Sampling removal, `pinmeto_get_google_review_insights` failed
+completely whenever a query matched no reviews — a quiet store or a sparse date
+range would hit it. The no-reviews path returns `data: null`, but
+`ReviewInsightsOutputSchema.data` was `.optional()` rather than nullable, so the
+SDK rejected the server's own response with `-32602 Output validation error`
+instead of returning "No reviews found". The field is now `.nullish()`.
+
 Removed internals: the `src/sampling/` module (prompt building, response
 parsing, batching), `checkSamplingSupport()`, and a per-request location lookup
 that existed only to name the location inside a sampling prompt. Single-location

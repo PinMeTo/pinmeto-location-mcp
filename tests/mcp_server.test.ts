@@ -2685,6 +2685,9 @@ describe('Consolidated Network Tools', () => {
         if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
           return Promise.reject(new Error('Unauthorized'));
         }
+        if (url.includes('/ratings/google/empty-store')) {
+          return Promise.resolve({ data: [] });
+        }
         if (url.includes('/ratings/google')) {
           return Promise.resolve({
             data: [
@@ -2741,6 +2744,24 @@ describe('Consolidated Network Tools', () => {
         expect(sc.data.summary).toBeDefined();
       });
     }
+
+    // The no-reviews path returns `data: null`. When the output schema declared
+    // `data` optional rather than nullable, the SDK rejected that response and
+    // the whole call failed with -32602 instead of reporting "no reviews".
+    it('should return an empty result rather than failing when no reviews match', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'summary',
+        forceRefresh: true,
+        storeIds: ['empty-store']
+      });
+
+      expect(response.result.isError).toBeFalsy();
+      const sc = response.result.structuredContent;
+      expect(sc.data).toBeNull();
+      expect(sc.warningCode).toBe('INCOMPLETE_DATA');
+    });
   });
 });
 

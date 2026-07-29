@@ -729,7 +729,13 @@ export type ReviewInsightsWarningCode = z.infer<typeof ReviewInsightsWarningCode
  * Returns statistical insights computed over review text.
  */
 export const ReviewInsightsOutputSchema = {
-  data: ReviewInsightsDataSchema.optional().describe('Analysis results (absent on error or warning)'),
+  // nullish, not optional: the no-reviews path returns `data: null`, and
+  // `.optional()` made the SDK reject it with an output validation error -
+  // so any query matching zero reviews failed outright instead of returning
+  // the intended empty response.
+  data: ReviewInsightsDataSchema.nullish().describe(
+    'Analysis results (null or absent on error, warning, or no matching reviews)'
+  ),
   metadata: ReviewInsightsMetadataSchema.optional().describe('Analysis metadata'),
   // Large dataset warning (when confirmation needed)
   requiresConfirmation: z
