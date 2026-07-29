@@ -2862,6 +2862,94 @@ describe('Consolidated Network Tools', () => {
       expect(sc.analysisNote).toBeUndefined();
     });
 
+    // Failure paths. Auth succeeds in all three - the review fetch itself is
+    // what fails, so these exercise the tool's own error handling rather than
+    // the shared token path.
+    const apiError = (status: number, message: string) =>
+      Object.assign(new Error(message), {
+        isAxiosError: true,
+        response: { status, data: { message } }
+      });
+
+    it('should return an error when the bulk review fetch fails', async () => {
+      vi.mocked(axios.get).mockImplementation((url: string) => {
+        if (url.includes('/ratings/google')) {
+          return Promise.reject(apiError(500, 'Internal server error'));
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-02-01',
+        to: '2024-02-28',
+        analysisType: 'summary',
+        forceRefresh: true
+      });
+
+      expect(response.result.isError).toBe(true);
+      const sc = response.result.structuredContent;
+      expect(sc.errorCode).toBe('SERVER_ERROR');
+      expect(sc.retryable).toBe(true);
+      expect(sc.error).toContain('all Google reviews');
+    });
+
+    it('should return an error when every requested store fails', async () => {
+      vi.mocked(axios.get).mockImplementation((url: string) => {
+        if (url.includes('/ratings/google')) {
+          return Promise.reject(apiError(500, 'Internal server error'));
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-03-01',
+        to: '2024-03-31',
+        analysisType: 'summary',
+        forceRefresh: true,
+        storeIds: ['store-x', 'store-y']
+      });
+
+      expect(response.result.isError).toBe(true);
+      const sc = response.result.structuredContent;
+      expect(sc.errorCode).toBe('SERVER_ERROR');
+      // The message must name which stores failed, not just that something did
+      expect(sc.error).toContain('store-x');
+      expect(sc.error).toContain('store-y');
+    });
+
+    it('should return data with a note when only some stores fail', async () => {
+      vi.mocked(axios.get).mockImplementation((url: string) => {
+        if (url.includes('/ratings/google/good-store')) {
+          return Promise.resolve({
+            data: [
+              { storeId: 'good-store', rating: 5, comment: 'Great', date: '2024-04-02' },
+              { storeId: 'good-store', rating: 3, comment: 'Fine', date: '2024-04-03' }
+            ]
+          });
+        }
+        if (url.includes('/ratings/google/bad-store')) {
+          return Promise.reject(apiError(500, 'Internal server error'));
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-04-01',
+        to: '2024-04-30',
+        analysisType: 'summary',
+        forceRefresh: true,
+        storeIds: ['good-store', 'bad-store']
+      });
+
+      // Partial failure must not sink the whole call
+      expect(response.result.isError).toBeFalsy();
+      const sc = response.result.structuredContent;
+      expect(sc.data.summary).toBeDefined();
+      expect(sc.metadata.totalReviewCount).toBe(2);
+      // ...and must say which store was lost, so the numbers can be trusted
+      expect(sc.metadata.samplingNote).toContain('bad-store');
+    });
+
     it('should keep the analysis note when no reviews match', async () => {
       const response = await callNetworkTool('pinmeto_get_google_review_insights', {
         from: '2024-01-01',
