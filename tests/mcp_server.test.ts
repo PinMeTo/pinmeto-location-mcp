@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { createMcpServer } from '../src/mcp_server';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { formatErrorResponse, isValidDate } from '../src/helpers';
@@ -1164,15 +1164,132 @@ describe('Initialize Handler', () => {
     expect(initResponse).toBeDefined();
     expect(initResponse.result).toBeDefined();
 
-    // Verify server returns its OWN capabilities (resources, tools)
-    // NOT the empty client capabilities
+    // Verify server returns its OWN capabilities, NOT the empty client ones.
+    // These are derived by the SDK from what createMcpServer() registers, so
+    // `tools` is present and `resources` is absent - this server registers no
+    // resources and must not claim to serve them.
     expect(initResponse.result.capabilities).toBeDefined();
-    expect(initResponse.result.capabilities).toHaveProperty('resources');
     expect(initResponse.result.capabilities).toHaveProperty('tools');
+    expect(initResponse.result.capabilities).not.toHaveProperty('resources');
 
     // Verify serverInfo is also returned
     expect(initResponse.result.serverInfo).toBeDefined();
     expect(initResponse.result.serverInfo.name).toBe('PinMeTo Location MCP');
+  });
+});
+
+describe('User-Agent', () => {
+  it('should send the server identity when no client has connected', async () => {
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: { data: [] } });
+
+    const server = createMcpServer();
+    await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
+
+    const [, config] = vi.mocked(axios.get).mock.calls.at(-1) as [string, any];
+    expect(config.headers['User-Agent']).toMatch(/^@pinmeto\/pinmeto-location-mcp-\d/);
+  });
+
+  it('should prefix the connected client identity per request', async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { data: [] } });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
+    await testTransport.close();
+
+    const [, config] = vi.mocked(axios.get).mock.calls.at(-1) as [string, any];
+    expect(config.headers['User-Agent']).toMatch(
+      /^test-client\/0\.0\.0 @pinmeto\/pinmeto-location-mcp-\d/
+    );
+  });
+
+  it('should not mutate global axios defaults', async () => {
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: { data: [] } });
+
+    const server = createMcpServer();
+    await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
+
+    expect(axios.defaults.headers.common['User-Agent']).toBeUndefined();
+  });
+
+  // Node throws ERR_INVALID_CHAR for header values outside Latin-1 or containing
+  // control characters, which would break every request for the whole session.
+  it.each([
+    ['em dash', 'Claude\u2014Desktop', '1.0'],
+    ['newline injection', 'Evil\r\nX-Injected: 1', '1.0'],
+    ['emoji', 'Client\ud83d\ude80', '2.0'],
+    ['bad version', 'Client', '1.0\u20140']
+  ])('should produce a header-safe User-Agent for %s', async (_label, name, version) => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { data: [] } });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name, version }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
+    await testTransport.close();
+
+    const [, config] = vi.mocked(axios.get).mock.calls.at(-1) as [string, any];
+    const ua = config.headers['User-Agent'];
+
+    // Printable ASCII only - this is exactly what Node validates
+    expect(ua).toMatch(/^[\x20-\x7E]+$/);
+    // And it must actually be accepted as a header value
+    expect(() => new Headers({ 'User-Agent': ua })).not.toThrow();
+    expect(ua).toContain('@pinmeto/pinmeto-location-mcp');
+  });
+
+  it('should cap an overlong client name so the server identity survives', async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { data: [] } });
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'x'.repeat(5000), version: '1.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
+    await testTransport.close();
+
+    const [, config] = vi.mocked(axios.get).mock.calls.at(-1) as [string, any];
+    expect(config.headers['User-Agent'].length).toBeLessThan(200);
+    expect(config.headers['User-Agent']).toContain('@pinmeto/pinmeto-location-mcp');
   });
 });
 
@@ -2558,6 +2675,295 @@ describe('Consolidated Network Tools', () => {
       // Should include reviews from multiple stores
       const storeIds = new Set(response.result.structuredContent.data.map((r: any) => r.storeId));
       expect(storeIds.size).toBe(2);
+    });
+  });
+
+  describe('pinmeto_get_google_review_insights', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+        if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+          return Promise.reject(new Error('Unauthorized'));
+        }
+        if (url.includes('/ratings/google/empty-store')) {
+          return Promise.resolve({ data: [] });
+        }
+        if (url.includes('/ratings/google')) {
+          return Promise.resolve({
+            data: [
+              { storeId: 'store-a', rating: 5, comment: 'Excellent', date: '2024-01-15' },
+              { storeId: 'store-a', rating: 4, comment: 'Good place', date: '2024-01-10' },
+              { storeId: 'store-b', rating: 2, comment: 'Slow service', date: '2024-01-08' }
+            ]
+          });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+    });
+
+    it('should not warn for summary, which is genuinely differentiated', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'summary'
+      });
+
+      const sc = response.result.structuredContent;
+      expect(sc.data.summary).toBeDefined();
+      expect(sc.warningCode).toBeUndefined();
+    });
+
+    it('should return locationComparison for comparison without warning', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'comparison'
+      });
+
+      const sc = response.result.structuredContent;
+      expect(sc.data.locationComparison).toBeDefined();
+      expect(sc.data.locationComparison.length).toBe(2);
+      expect(sc.warningCode).toBeUndefined();
+    });
+
+    // issues/trends/themes all collapse to the same summary payload. The tool
+    // must say so rather than quietly answering a different question.
+    for (const analysisType of ['issues', 'trends', 'themes']) {
+      it(`should flag '${analysisType}' as undifferentiated`, async () => {
+        const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+          from: '2024-01-01',
+          to: '2024-12-31',
+          analysisType
+        });
+
+        const sc = response.result.structuredContent;
+        expect(sc.warningCode).toBe('UNDIFFERENTIATED_ANALYSIS_TYPE');
+        expect(sc.metadata.analysisNote).toContain(analysisType);
+        // samplingNote is reserved for review-subset behavior
+        expect(sc.metadata.samplingNote).toBeUndefined();
+        // The promised field is genuinely absent - the warning is not cosmetic
+        expect(sc.data[analysisType]).toBeUndefined();
+        expect(sc.data.summary).toBeDefined();
+      });
+    }
+
+    // A cache hit must not look like a cleaner result than the fresh response
+    // it stands in for. The cache key includes analysisType and
+    // samplingStrategy, so warnings would otherwise vanish on the second call.
+    it('should replay the warning on a cache hit', async () => {
+      const args = {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'themes'
+      };
+
+      // insightsCache is module-level and outlives each test, so the first
+      // call must explicitly bypass it to be genuinely fresh.
+      const fresh = await callNetworkTool('pinmeto_get_google_review_insights', {
+        ...args,
+        forceRefresh: true
+      });
+      expect(fresh.result.structuredContent.warningCode).toBe('UNDIFFERENTIATED_ANALYSIS_TYPE');
+      expect(fresh.result.structuredContent.metadata.cache?.hit).toBeFalsy();
+
+      const cached = await callNetworkTool('pinmeto_get_google_review_insights', args);
+      expect(cached.result.structuredContent.metadata.cache?.hit).toBe(true);
+      expect(cached.result.structuredContent.warningCode).toBe('UNDIFFERENTIATED_ANALYSIS_TYPE');
+      expect(cached.result.structuredContent.metadata.analysisNote).toContain('themes');
+    });
+
+    // The no-reviews path returns `data: null`. When the output schema declared
+    // `data` optional rather than nullable, the SDK rejected that response and
+    // the whole call failed with -32602 instead of reporting "no reviews".
+    it('should return an empty result rather than failing when no reviews match', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'summary',
+        forceRefresh: true,
+        storeIds: ['empty-store']
+      });
+
+      expect(response.result.isError).toBeFalsy();
+      const sc = response.result.structuredContent;
+      expect(sc.data).toBeNull();
+      expect(sc.warningCode).toBe('INCOMPLETE_DATA');
+    });
+
+    // The confirmation paths return before any analysis runs and carry no
+    // metadata object, so the caveat has to ride at the top level or the
+    // caller only discovers it after a second round trip.
+    it.each([
+      ['medium dataset requiring confirmation', 1500],
+      ['large dataset requiring a sampling strategy', 10500]
+    ])('should carry the analysis note through the %s', async (_label, reviewCount) => {
+      vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+        if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+          return Promise.reject(new Error('Unauthorized'));
+        }
+        if (url.includes('/ratings/google')) {
+          return Promise.resolve({
+            data: Array.from({ length: reviewCount }, (_, i) => ({
+              storeId: `store-${i % 3}`,
+              rating: (i % 5) + 1,
+              comment: `Review number ${i}`,
+              date: '2024-01-15'
+            }))
+          });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'themes',
+        forceRefresh: true
+      });
+
+      const sc = response.result.structuredContent;
+      expect(sc.requiresConfirmation).toBe(true);
+      // The confirmation handshake must keep its own code - the caller keys
+      // off it to know a re-call is required.
+      expect(sc.warningCode).toBe('LARGE_DATASET_WARNING');
+      // ...and the caveat rides alongside rather than replacing it
+      expect(sc.analysisNote).toContain('themes');
+      // Visible in the text too, so the model sees it without parsing
+      expect(response.result.content[0].text).toContain('themes');
+    });
+
+    it('should not add an analysis note to confirmations for supported types', async () => {
+      vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+        if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+          return Promise.reject(new Error('Unauthorized'));
+        }
+        if (url.includes('/ratings/google')) {
+          return Promise.resolve({
+            data: Array.from({ length: 1500 }, (_, i) => ({
+              storeId: `store-${i % 3}`,
+              rating: (i % 5) + 1,
+              comment: `Review number ${i}`,
+              date: '2024-01-15'
+            }))
+          });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'summary',
+        forceRefresh: true
+      });
+
+      const sc = response.result.structuredContent;
+      expect(sc.warningCode).toBe('LARGE_DATASET_WARNING');
+      expect(sc.analysisNote).toBeUndefined();
+    });
+
+    // Failure paths. Auth succeeds in all three - the review fetch itself is
+    // what fails, so these exercise the tool's own error handling rather than
+    // the shared token path.
+    const apiError = (status: number, message: string) =>
+      Object.assign(new Error(message), {
+        isAxiosError: true,
+        response: { status, data: { message } }
+      });
+
+    it('should return an error when the bulk review fetch fails', async () => {
+      vi.mocked(axios.get).mockImplementation((url: string) => {
+        if (url.includes('/ratings/google')) {
+          return Promise.reject(apiError(500, 'Internal server error'));
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-02-01',
+        to: '2024-02-28',
+        analysisType: 'summary',
+        forceRefresh: true
+      });
+
+      expect(response.result.isError).toBe(true);
+      const sc = response.result.structuredContent;
+      expect(sc.errorCode).toBe('SERVER_ERROR');
+      expect(sc.retryable).toBe(true);
+      expect(sc.error).toContain('all Google reviews');
+    });
+
+    it('should return an error when every requested store fails', async () => {
+      vi.mocked(axios.get).mockImplementation((url: string) => {
+        if (url.includes('/ratings/google')) {
+          return Promise.reject(apiError(500, 'Internal server error'));
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-03-01',
+        to: '2024-03-31',
+        analysisType: 'summary',
+        forceRefresh: true,
+        storeIds: ['store-x', 'store-y']
+      });
+
+      expect(response.result.isError).toBe(true);
+      const sc = response.result.structuredContent;
+      expect(sc.errorCode).toBe('SERVER_ERROR');
+      // The message must name which stores failed, not just that something did
+      expect(sc.error).toContain('store-x');
+      expect(sc.error).toContain('store-y');
+    });
+
+    it('should return data with a note when only some stores fail', async () => {
+      vi.mocked(axios.get).mockImplementation((url: string) => {
+        if (url.includes('/ratings/google/good-store')) {
+          return Promise.resolve({
+            data: [
+              { storeId: 'good-store', rating: 5, comment: 'Great', date: '2024-04-02' },
+              { storeId: 'good-store', rating: 3, comment: 'Fine', date: '2024-04-03' }
+            ]
+          });
+        }
+        if (url.includes('/ratings/google/bad-store')) {
+          return Promise.reject(apiError(500, 'Internal server error'));
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-04-01',
+        to: '2024-04-30',
+        analysisType: 'summary',
+        forceRefresh: true,
+        storeIds: ['good-store', 'bad-store']
+      });
+
+      // Partial failure must not sink the whole call
+      expect(response.result.isError).toBeFalsy();
+      const sc = response.result.structuredContent;
+      expect(sc.data.summary).toBeDefined();
+      expect(sc.metadata.totalReviewCount).toBe(2);
+      // ...and must say which store was lost, so the numbers can be trusted
+      expect(sc.metadata.samplingNote).toContain('bad-store');
+    });
+
+    it('should keep the analysis note when no reviews match', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2024-01-01',
+        to: '2024-12-31',
+        analysisType: 'trends',
+        forceRefresh: true,
+        storeIds: ['empty-store']
+      });
+
+      const sc = response.result.structuredContent;
+      // Absent data outranks the caveat for the single warningCode slot...
+      expect(sc.warningCode).toBe('INCOMPLETE_DATA');
+      // ...but the caveat itself must survive
+      expect(sc.metadata.analysisNote).toContain('trends');
     });
   });
 });

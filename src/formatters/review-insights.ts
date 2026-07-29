@@ -1,6 +1,6 @@
 /**
  * Markdown formatters for review insights tool.
- * Converts AI-analyzed review insights to human-readable Markdown.
+ * Converts computed review insights to human-readable Markdown.
  */
 
 import { MARKDOWN_TABLE_MAX_ROWS } from '../helpers';
@@ -67,13 +67,17 @@ function formatMetadataSection(metadata: ReviewInsightsMetadata): string {
   let md = '## Analysis Details\n\n';
 
   md += `**Analysis Type:** ${formatAnalysisType(metadata.analysisType)}\n`;
-  md += `**Method:** ${metadata.analysisMethod === 'ai_sampling' ? 'AI-Powered Analysis' : 'Statistical Analysis'}\n`;
+  md += `**Method:** Statistical Analysis\n`;
   md += `**Date Range:** ${metadata.dateRange.from} to ${metadata.dateRange.to}\n`;
   md += `**Locations:** ${metadata.locationCount.toLocaleString('en-US')}\n`;
   md += `**Reviews Analyzed:** ${metadata.analyzedReviewCount.toLocaleString('en-US')} of ${metadata.totalReviewCount.toLocaleString('en-US')}\n`;
 
   if (metadata.samplingNote) {
     md += `**Note:** ${metadata.samplingNote}\n`;
+  }
+
+  if (metadata.analysisNote) {
+    md += `**Analysis Note:** ${metadata.analysisNote}\n`;
   }
 
   if (metadata.cache?.hit) {

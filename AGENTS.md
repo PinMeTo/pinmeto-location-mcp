@@ -96,6 +96,16 @@ These are easy to get wrong from reading the call sites alone:
 - `makePaginatedPinMeToRequest()` returns a **three**-element tuple: `[data[], areAllPagesFetched, lastError]`. Destructuring only the first two silently drops the error. `areAllPagesFetched: false` means pagination broke off partway, so partial data alongside a non-null `lastError` is the expected shape — not an empty dataset.
 - Insights tools default to `total` aggregation and `none` comparison. This is deliberate, for token efficiency — don't "helpfully" change the defaults to time series.
 
+## Protocol Notes
+
+- **Don't override the SDK's `initialize` handler.** Capabilities are derived from what `createMcpServer()` registers. A previous hand-written override advertised a `resources` capability this server never implemented.
+- **Client identity is resolved per request** in `PinMeToMcpServer._userAgent()`, not latched at connection time and never written to `axios.defaults`. MCP `2026-07-28` removes the initialize handshake and moves client identity into each request's `_meta`, so that method is the single seam to change when we migrate.
+- **MCP Sampling, Roots, and Logging are deprecated** as of MCP `2026-07-28`. Sampling support was removed in v4.0.0 — no client our customers use implemented it. Don't reintroduce them. Log to stderr (already the convention here); that *is* the recommended replacement for the Logging feature.
+- **"Sampling" in this codebase now means review subsetting only** (`applySamplingStrategy`, `samplingStrategy`, `samplingNote`) — choosing which reviews to analyze. It has nothing to do with MCP Sampling. Keep `samplingNote` for messages about *which reviews* were analyzed (subset strategy, partial store failures); use `analysisNote` for messages about *what analysis* was performed.
+- **Cached responses must carry the same `warningCode` as the fresh response** they stand in for. `InsightsCacheEntry` stores it for exactly this reason — the insights cache key includes `analysisType` and `samplingStrategy`, so a dropped warning makes the second identical request look cleaner than the first.
+- **`warningCode` reports the single most actionable condition, not the most severe.** `LARGE_DATASET_WARNING` and `INCOMPLETE_DATA` outrank `UNDIFFERENTIATED_ANALYSIS_TYPE` because callers key off the first two to decide whether to re-call. Secondary context belongs in `analysisNote` (top level when the response has no `metadata`, e.g. the confirmation paths) rather than displacing the code.
+- **`pinmeto_get_google_review_insights` only differentiates `summary` and `comparison`.** `performStatisticalAnalysis()` populates *only* `summary`; `performStatisticalLocationComparison()` adds `locationComparison`. Nothing populates `themes`, `issues`, or `trends`, and the `themes` parameter is ignored. Those `analysisType` values are accepted and flagged with `UNDIFFERENTIATED_ANALYSIS_TYPE`. If you implement real extraction, remove the flag and the description caveat together.
+
 ## Testing
 
 Tests use Vitest with axios mocking. When writing tests:

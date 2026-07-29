@@ -760,7 +760,7 @@ export function formatContent<T>(
 }
 
 // ============================================================================
-// Review Insights Helpers (MCP Sampling)
+// Review Insights Helpers
 // ============================================================================
 
 /**
@@ -1204,11 +1204,12 @@ export function computeAverageRating(reviews: SanitizedReview[]): number {
 }
 
 /**
- * Performs basic statistical analysis when MCP Sampling is unavailable.
- * Provides a summary based purely on rating statistics without AI analysis.
+ * Performs statistical analysis over reviews, summarizing rating and sentiment
+ * distributions. Themes and issues require reading the review text itself, so
+ * they are not populated here.
  *
  * @param reviews Sanitized reviews to analyze
- * @returns ReviewInsightsData with summary (themes/issues not available without AI)
+ * @returns ReviewInsightsData with summary
  */
 export function performStatisticalAnalysis(reviews: SanitizedReview[]): ReviewInsightsData {
   if (reviews.length === 0) {
@@ -1278,14 +1279,14 @@ function generateStatisticalSummary(
     parts.push(`${sentimentDist.negative}% of reviews express concerns that may need attention.`);
   }
 
-  // Note about AI analysis
-  parts.push('Note: Full theme and issue analysis requires MCP Sampling support.');
+  // Point at the raw-review tool for anything the statistics can't express
+  parts.push('Fetch pinmeto_get_google_reviews for the underlying review text.');
 
   return parts.join(' ');
 }
 
 /**
- * Performs statistical location comparison when MCP Sampling is unavailable.
+ * Performs per-location statistical comparison.
  *
  * @param reviews Sanitized reviews to analyze
  * @returns ReviewInsightsData with location comparison
