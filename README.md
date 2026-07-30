@@ -19,6 +19,8 @@ Ask your AI assistant questions like:
 
 See [Example Prompts](docs/USE-CASES.md) for more ideas.
 
+> 📊 **Turn your data into reports.** Pair this server with the [PinMeTo Location Reports Skill](https://github.com/PinMeTo/pinmeto-location-reports-skill) to generate formatted PDF and PowerPoint reports across all your locations. See [Creating Reports](#creating-reports) below.
+
 ---
 
 ## Installation
