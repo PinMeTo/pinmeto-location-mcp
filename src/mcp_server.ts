@@ -244,7 +244,14 @@ export function createMcpServer() {
   // capability this server never implemented.
   const mcpServer = new PinMeToMcpServer({
     name: 'PinMeTo Location MCP',
-    version: PACKAGE_VERSION
+    version: PACKAGE_VERSION,
+    // MCP 2025-11-25 `Implementation` metadata. The SDK's ImplementationSchema
+    // carries these through to the initialize result, so no custom handler is
+    // needed to advertise them.
+    description:
+      'Read-only access to the PinMeTo location management platform: locations, ' +
+      'plus Google/Facebook/Apple insights, ratings, reviews, and keywords.',
+    websiteUrl: 'https://www.pinmeto.com'
   });
 
   // Locations
