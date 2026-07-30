@@ -2,16 +2,27 @@
 "@pinmeto/pinmeto-location-mcp": patch
 ---
 
-Clear all 7 open Dependabot alerts (3 high, 2 moderate, 1 low, plus one npm-audit-only finding) via `npm audit fix`. Lockfile only — no `package.json` change was needed, since every fix landed inside an existing semver range.
+Clear every open dependency advisory. Both scanners now report zero: **Dependabot 7 alerts → 0**, **`npm audit` 6 findings → 0**.
 
-| Package | To | Source | Severity |
-|---|---|---|---|
-| `fast-uri` | 3.1.4 | sdk → ajv | high ×2 |
-| `js-yaml` | 3.15.0 / 4.3.0 | @changesets/cli (dev) | high ×2, moderate |
-| `postcss` | 8.5.25 | vitest → vite (dev) | high |
-| `@hono/node-server` | 2.0.12 | sdk | moderate |
-| `body-parser` | 2.3.0 | sdk → express | low |
+The two totals differ because the tools count differently, and neither is wrong:
 
-All are transitive. Worth noting for triage: the `body-parser`, `express`, and `@hono/node-server` advisories describe DoS and path-traversal in HTTP request handling, which this server never reaches — it runs on stdio only and those packages arrive as unused dependencies of `@modelcontextprotocol/sdk`'s HTTP transport. So the practical exposure was minimal; the bumps are for a clean audit rather than to close a reachable hole.
+- **Dependabot lists one alert per advisory**: 7 alerts (4 high, 2 moderate, 1 low) across 4 packages.
+- **`npm audit` groups advisories per package**: 6 findings (3 high, 2 moderate, 1 low) — and it additionally flagged `postcss`, which Dependabot did not report.
 
-`npm audit` now reports 0 vulnerabilities. Tests, typecheck, and build all pass, and the built server was smoke-tested over stdio.
+Five packages were bumped in total:
+
+| Package | To | Comes from | Advisories | Flagged by |
+|---|---|---|---|---|
+| `fast-uri` | 3.1.4 | sdk → ajv | 2 high | both |
+| `js-yaml` | 3.15.0 / 4.3.0 | `@changesets/cli` (dev) | 2 high, 1 moderate | both |
+| `@hono/node-server` | 2.0.12 | sdk | 1 moderate | both |
+| `body-parser` | 2.3.0 | sdk → express | 1 low | both |
+| `postcss` | 8.5.25 | vitest → vite (dev) | 1 high | `npm audit` only |
+
+That is 8 distinct advisories across the two scanners — 7 seen by Dependabot plus the `postcss` one only `npm audit` caught.
+
+Lockfile only: every fix landed inside an existing semver range, so `package.json` is unchanged and no `overrides` entry was needed.
+
+Worth noting for triage: all five are transitive, and the `body-parser`, `express`, and `@hono/node-server` advisories describe DoS and path traversal **in HTTP request handling**, which this server never reaches — it runs on stdio only, and those packages arrive as unused dependencies of `@modelcontextprotocol/sdk`'s HTTP transport. The practical exposure was minimal; these bumps buy a clean audit rather than close a reachable hole.
+
+Typecheck, 233 tests, and build all pass, and the built server was smoke-tested over stdio.
