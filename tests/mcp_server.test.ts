@@ -2740,6 +2740,49 @@ describe('Consolidated Network Tools', () => {
     });
   });
 
+  describe('pinmeto_get_google_ratings', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      vi.mocked(axios.post).mockImplementation((url: string) => {
+        if (url.includes('/oauth/token')) {
+          return Promise.resolve({ data: { access_token: testAccessToken } });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+      vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+        if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+          return Promise.reject(new Error('Unauthorized'));
+        }
+        // A single store with no reviews in the requested period.
+        if (url.includes('/ratings/google/empty-store')) {
+          return Promise.resolve({ data: [] });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+    });
+
+    it('should return a zero summary rather than a -32602 when a single store has no reviews', async () => {
+      const response = await callNetworkTool('pinmeto_get_google_ratings', {
+        storeId: 'empty-store',
+        from: '2024-01-01',
+        to: '2024-12-31',
+        forceRefresh: true
+      });
+
+      // Before the fix, the summary's averageRating of 0 tripped the output
+      // schema's .min(1) floor and the SDK rejected the response with an
+      // output-validation error (JSON-RPC -32602).
+      expect(response.error).toBeUndefined();
+      expect(response.result).toBeDefined();
+      expect(response.result.isError).toBeFalsy();
+
+      const data = response.result.structuredContent.data;
+      expect(data.averageRating).toBe(0);
+      expect(data.totalReviews).toBe(0);
+      expect(data.distribution).toEqual({});
+    });
+  });
+
   describe('pinmeto_get_google_review_insights', () => {
     beforeEach(() => {
       vi.clearAllMocks();
