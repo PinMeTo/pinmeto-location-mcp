@@ -222,7 +222,12 @@ export const KeywordDataSchema = z
  */
 export const RatingsSummarySchema = z
   .object({
-    averageRating: z.number().min(1).max(5).optional().describe('Average rating (1-5)'),
+    averageRating: z
+      .number()
+      .min(0)
+      .max(5)
+      .optional()
+      .describe('Average rating (1-5); 0 when the location has no reviews in range'),
     totalReviews: z.number().nonnegative().optional().describe('Total number of reviews'),
     distribution: z
       .record(z.string(), z.number().nonnegative())
