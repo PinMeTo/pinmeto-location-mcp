@@ -518,7 +518,10 @@ describe('Server Info (MCP 2025-11-25 Implementation fields)', () => {
       testTransport.onmessage?.({
         method: 'initialize',
         params: {
-          protocolVersion: '2025-06-18',
+          // Negotiate the revision that introduced description/websiteUrl, so
+          // this asserts intended behavior rather than incidentally documenting
+          // that the fields are sent to older clients too.
+          protocolVersion: '2025-11-25',
           capabilities: {},
           clientInfo: { name: 'test-client', version: '0.0.0' }
         },

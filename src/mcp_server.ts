@@ -248,6 +248,15 @@ export function createMcpServer() {
     // MCP 2025-11-25 `Implementation` metadata. The SDK's ImplementationSchema
     // carries these through to the initialize result, so no custom handler is
     // needed to advertise them.
+    //
+    // Sent unconditionally, including to clients that negotiate an earlier
+    // revision. That is deliberate: the SDK returns `serverInfo` verbatim and
+    // exposes no hook to vary it by negotiated version, and MCP client schemas
+    // are plain Zod objects that strip unknown keys rather than reject them.
+    // Gating these would mean restoring the custom initialize handler removed
+    // in #49, which had been mis-advertising a `resources` capability this
+    // server does not implement - a concrete regression traded for a
+    // hypothetical strict client the official SDKs do not produce.
     description:
       'Read-only access to the PinMeTo location management platform: locations, ' +
       'plus Google/Facebook/Apple insights, ratings, reviews, and keywords.',
