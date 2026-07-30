@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.0.0] - 2026-07-30
+
+### Changed
+
+- Remove MCP Sampling support and stop overriding the SDK's `initialize` handler. (`7bc9e96`)
+
+### Added
+
+- Advertise MCP spec 2025-11-25 `Implementation` metadata on `serverInfo`: a human-readable `description` and a `websiteUrl`. (`903070f`)
+
+### Fixed
+
+- Clear every open dependency advisory. Both scanners now report zero: **Dependabot 7 alerts → 0**, **`npm audit` 6 findings → 0**. (`ac50769`)
+- Resolve Dependabot security alerts by updating dependencies. Raised the `axios` range floor to `^1.16.0` (resolving to 1.18.1 in the lockfile; fixes prototype pollution, proxy credential leak, ReDoS, MITM) and refreshed transitive dependencies in the lockfile: `form-data` 4.0.6, `hono` 4.12.27, `qs` 6.15.2, `fast-uri` 3.1.2 (runtime), plus dev tooling `vite` 7.3.5 and `vitest` 3.2.6 (fixes the critical Vitest UI file-read/exec advisory). Clears all 1 critical and 10 high severity alerts. (`2a85969`)
+- Fix `-32602` output-validation crash in `pinmeto_get_google_ratings`. A single-store query for a period with no reviews returned `averageRating: 0`, which the ratings output schema rejected (`averageRating` had a `min(1)` floor), killing the call. The floor is relaxed to `min(0)` so a zero-review store returns a clean summary (`averageRating: 0, totalReviews: 0`) instead of failing. The all-locations path was unaffected because it omits stores with no reviews. (`2c72cfb`)
+- Unblock `@modelcontextprotocol/sdk` upgrades (now on 1.29.0). (`9941b2a`)
+
 ## [3.2.2] - 2026-02-06
 
 ### Fixed
