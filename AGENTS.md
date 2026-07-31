@@ -86,7 +86,11 @@ For the step-by-step process of adding a tool, use the `add-tool` skill.
 
 ## Tool Annotations
 
-Every tool in this server sets `readOnlyHint: true` — the server only fetches data and never modifies state. All other annotations use SDK defaults. If a future tool writes, set `readOnlyHint: false` and consider `destructiveHint: true` for deletes/overwrites and `idempotentHint: true` where repeated calls have no additional effect.
+Every tool in this server sets `readOnlyHint: true` and a human-readable `title` — the
+server only fetches data and never modifies state, and directory submission requires a
+title on every tool. All other annotations use SDK defaults. If a future tool writes, set
+`readOnlyHint: false` and consider `destructiveHint: true` for deletes/overwrites and
+`idempotentHint: true` where repeated calls have no additional effect.
 
 ## Failure Contracts
 

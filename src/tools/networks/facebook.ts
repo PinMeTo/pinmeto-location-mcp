@@ -62,6 +62,7 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_facebook_insights',
     {
+      title: 'Facebook insights',
       description:
         'Fetch Facebook metrics for all locations, or a single location if storeId provided. ' +
         'Supports time aggregation (default: total) and period comparisons.\n\n' +
@@ -215,6 +216,7 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_facebook_brandpage_insights',
     {
+      title: 'Facebook brand page insights',
       description:
         'Fetch Facebook metrics for all brand pages. Supports time aggregation (default: total) and period comparisons.\n\n' +
         'Comparison Options:\n' +
@@ -354,6 +356,7 @@ export function getFacebookRatings(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_facebook_ratings',
     {
+      title: 'Facebook ratings',
       description:
         'Fetch Facebook ratings for all locations, or a single location if storeId provided.\n\n' +
         'Error Handling:\n' +

@@ -442,10 +442,12 @@ describe('Tool Annotations', () => {
     const tools = toolsResponse.result.tools;
     expect(tools.length).toBe(12);
 
-    // Verify each tool has readOnlyHint: true
+    // Directory submission requires a title and readOnlyHint on every tool.
     for (const tool of tools) {
       expect(tool.annotations).toBeDefined();
       expect(tool.annotations.readOnlyHint).toBe(true);
+      expect(tool.title, `${tool.name} is missing a title`).toBeTruthy();
+      expect(tool.title).not.toMatch(/^pinmeto_/);
     }
   });
 

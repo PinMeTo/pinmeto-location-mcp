@@ -117,6 +117,23 @@ Visit the [skill repository](https://github.com/PinMeTo/pinmeto-location-reports
 
 ---
 
+## Privacy Policy
+
+This server sends your PinMeTo API credentials to PinMeTo's API to fetch your own
+location data, and returns that data to your MCP client. It stores nothing
+remotely and transmits nothing to any third party.
+
+- **Collected:** your PinMeTo Account ID, App ID, and App Secret, supplied by you at install time.
+- **Used for:** authenticating requests to the PinMeTo API on your behalf.
+- **Stored:** credentials are held by your MCP client (macOS Keychain under Claude Desktop). Location and insights data is cached in memory for the duration of a session and never written to disk.
+- **Shared:** nothing is shared with third parties.
+- **Retained:** nothing is retained after the process exits.
+- **Contact:** [PinMeTo Support](https://www.pinmeto.com/contact)
+
+Full policy: https://places.pinmeto.com/listings/public/legal/privacypolicy
+
+---
+
 ## License
 
 MIT
