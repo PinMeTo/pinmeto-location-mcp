@@ -1,0 +1,1407 @@
+# Plugin Bundling Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Ship the PinMeTo MCP server and the Location Reports skill as one plugin a Claude Desktop customer installs in a single step.
+
+**Architecture:** A new public `PinMeTo/claude-plugins` marketplace repo holds one plugin containing a single-file esbuild bundle of the server plus the unpacked skill. Credentials come from plugin `userConfig` and substitute into `.mcp.json` as `${user_config.*}`. The two source repos stay authoritative and only fire a `repository_dispatch`; a single sync workflow in the marketplace repo pulls released artifacts, so there is exactly one writer.
+
+**Tech Stack:** TypeScript, Node 18+, esbuild, Vitest, Changesets, GitHub Actions, Claude Code plugin format.
+
+**Spec:** `docs/superpowers/specs/2026-07-31-plugin-bundling-design.md`
+
+## Scope
+
+This plan covers Phase 0 through a plugin that installs and works from a local marketplace. It deliberately stops short of directory submission, which is web forms, org access, and a review queue rather than code, and which depends on confirming PinMeTo's Team/Enterprise or Console access. That becomes a follow-up plan once this one lands.
+
+## Global Constraints
+
+- Node `>= 18`. The skill's `package.json` declares `engines.node: ">=18"`; the esbuild target must match.
+- The plugin's `.mcp.json` server key is `pinmeto`. The skill's tool calls depend on the twelve `pinmeto_*` tool names, which do not change in this plan.
+- Plugin major version tracks the MCP server major. Server 4.x gives plugin 4.x.
+- Every tool keeps `annotations.readOnlyHint: true`. This server never writes.
+- Never commit `node_modules` or the skill's sample `.pdf` / `.pptx` fixtures into `claude-plugins`. Payload budget is roughly 3 MB.
+- `pinmeto-location-mcp` requires a changeset on every PR. Use `npx changeset add --empty` for changes that do not affect the published package.
+- Never commit to `main` in `pinmeto-location-mcp`. Feature branch and PR, per `AGENTS.md`.
+
+## File Structure
+
+**`pinmeto-location-mcp`** (existing):
+
+| File | Responsibility |
+| --- | --- |
+| `scripts/generate-version.js` | New. Writes `src/generated/version.ts` from `package.json`. Runs in `prebuild` and `pretest`. |
+| `src/generated/version.ts` | New, git-ignored. Two literal exports. The single runtime source of name and version. |
+| `src/mcp_server.ts:27-32` | Modify. Drop the `readFileSync` of `package.json`; import from the generated module. |
+| `scripts/build-bundle.js` | New. Wraps esbuild to emit `dist/index.mjs`. |
+| `src/tools/locations/locations.ts` | Modify. Add `title` to three tool configs. |
+| `src/tools/networks/{google,facebook,apple}.ts` | Modify. Add `title` to nine tool configs. |
+| `tests/bundle.test.ts` | New. Spawns the built bundle and drives a real stdio handshake. |
+| `tests/mcp_server.test.ts:443-450` | Modify. Extend the annotations assertion to require titles. |
+| `scripts/create-gh-release.js:92-112` | Modify. Attach `dist/index.mjs` as a second release asset. |
+| `README.md` | Modify. Add a Privacy Policy section; lead with the plugin. |
+| `AGENTS.md` | Modify. Correct the Tool Annotations paragraph. |
+
+**`PinMeTo/claude-plugins`** (new, public):
+
+| File | Responsibility |
+| --- | --- |
+| `.claude-plugin/marketplace.json` | Marketplace manifest listing the one plugin. |
+| `plugins/pinmeto-locations/.claude-plugin/plugin.json` | Plugin manifest. Owns `userConfig` and the version. |
+| `plugins/pinmeto-locations/.mcp.json` | Server declaration consuming `${user_config.*}`. |
+| `plugins/pinmeto-locations/SETUP.md` | Setup skill: credentials walkthrough, smoke test, duplicate-server check. |
+| `plugins/pinmeto-locations/components.json` | Provenance. Which server and skill versions are vendored. |
+| `plugins/pinmeto-locations/server/index.mjs` | Synced artifact. Never hand-edited. |
+| `plugins/pinmeto-locations/skills/pinmeto-location-reports/` | Synced artifact. Never hand-edited. |
+| `scripts/bump-version.js` | Derives `plugin.json` version from `components.json`. |
+| `.github/workflows/sync.yml` | The single writer. Pulls artifacts, gates, commits. |
+
+---
+
+### Task 1: Phase 0 spike — verify plugin behavior in Claude Desktop
+
+This is a decision gate, not a code change. Nothing after Task 3 is safe to build until it resolves. Tasks 2 and 3 are unconditional and may run in parallel with this.
+
+**Files:**
+- Create: `/tmp/spike-plugin/` (throwaway, not committed)
+- Modify: `docs/superpowers/specs/2026-07-31-plugin-bundling-design.md` (record findings)
+
+**Interfaces:**
+- Consumes: nothing.
+- Produces: a yes/no on the vendored-server path, which Task 4 branches on.
+
+- [ ] **Step 1: Scaffold a throwaway plugin**
+
+```bash
+mkdir -p /tmp/spike-plugin/.claude-plugin
+mkdir -p /tmp/spike-plugin/plugins/spike/.claude-plugin
+cd /tmp/spike-plugin
+```
+
+Write `/tmp/spike-plugin/.claude-plugin/marketplace.json`:
+
+```json
+{
+  "name": "spike-marketplace",
+  "owner": { "name": "PinMeTo", "url": "https://pinmeto.com" },
+  "metadata": { "description": "Throwaway spike", "version": "0.0.1", "pluginRoot": "./plugins" },
+  "plugins": [
+    { "name": "spike", "source": "./plugins/spike", "description": "Spike", "version": "0.0.1" }
+  ]
+}
+```
+
+Write `/tmp/spike-plugin/plugins/spike/.claude-plugin/plugin.json`:
+
+```json
+{
+  "name": "spike",
+  "version": "0.0.1",
+  "description": "Spike to verify userConfig and stdio server behavior in Claude Desktop.",
+  "userConfig": {
+    "PINMETO_ACCOUNT_ID": { "type": "string", "title": "PinMeTo Account ID", "description": "Test value", "required": true },
+    "PINMETO_APP_ID": { "type": "string", "title": "PinMeTo App ID", "description": "Test value", "required": true },
+    "PINMETO_APP_SECRET": { "type": "string", "title": "PinMeTo App Secret", "description": "Test value", "required": true, "sensitive": true }
+  }
+}
+```
+
+Write `/tmp/spike-plugin/plugins/spike/.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "pinmeto": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/index.mjs"],
+      "env": {
+        "PINMETO_ACCOUNT_ID": "${user_config.PINMETO_ACCOUNT_ID}",
+        "PINMETO_APP_ID": "${user_config.PINMETO_APP_ID}",
+        "PINMETO_APP_SECRET": "${user_config.PINMETO_APP_SECRET}"
+      }
+    }
+  }
+}
+```
+
+- [ ] **Step 2: Add a trivial skill so skill activation can be observed**
+
+Write `/tmp/spike-plugin/plugins/spike/skills/spike-check/SKILL.md`:
+
+```markdown
+---
+name: spike-check
+description: Use this skill when the user says "run the spike check". Confirms the bundled skill activated.
+---
+
+# Spike check
+
+Reply with exactly: SPIKE SKILL ACTIVE. Then call `pinmeto_get_locations` and report whether it returned data or an auth error.
+```
+
+- [ ] **Step 3: Drop in a server bundle**
+
+Depends on Task 3 having produced `dist/index.mjs`. If Task 3 is not done, build it ad hoc:
+
+```bash
+cd /Users/marcus/Projects/code/pinmeto-location-mcp
+npx esbuild src/index.ts --bundle --platform=node --format=esm --target=node18 \
+  --banner:js="import{createRequire as __cr}from'module';const require=__cr(import.meta.url);const __dirname=new URL('.',import.meta.url).pathname;" \
+  --outfile=/tmp/spike-plugin/plugins/spike/server/index.mjs
+cp package.json /tmp/spike-plugin/plugins/spike/
+```
+
+The `__dirname` banner and the copied `package.json` are spike-only scaffolding. Task 3 removes the need for both.
+
+- [ ] **Step 4: Install in Claude Desktop and record the four answers**
+
+In Claude Desktop: Customize -> Plugins -> `+` in Personal plugins -> Add marketplace -> local path `/tmp/spike-plugin`. Then install `spike`.
+
+Record each answer verbatim, including any error text:
+
+1. Does a credential dialog appear on enable, and is the App Secret masked?
+2. Does the server connect? Check whether `node` resolves. If it fails, capture the error and test whether an absolute path to a system Node works.
+3. In a new chat, say "run the spike check". Does the skill activate and print `SPIKE SKILL ACTIVE`?
+4. Ask Claude to run `python3 -c "import reportlab, pptx, matplotlib; print('ok')"`. Does it succeed?
+
+- [ ] **Step 5: Write findings into the spec and commit**
+
+Replace the Phase 0 table's "If no" column with what actually happened, and change the section heading from `## Phase 0: the spike (blocking)` to `## Phase 0: the spike (resolved YYYY-MM-DD)`.
+
+Decision rule for Task 4:
+- Q1 and Q2 both yes: build Task 4 as specified.
+- Q1 or Q2 no: build Task 4 in **fallback shape** — omit `.mcp.json` and `userConfig` entirely, ship skill plus `SETUP.md` only, and `SETUP.md` walks the user through the `.mcpb`.
+- Q3 no: stop. Approach A is dead. Reopen the spec.
+- Q4 no: file a separate issue. It does not block this plan.
+
+```bash
+git add docs/superpowers/specs/2026-07-31-plugin-bundling-design.md
+git commit -m "docs: record Phase 0 spike findings for plugin bundling"
+```
+
+---
+
+### Task 2: Tool titles and privacy policy (submission readiness)
+
+Unconditional. Both directory submissions need these regardless of how Phase 0 resolves.
+
+**Files:**
+- Modify: `src/tools/locations/locations.ts:19,97,277`
+- Modify: `src/tools/networks/google.ts:237,464,564,716,826`
+- Modify: `src/tools/networks/facebook.ts:63,216,355`
+- Modify: `src/tools/networks/apple.ts:59`
+- Modify: `tests/mcp_server.test.ts:443-450`
+- Modify: `README.md`, `AGENTS.md`
+
+**Interfaces:**
+- Consumes: nothing.
+- Produces: every tool in `tools/list` has a non-empty `title`. Task 3's bundle test relies on the count staying at 12.
+
+- [ ] **Step 1: Write the failing test**
+
+In `tests/mcp_server.test.ts`, replace the assertion block at lines 443-450:
+
+```ts
+    expect(tools.length).toBe(12);
+
+    // Directory submission requires a title and readOnlyHint on every tool.
+    for (const tool of tools) {
+      expect(tool.annotations).toBeDefined();
+      expect(tool.annotations.readOnlyHint).toBe(true);
+      expect(tool.title, `${tool.name} is missing a title`).toBeTruthy();
+      expect(tool.title).not.toMatch(/^pinmeto_/);
+    }
+```
+
+The second assertion stops someone from "fixing" this by pasting the tool name into `title`.
+
+- [ ] **Step 2: Run the test and confirm it fails**
+
+Run: `npx vitest --run tests/mcp_server.test.ts -t "readOnlyHint"`
+Expected: FAIL, 12 failures of the form `pinmeto_get_apple_insights is missing a title`.
+
+- [ ] **Step 3: Add titles**
+
+`title` is a sibling of `description` in the `registerTool` config object, per `@modelcontextprotocol/sdk` `dist/esm/server/mcp.d.ts:150-157`. For each tool, insert a `title` line immediately before the existing `description`:
+
+| File | Tool | `title` |
+| --- | --- | --- |
+| `locations.ts:19` | `pinmeto_get_location` | `'Get location'` |
+| `locations.ts:97` | `pinmeto_get_locations` | `'Get all locations'` |
+| `locations.ts:277` | `pinmeto_search_locations` | `'Search locations'` |
+| `google.ts:237` | `pinmeto_get_google_insights` | `'Google insights'` |
+| `google.ts:464` | `pinmeto_get_google_ratings` | `'Google ratings'` |
+| `google.ts:564` | `pinmeto_get_google_reviews` | `'Google reviews'` |
+| `google.ts:716` | `pinmeto_get_google_keywords` | `'Google search keywords'` |
+| `google.ts:826` | `pinmeto_get_google_review_insights` | `'Google review analysis'` |
+| `facebook.ts:63` | `pinmeto_get_facebook_insights` | `'Facebook insights'` |
+| `facebook.ts:216` | `pinmeto_get_facebook_brandpage_insights` | `'Facebook brand page insights'` |
+| `facebook.ts:355` | `pinmeto_get_facebook_ratings` | `'Facebook ratings'` |
+| `apple.ts:59` | `pinmeto_get_apple_insights` | `'Apple Maps insights'` |
+
+The shape in each case:
+
+```ts
+  server.registerTool(
+    'pinmeto_get_apple_insights',
+    {
+      title: 'Apple Maps insights',
+      description:
+        'Fetch Apple metrics for all locations, or a single location if storeId provided. ' +
+```
+
+- [ ] **Step 4: Run the test and confirm it passes**
+
+Run: `npx vitest --run tests/mcp_server.test.ts`
+Expected: PASS, all suites green.
+
+- [ ] **Step 5: Add the Privacy Policy section to the README**
+
+Directory submission requires a "Privacy Policy" section in `README.md`. `manifest.json:75` already has the `privacy_policies` array with an HTTPS URL; this is the missing third requirement. Insert immediately above the existing `## License` section:
+
+```markdown
+## Privacy Policy
+
+This server sends your PinMeTo API credentials to PinMeTo's API to fetch your own
+location data, and returns that data to your MCP client. It stores nothing
+remotely and transmits nothing to any third party.
+
+- **Collected:** your PinMeTo Account ID, App ID, and App Secret, supplied by you at install time.
+- **Used for:** authenticating requests to the PinMeTo API on your behalf.
+- **Stored:** credentials are held by your MCP client (macOS Keychain under Claude Desktop). Location and insights data is cached in memory for the duration of a session and never written to disk.
+- **Shared:** nothing is shared with third parties.
+- **Retained:** nothing is retained after the process exits.
+- **Contact:** [PinMeTo Support](https://www.pinmeto.com/contact)
+
+Full policy: https://places.pinmeto.com/listings/public/legal/privacypolicy
+
+---
+```
+
+- [ ] **Step 6: Correct AGENTS.md**
+
+Under `## Tool Annotations`, replace the first paragraph:
+
+```markdown
+Every tool in this server sets `readOnlyHint: true` and a human-readable `title` — the
+server only fetches data and never modifies state, and directory submission requires a
+title on every tool. All other annotations use SDK defaults. If a future tool writes, set
+`readOnlyHint: false` and consider `destructiveHint: true` for deletes/overwrites and
+`idempotentHint: true` where repeated calls have no additional effect.
+```
+
+- [ ] **Step 7: Changeset and commit**
+
+```bash
+npx changeset add
+```
+
+Choose a **patch** bump. Summary: `Add display titles to all 12 tools and document the privacy policy, both required for directory submission.`
+
+```bash
+git add src tests README.md AGENTS.md .changeset
+git commit -m "feat: add tool titles and privacy policy for directory submission"
+```
+
+---
+
+### Task 3: Single-file server bundle
+
+**Files:**
+- Create: `scripts/generate-version.js`
+- Create: `scripts/build-bundle.js`
+- Create: `tests/bundle.test.ts`
+- Modify: `src/mcp_server.ts:1-32`
+- Modify: `package.json` (scripts)
+- Modify: `.gitignore`
+- Modify: `scripts/create-gh-release.js:92-112`
+
+**Interfaces:**
+- Consumes: Task 2's twelve titled tools.
+- Produces: `dist/index.mjs`, a self-contained ESM server started with `node dist/index.mjs`. Task 4's `.mcp.json` points at a copy of this file. Also produces `src/generated/version.ts` exporting `PACKAGE_NAME: string` and `PACKAGE_VERSION: string`.
+
+**Why a generated module rather than esbuild `--define`:** the spec proposed injecting `__PACKAGE_NAME__` and `__PACKAGE_VERSION__` via `--define`. That breaks the plain `tsc` build, which npm and `.mcpb` consumers use: `declare const` type-checks fine but nothing defines the identifier at runtime, so those consumers would hit a `ReferenceError`. Generating a real module keeps one source of truth (`package.json`) and works identically under `tsc`, esbuild, and Vitest.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/bundle.test.ts`:
+
+```ts
+import { describe, it, expect, beforeAll } from 'vitest';
+import { execFileSync, spawn } from 'child_process';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
+
+const rootDir = join(__dirname, '..');
+const bundlePath = join(rootDir, 'dist', 'index.mjs');
+
+/** Drive one stdio session against the bundle and collect JSON-RPC responses. */
+function driveServer(requests: object[]): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    const child = spawn('node', [bundlePath], {
+      env: {
+        ...process.env,
+        PINMETO_ACCOUNT_ID: 'test_account',
+        PINMETO_APP_ID: 'test_id',
+        PINMETO_APP_SECRET: 'test_secret'
+      },
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', c => (stdout += c));
+    child.stderr.on('data', c => (stderr += c));
+
+    child.on('error', reject);
+    child.on('close', () => {
+      const lines = stdout.trim().split('\n').filter(Boolean);
+      if (!lines.length) {
+        reject(new Error(`No stdout from bundle. stderr:\n${stderr}`));
+        return;
+      }
+      resolve(lines.map(l => JSON.parse(l)));
+    });
+
+    for (const r of requests) child.stdin.write(JSON.stringify(r) + '\n');
+    child.stdin.end();
+  });
+}
+
+describe('single-file bundle', () => {
+  beforeAll(() => {
+    execFileSync('node', ['scripts/build-bundle.js'], { cwd: rootDir, stdio: 'inherit' });
+  }, 60_000);
+
+  it('emits one self-contained file', () => {
+    expect(existsSync(bundlePath)).toBe(true);
+  });
+
+  it('completes an initialize handshake reporting the package.json version', async () => {
+    const pkg = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf-8'));
+    const [init] = await driveServer([
+      {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-06-18',
+          capabilities: {},
+          clientInfo: { name: 'bundle-test', version: '0.0.0' }
+        }
+      }
+    ]);
+
+    expect(init.result.serverInfo.version).toBe(pkg.version);
+  });
+
+  it('lists all 12 tools with titles', async () => {
+    const responses = await driveServer([
+      {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-06-18',
+          capabilities: {},
+          clientInfo: { name: 'bundle-test', version: '0.0.0' }
+        }
+      },
+      { jsonrpc: '2.0', method: 'notifications/initialized' },
+      { jsonrpc: '2.0', id: 2, method: 'tools/list' }
+    ]);
+
+    const tools = responses.find(r => r.id === 2)?.result?.tools;
+    expect(tools).toHaveLength(12);
+    for (const tool of tools) {
+      expect(tool.title, `${tool.name} is missing a title`).toBeTruthy();
+    }
+  });
+});
+```
+
+The version assertion is the guard against the `--define` trap: it fails if the bundle reports a stale or missing version.
+
+- [ ] **Step 2: Run the test and confirm it fails**
+
+Run: `npx vitest --run tests/bundle.test.ts`
+Expected: FAIL at `beforeAll` with `Cannot find module '.../scripts/build-bundle.js'`.
+
+- [ ] **Step 3: Create the version generator**
+
+Create `scripts/generate-version.js`:
+
+```js
+#!/usr/bin/env node
+/**
+ * Writes src/generated/version.ts from package.json.
+ *
+ * The server needs its own name and version at runtime for serverInfo and the
+ * User-Agent. Reading package.json at runtime ties the entry point to a fixed
+ * position on disk, which breaks single-file bundling. Generating a module keeps
+ * package.json as the one source of truth while working under tsc, esbuild, and
+ * Vitest alike.
+ */
+
+import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+const pkg = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf-8'));
+const outDir = join(rootDir, 'src', 'generated');
+
+mkdirSync(outDir, { recursive: true });
+writeFileSync(
+  join(outDir, 'version.ts'),
+  `// Generated by scripts/generate-version.js. Do not edit.\n` +
+    `export const PACKAGE_NAME = ${JSON.stringify(pkg.name)};\n` +
+    `export const PACKAGE_VERSION = ${JSON.stringify(pkg.version)};\n`
+);
+
+console.log(`Generated src/generated/version.ts (${pkg.name}@${pkg.version})`);
+```
+
+- [ ] **Step 4: Create the bundle script**
+
+Create `scripts/build-bundle.js`:
+
+```js
+#!/usr/bin/env node
+/**
+ * Builds dist/index.mjs: the whole server and its dependencies in one file.
+ *
+ * Consumed by the claude-plugins marketplace repo, which vendors this file
+ * directly. npm pack cannot be used for that: npm never ships node_modules, and
+ * this server's production dependencies are ~25 MB across ~3,600 files.
+ */
+
+import { execFileSync } from 'child_process';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { statSync } from 'fs';
+
+const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+execFileSync('node', [join(rootDir, 'scripts', 'generate-version.js')], {
+  cwd: rootDir,
+  stdio: 'inherit'
+});
+
+// axios pulls CJS dependencies (form-data -> combined-stream) that call require()
+// at load time. ESM output has no require, so provide a real one.
+const banner = "import{createRequire as __cr}from'module';const require=__cr(import.meta.url);";
+
+execFileSync(
+  'npx',
+  [
+    'esbuild',
+    'src/index.ts',
+    '--bundle',
+    '--platform=node',
+    '--format=esm',
+    '--target=node18',
+    `--banner:js=${banner}`,
+    '--outfile=dist/index.mjs'
+  ],
+  { cwd: rootDir, stdio: 'inherit' }
+);
+
+const { size } = statSync(join(rootDir, 'dist', 'index.mjs'));
+console.log(`Bundle: ${(size / 1024 / 1024).toFixed(2)} MB`);
+```
+
+- [ ] **Step 5: Replace the runtime package.json read**
+
+In `src/mcp_server.ts`, delete lines 27-32:
+
+```ts
+const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')) as {
+  name: string;
+  version: string;
+};
+const PACKAGE_NAME = pkg.name;
+const PACKAGE_VERSION = pkg.version;
+```
+
+Replace with an import alongside the existing imports:
+
+```ts
+import { PACKAGE_NAME, PACKAGE_VERSION } from './generated/version';
+```
+
+Then delete lines 4 and 6 entirely. Line 27 is their only use, and `dirname` on line 6 is already an unused import:
+
+```ts
+import { readFileSync } from 'fs';   // delete
+import { dirname, join } from 'path'; // delete
+```
+
+Run `npx tsc --noEmit` to confirm no missing-symbol errors remain.
+
+- [ ] **Step 6: Wire up scripts and gitignore**
+
+In `package.json`, add `prebuild` and `pretest`, and a `bundle` script:
+
+```json
+    "prebuild": "node scripts/generate-version.js",
+    "pretest": "node scripts/generate-version.js",
+    "bundle": "node scripts/build-bundle.js",
+```
+
+Append to `.gitignore`:
+
+```
+# Generated at build time from package.json
+src/generated/
+dist/
+```
+
+- [ ] **Step 7: Run the full suite**
+
+Run: `npm test`
+Expected: PASS, including the three new bundle tests. If `tests/bundle.test.ts` reports `No stdout from bundle`, the printed stderr contains the real cause.
+
+- [ ] **Step 8: Attach the bundle to releases**
+
+In `scripts/create-gh-release.js`, after the existing `hasArtifact` block around line 92, add:
+
+```js
+// Check for the single-file bundle consumed by the claude-plugins marketplace
+const bundleFile = 'index.mjs';
+const bundlePath = join(rootDir, 'dist', bundleFile);
+const hasBundle = existsSync(bundlePath);
+
+if (!hasBundle) {
+  console.warn(`\nWarning: dist/${bundleFile} not found. Release will omit the plugin bundle.`);
+  console.warn('Run "npm run bundle" to create it.\n');
+}
+```
+
+Then extend the `ghArgs` block at line 110:
+
+```js
+  if (hasArtifact) {
+    ghArgs.push(mcpbPath);
+  }
+  if (hasBundle) {
+    ghArgs.push(bundlePath);
+  }
+```
+
+And add `npm run bundle` to the `release:draft` script in `package.json`:
+
+```json
+    "release:draft": "npm test && npm run build && npm run bundle && npx @anthropic-ai/mcpb pack && node scripts/create-gh-release.js",
+```
+
+- [ ] **Step 9: Verify the non-bundled build still reports its version**
+
+This is the regression the generated module exists to prevent.
+
+```bash
+npm run build
+printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"0"}}}' \
+  | PINMETO_ACCOUNT_ID=x PINMETO_APP_ID=y PINMETO_APP_SECRET=z node build/index.js 2>/dev/null \
+  | head -1
+```
+
+Expected: JSON containing `"version":"4.0.0"` matching `package.json`. A `ReferenceError` here means the generated module was not wired into the `tsc` path.
+
+- [ ] **Step 10: Changeset and commit**
+
+```bash
+npx changeset add
+```
+
+Choose a **minor** bump. Summary: `Add a single-file esbuild bundle build target for plugin distribution, and resolve the package name and version at build time instead of reading package.json at runtime.`
+
+```bash
+git add scripts tests src package.json .gitignore .changeset
+git commit -m "feat: add single-file bundle build target for plugin distribution"
+```
+
+---
+
+### Task 4: Scaffold the claude-plugins marketplace repo
+
+Gated on Task 1. Build the shape the decision rule selected.
+
+**Files:**
+- Create: `~/Projects/code/claude-plugins/.claude-plugin/marketplace.json`
+- Create: `~/Projects/code/claude-plugins/plugins/pinmeto-locations/.claude-plugin/plugin.json`
+- Create: `~/Projects/code/claude-plugins/plugins/pinmeto-locations/.mcp.json`
+- Create: `~/Projects/code/claude-plugins/plugins/pinmeto-locations/SETUP.md`
+- Create: `~/Projects/code/claude-plugins/plugins/pinmeto-locations/components.json`
+- Create: `~/Projects/code/claude-plugins/.gitignore`, `README.md`, `LICENSE`
+
+**Interfaces:**
+- Consumes: `dist/index.mjs` from Task 3; the twelve titled tools from Task 2.
+- Produces: a marketplace installable from a local path. Task 6's sync workflow writes into `server/`, `skills/`, and `components.json`.
+
+- [ ] **Step 1: Initialize the repo**
+
+```bash
+mkdir -p ~/Projects/code/claude-plugins/plugins/pinmeto-locations/.claude-plugin
+mkdir -p ~/Projects/code/claude-plugins/.claude-plugin
+cd ~/Projects/code/claude-plugins
+git init
+cp /Users/marcus/Projects/code/pinmeto-location-mcp/LICENSE .
+```
+
+Write `.gitignore`:
+
+```
+.DS_Store
+node_modules/
+*.tmp
+```
+
+- [ ] **Step 2: Write the marketplace manifest**
+
+`.claude-plugin/marketplace.json`:
+
+```json
+{
+  "name": "pinmeto",
+  "owner": {
+    "name": "PinMeTo",
+    "email": "dev@pinmeto.com",
+    "url": "https://www.pinmeto.com/"
+  },
+  "metadata": {
+    "description": "Official PinMeTo plugins for Claude",
+    "version": "1.0.0",
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "pinmeto-locations",
+      "source": "./plugins/pinmeto-locations",
+      "description": "PinMeTo location data and analytics reports for Google, Facebook and Apple.",
+      "version": "4.1.0",
+      "author": { "name": "PinMeTo", "email": "dev@pinmeto.com" },
+      "category": "integration",
+      "tags": ["location", "analytics", "reporting", "google", "facebook", "apple"],
+      "license": "MIT",
+      "homepage": "https://www.pinmeto.com/",
+      "repository": "https://github.com/PinMeTo/claude-plugins.git"
+    }
+  ]
+}
+```
+
+- [ ] **Step 3: Write the plugin manifest**
+
+`plugins/pinmeto-locations/.claude-plugin/plugin.json`:
+
+```json
+{
+  "name": "pinmeto-locations",
+  "version": "4.1.0",
+  "description": "PinMeTo location data and analytics reports for Google, Facebook and Apple.",
+  "author": { "name": "PinMeTo", "url": "https://www.pinmeto.com/" },
+  "homepage": "https://www.pinmeto.com/",
+  "repository": "https://github.com/PinMeTo/claude-plugins",
+  "license": "MIT",
+  "keywords": ["location", "analytics", "reporting", "google", "facebook", "apple"],
+  "userConfig": {
+    "PINMETO_ACCOUNT_ID": {
+      "type": "string",
+      "title": "PinMeTo Account ID",
+      "description": "Found in Account Settings -> API (example: pinmeto)",
+      "required": true
+    },
+    "PINMETO_APP_ID": {
+      "type": "string",
+      "title": "PinMeTo App ID",
+      "description": "Found in Account Settings -> API",
+      "required": true
+    },
+    "PINMETO_APP_SECRET": {
+      "type": "string",
+      "title": "PinMeTo App Secret",
+      "description": "Found in Account Settings -> API",
+      "required": true,
+      "sensitive": true
+    }
+  }
+}
+```
+
+If Task 1 selected the fallback shape, omit the entire `userConfig` block.
+
+- [ ] **Step 4: Write the server declaration**
+
+`plugins/pinmeto-locations/.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "pinmeto": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/index.mjs"],
+      "env": {
+        "PINMETO_ACCOUNT_ID": "${user_config.PINMETO_ACCOUNT_ID}",
+        "PINMETO_APP_ID": "${user_config.PINMETO_APP_ID}",
+        "PINMETO_APP_SECRET": "${user_config.PINMETO_APP_SECRET}"
+      }
+    }
+  }
+}
+```
+
+If Task 1 selected the fallback shape, do not create this file at all.
+
+- [ ] **Step 5: Write SETUP.md**
+
+`plugins/pinmeto-locations/SETUP.md`:
+
+```markdown
+---
+name: pinmeto-setup
+description: Use this skill immediately after the PinMeTo Locations plugin is installed or enabled, or when the user reports that PinMeTo tools are failing, returning authentication errors, or behaving inconsistently. Walks through credentials, verifies the connection, and checks for a conflicting PinMeTo extension.
+---
+
+# PinMeTo Locations setup
+
+## 1. Check for a conflicting installation
+
+Ask the user whether they previously installed the **PinMeTo Location MCP** desktop
+extension (the `.mcpb` file).
+
+If they did, they must disable it: Settings -> Extensions -> PinMeTo Location MCP ->
+disable. Running both means two servers expose the same twelve tool names. Nothing
+errors; Claude picks one arbitrarily and token usage roughly doubles.
+
+Do not skip this. The symptom is silent.
+
+## 2. Credentials
+
+Three values, all from [PinMeTo Account Settings ->
+API](https://places.pinmeto.com/account-settings/pinmeto/api/v3):
+
+| Field | Notes |
+| --- | --- |
+| Account ID | Short identifier, for example `pinmeto` |
+| App ID | Public |
+| App Secret | Treated as sensitive and stored in the system keychain |
+
+Claude prompts for these when the plugin is enabled. If the user never saw the
+prompt, have them disable and re-enable the plugin.
+
+## 3. Verify the connection
+
+Call `pinmeto_get_locations` with no arguments.
+
+- Locations returned: setup is complete.
+- `errorCode: "UNAUTHORIZED"`: one of the three credentials is wrong. Most often the
+  Account ID, which is the short name, not the company display name.
+- Tool not found: the server did not start. Ask the user to fully quit and reopen
+  Claude Desktop.
+
+## 4. What is available
+
+Twelve read-only tools covering locations, Google insights, reviews, ratings and
+keywords, Facebook insights and ratings, and Apple Maps insights. The bundled
+**PinMeTo Location Reports** skill turns that data into PDF and PowerPoint reports;
+it activates on requests like "create a Q4 report".
+```
+
+- [ ] **Step 6: Seed components.json**
+
+`plugins/pinmeto-locations/components.json`:
+
+```json
+{
+  "server": "0.0.0",
+  "skill": "0.0.0"
+}
+```
+
+Zeroes are correct: nothing is vendored yet. Task 6's first sync overwrites them.
+
+- [ ] **Step 7: Vendor artifacts by hand once and verify install**
+
+```bash
+cd /Users/marcus/Projects/code/pinmeto-location-mcp && npm run bundle
+mkdir -p ~/Projects/code/claude-plugins/plugins/pinmeto-locations/server
+cp dist/index.mjs ~/Projects/code/claude-plugins/plugins/pinmeto-locations/server/
+
+cd ~/Projects/code/claude-plugins/plugins/pinmeto-locations
+mkdir -p skills
+cp -R /Users/marcus/Projects/code/pinmeto-location-analytics-skill/pinmeto-location-reports skills/
+rm -rf skills/pinmeto-location-reports/node_modules
+rm -f skills/pinmeto-location-reports/*.pdf skills/pinmeto-location-reports/*.pptx
+du -sh skills/pinmeto-location-reports
+```
+
+Expected: under 3 MB. If not, something large is still in there; list the biggest files with `du -ah skills | sort -rh | head`.
+
+Install the marketplace from the local path in Claude Desktop and confirm the credential prompt, a working `pinmeto_get_locations`, and that asking for "a quarterly report" activates the reports skill.
+
+- [ ] **Step 8: Commit**
+
+```bash
+cd ~/Projects/code/claude-plugins
+git add -A
+git commit -m "feat: scaffold the pinmeto-locations plugin and marketplace"
+```
+
+Do not create the GitHub remote yet. Task 6 does that, after the sync workflow exists, so the repo is never public in a half-built state.
+
+---
+
+### Task 5: Version derivation script
+
+**Files:**
+- Create: `~/Projects/code/claude-plugins/scripts/bump-version.js`
+- Create: `~/Projects/code/claude-plugins/scripts/bump-version.test.js`
+
+**Interfaces:**
+- Consumes: `components.json` written by Task 6's sync steps.
+- Produces: CLI `node scripts/bump-version.js --server X.Y.Z --skill A.B.C`. Writes both `components.json` and the `version` field in `plugin.json` and `marketplace.json`. Exits 0 with `no change` on stdout when neither input moved.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `scripts/bump-version.test.js`, run with the Node test runner to keep the repo dependency-free:
+
+```js
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { nextVersion } from './bump-version.js';
+
+test('server major bump drives the plugin major', () => {
+  assert.equal(
+    nextVersion('4.3.2', { server: '4.1.0', skill: '1.2.0' }, { server: '5.0.0', skill: '1.2.0' }),
+    '5.0.0'
+  );
+});
+
+test('server minor bump bumps the plugin minor', () => {
+  assert.equal(
+    nextVersion('4.3.2', { server: '4.1.0', skill: '1.2.0' }, { server: '4.2.0', skill: '1.2.0' }),
+    '4.4.0'
+  );
+});
+
+test('skill minor bump bumps the plugin minor', () => {
+  assert.equal(
+    nextVersion('4.3.2', { server: '4.1.0', skill: '1.2.0' }, { server: '4.1.0', skill: '1.3.0' }),
+    '4.4.0'
+  );
+});
+
+test('patch on either component bumps the plugin patch', () => {
+  assert.equal(
+    nextVersion('4.3.2', { server: '4.1.0', skill: '1.2.0' }, { server: '4.1.1', skill: '1.2.0' }),
+    '4.3.3'
+  );
+});
+
+test('simultaneous minors collapse into one bump', () => {
+  assert.equal(
+    nextVersion('4.3.2', { server: '4.1.0', skill: '1.2.0' }, { server: '4.2.0', skill: '1.3.0' }),
+    '4.4.0'
+  );
+});
+
+test('no component change returns null', () => {
+  assert.equal(
+    nextVersion('4.3.2', { server: '4.1.0', skill: '1.2.0' }, { server: '4.1.0', skill: '1.2.0' }),
+    null
+  );
+});
+
+test('a server major reset takes precedence over a skill patch', () => {
+  assert.equal(
+    nextVersion('4.3.2', { server: '4.1.0', skill: '1.2.0' }, { server: '5.0.0', skill: '1.2.1' }),
+    '5.0.0'
+  );
+});
+```
+
+- [ ] **Step 2: Run the test and confirm it fails**
+
+Run: `node --test scripts/bump-version.test.js`
+Expected: FAIL, `Cannot find module` for `./bump-version.js`.
+
+- [ ] **Step 3: Implement**
+
+Create `scripts/bump-version.js`:
+
+```js
+#!/usr/bin/env node
+/**
+ * Derives the plugin version from the two vendored component versions.
+ *
+ * Rule:
+ *   major - tracks the server major only. Server majors are what break the skill,
+ *           so the plugin major tells a user which server generation they are on.
+ *   minor - either component had a minor release.
+ *   patch - either component had a patch release.
+ *
+ * Simultaneous bumps collapse into one. Users install one thing and need one
+ * number; components.json keeps the provenance.
+ */
+
+import { readFileSync, writeFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const parse = v => {
+  const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(v);
+  if (!m) throw new Error(`Not a semver version: ${v}`);
+  return { major: +m[1], minor: +m[2], patch: +m[3] };
+};
+
+/**
+ * @param {string} currentPlugin  the plugin's current version
+ * @param {{server: string, skill: string}} before  previously vendored versions
+ * @param {{server: string, skill: string}} after   newly vendored versions
+ * @returns {string|null} the next plugin version, or null if nothing changed
+ */
+export function nextVersion(currentPlugin, before, after) {
+  const plugin = parse(currentPlugin);
+  const [bs, as] = [parse(before.server), parse(after.server)];
+  const [bk, ak] = [parse(before.skill), parse(after.skill)];
+
+  if (as.major !== bs.major) return `${as.major}.0.0`;
+
+  const minorBump = as.minor !== bs.minor || ak.major !== bk.major || ak.minor !== bk.minor;
+  if (minorBump) return `${plugin.major}.${plugin.minor + 1}.0`;
+
+  const patchBump = as.patch !== bs.patch || ak.patch !== bk.patch;
+  if (patchBump) return `${plugin.major}.${plugin.minor}.${plugin.patch + 1}`;
+
+  return null;
+}
+
+// A skill major counts as a minor for the plugin: the plugin major is reserved for
+// the server generation, so a skill major cannot be represented as a plugin major.
+
+function main() {
+  const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const pluginDir = join(rootDir, 'plugins', 'pinmeto-locations');
+  const componentsPath = join(pluginDir, 'components.json');
+  const pluginPath = join(pluginDir, '.claude-plugin', 'plugin.json');
+  const marketplacePath = join(rootDir, '.claude-plugin', 'marketplace.json');
+
+  const args = process.argv.slice(2);
+  const argOf = flag => {
+    const i = args.indexOf(flag);
+    return i === -1 ? null : args[i + 1];
+  };
+
+  const before = JSON.parse(readFileSync(componentsPath, 'utf-8'));
+  const after = {
+    server: argOf('--server') ?? before.server,
+    skill: argOf('--skill') ?? before.skill
+  };
+
+  const pluginJson = JSON.parse(readFileSync(pluginPath, 'utf-8'));
+  const next = nextVersion(pluginJson.version, before, after);
+
+  if (next === null) {
+    console.log('no change');
+    return;
+  }
+
+  pluginJson.version = next;
+  writeFileSync(pluginPath, JSON.stringify(pluginJson, null, 2) + '\n');
+  writeFileSync(componentsPath, JSON.stringify(after, null, 2) + '\n');
+
+  const marketplace = JSON.parse(readFileSync(marketplacePath, 'utf-8'));
+  const entry = marketplace.plugins.find(p => p.name === 'pinmeto-locations');
+  entry.version = next;
+  writeFileSync(marketplacePath, JSON.stringify(marketplace, null, 2) + '\n');
+
+  console.log(next);
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) main();
+```
+
+- [ ] **Step 4: Run the test and confirm it passes**
+
+Run: `node --test scripts/bump-version.test.js`
+Expected: PASS, 7 tests.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add scripts
+git commit -m "feat: derive the plugin version from vendored component versions"
+```
+
+---
+
+### Task 6: Sync workflow and dispatch triggers
+
+**Files:**
+- Create: `~/Projects/code/claude-plugins/.github/workflows/sync.yml`
+- Create: `/Users/marcus/Projects/code/pinmeto-location-mcp/.github/workflows/notify-marketplace.yml`
+- Create: `pinmeto-location-reports-skill/.github/workflows/notify-marketplace.yml`
+
+**Interfaces:**
+- Consumes: `scripts/bump-version.js` from Task 5; release assets from Task 3.
+- Produces: a commit on `claude-plugins` `main` per release, containing updated `server/index.mjs`, `skills/`, `components.json`, and version fields.
+
+- [ ] **Step 1: Write the sync workflow**
+
+`.github/workflows/sync.yml`:
+
+```yaml
+name: Sync plugin artifacts
+
+on:
+  repository_dispatch:
+    types: [server-released, skill-released]
+  workflow_dispatch:
+    inputs:
+      server_version:
+        description: MCP server version to vendor (blank keeps current)
+        required: false
+      skill_version:
+        description: Skill version to vendor (blank keeps current)
+        required: false
+
+# Exactly one writer. Two releases landing minutes apart queue rather than race.
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Resolve target versions
+        id: versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SERVER="${{ github.event.client_payload.server_version || inputs.server_version }}"
+          SKILL="${{ github.event.client_payload.skill_version || inputs.skill_version }}"
+          CURRENT_SERVER=$(jq -r .server plugins/pinmeto-locations/components.json)
+          CURRENT_SKILL=$(jq -r .skill plugins/pinmeto-locations/components.json)
+          echo "server=${SERVER:-$CURRENT_SERVER}" >> "$GITHUB_OUTPUT"
+          echo "skill=${SKILL:-$CURRENT_SKILL}" >> "$GITHUB_OUTPUT"
+
+      - name: Vendor the server bundle
+        env:
+          GH_TOKEN: ${{ secrets.MARKETPLACE_SYNC_TOKEN }}
+        run: |
+          mkdir -p plugins/pinmeto-locations/server
+          gh release download "v${{ steps.versions.outputs.server }}" \
+            --repo PinMeTo/pinmeto-location-mcp \
+            --pattern index.mjs \
+            --output plugins/pinmeto-locations/server/index.mjs \
+            --clobber
+
+      - name: Vendor the skill
+        env:
+          GH_TOKEN: ${{ secrets.MARKETPLACE_SYNC_TOKEN }}
+        run: |
+          gh release download "v${{ steps.versions.outputs.skill }}" \
+            --repo PinMeTo/pinmeto-location-reports-skill \
+            --pattern '*.skill' \
+            --output /tmp/skill.zip \
+            --clobber
+          rm -rf plugins/pinmeto-locations/skills/pinmeto-location-reports
+          mkdir -p plugins/pinmeto-locations/skills/pinmeto-location-reports
+          unzip -q /tmp/skill.zip -d plugins/pinmeto-locations/skills/pinmeto-location-reports
+
+      - name: Reject oversized payloads
+        run: |
+          SIZE_KB=$(du -sk plugins/pinmeto-locations | cut -f1)
+          echo "Plugin payload: ${SIZE_KB} KB"
+          if [ "$SIZE_KB" -gt 5120 ]; then
+            echo "::error::Plugin payload ${SIZE_KB} KB exceeds the 5 MB budget."
+            du -ah plugins/pinmeto-locations | sort -rh | head -20
+            exit 1
+          fi
+          if find plugins/pinmeto-locations -name node_modules -type d | grep -q .; then
+            echo "::error::node_modules leaked into the plugin payload."
+            exit 1
+          fi
+
+      - name: Verify the bundled server starts and matches the skill's expectations
+        working-directory: plugins/pinmeto-locations
+        env:
+          PINMETO_ACCOUNT_ID: ci
+          PINMETO_APP_ID: ci
+          PINMETO_APP_SECRET: ci
+        run: |
+          printf '%s\n%s\n%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | node server/index.mjs 2>/dev/null > /tmp/tools.jsonl
+          node -e '
+            const fs = require("fs");
+            const lines = fs.readFileSync("/tmp/tools.jsonl", "utf-8").trim().split("\n").filter(Boolean);
+            const listed = lines.map(JSON.parse).find(m => m.id === 2);
+            if (!listed) throw new Error("Server produced no tools/list response");
+            const tools = listed.result.tools;
+            if (tools.length !== 12) throw new Error(`Expected 12 tools, got ${tools.length}`);
+            const untitled = tools.filter(t => !t.title).map(t => t.name);
+            if (untitled.length) throw new Error(`Tools missing a title: ${untitled.join(", ")}`);
+            console.log(`Server OK: ${tools.length} tools, all titled`);
+          '
+
+      - name: Tool-surface parity against the vendored server
+        working-directory: plugins/pinmeto-locations/skills/pinmeto-location-reports
+        run: |
+          if [ -f scripts/check_mcp_parity.js ]; then
+            # --server takes the server entry point; the script spawns it and runs
+            # tools/list. No credentials needed. Exit 1 = drift, 2 = unreachable.
+            node scripts/check_mcp_parity.js --server ../../server/index.mjs
+          else
+            echo "::warning::check_mcp_parity.js not present in this skill release; parity not verified."
+          fi
+
+      - name: Derive the plugin version
+        id: bump
+        run: |
+          NEXT=$(node scripts/bump-version.js \
+            --server "${{ steps.versions.outputs.server }}" \
+            --skill "${{ steps.versions.outputs.skill }}")
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+
+      - name: Validate the plugin
+        run: npx --yes @anthropic-ai/claude-code plugin validate ./plugins/pinmeto-locations --strict
+
+      - name: Commit
+        run: |
+          if [ "${{ steps.bump.outputs.next }}" = "no change" ]; then
+            echo "Component versions unchanged; nothing to commit."
+            exit 0
+          fi
+          git config user.name "pinmeto-bot"
+          git config user.email "dev@pinmeto.com"
+          git add -A
+          git diff --staged --quiet && echo "No file changes." && exit 0
+          git commit -m "chore: sync plugin ${{ steps.bump.outputs.next }} (server ${{ steps.versions.outputs.server }}, skill ${{ steps.versions.outputs.skill }})"
+          git push
+```
+
+The parity step tolerates the script being absent, because older `.skill` releases predate it. It warns loudly rather than failing the sync.
+
+- [ ] **Step 2: Add the notify workflow to the MCP repo**
+
+Create `/Users/marcus/Projects/code/pinmeto-location-mcp/.github/workflows/notify-marketplace.yml`:
+
+```yaml
+name: Notify marketplace
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch to claude-plugins
+        env:
+          GH_TOKEN: ${{ secrets.MARKETPLACE_DISPATCH_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh api repos/PinMeTo/claude-plugins/dispatches \
+            --field event_type=server-released \
+            --field "client_payload[server_version]=$VERSION"
+```
+
+- [ ] **Step 3: Add the notify workflow to the skill repo**
+
+Create the same file in `pinmeto-location-reports-skill`, with `event_type=skill-released` and `client_payload[skill_version]`.
+
+- [ ] **Step 4: Create the tokens**
+
+Two fine-grained PATs, since `GITHUB_TOKEN` cannot dispatch across repos:
+
+- `MARKETPLACE_DISPATCH_TOKEN` — Contents: read, Metadata: read on `PinMeTo/claude-plugins`. Set as a secret in both source repos.
+- `MARKETPLACE_SYNC_TOKEN` — Contents: read on both source repos. Set as a secret in `claude-plugins`.
+
+- [ ] **Step 5: Create the remote and test the workflow end to end**
+
+```bash
+cd ~/Projects/code/claude-plugins
+gh repo create PinMeTo/claude-plugins --public --source=. --remote=origin --push
+```
+
+Then trigger a real run:
+
+```bash
+gh workflow run sync.yml \
+  --field server_version=4.1.0 \
+  --field skill_version=1.1.0
+gh run watch
+```
+
+Expected: green, with a `chore: sync plugin ...` commit on `main`. If the server download 404s, the release predates Task 3 and has no `index.mjs` asset; cut a new MCP release first.
+
+- [ ] **Step 6: Commit the source-repo workflows**
+
+In `pinmeto-location-mcp`, on the feature branch:
+
+```bash
+npx changeset add --empty
+git add .github .changeset
+git commit -m "ci: notify the claude-plugins marketplace on release"
+```
+
+---
+
+### Task 7: README migration
+
+**Files:**
+- Modify: `/Users/marcus/Projects/code/pinmeto-location-mcp/README.md`
+- Modify: `pinmeto-location-reports-skill/README.md`
+- Create: `~/Projects/code/claude-plugins/README.md`
+
+**Interfaces:**
+- Consumes: the published marketplace from Task 6.
+- Produces: nothing downstream.
+
+- [ ] **Step 1: Lead the MCP README with the plugin**
+
+Replace the `### Claude Desktop (Recommended)` block with:
+
+```markdown
+### Claude Desktop (Recommended)
+
+Installs the server and the reports skill together.
+
+1. Open **Customize** in the sidebar, go to **Plugins**
+2. Click **+** in Personal plugins, choose **Add marketplace**
+3. Enter `PinMeTo/claude-plugins`
+4. Install **PinMeTo Locations** and enter your API credentials when prompted
+
+Get your credentials from [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
+```
+
+Move the existing `.mcpb` instructions under `### Other Installation Options`, prefixed:
+
+```markdown
+**Desktop extension (server only).** Does not include the reports skill. Prefer the
+plugin above unless you specifically want the server on its own.
+```
+
+- [ ] **Step 2: Rewrite the Creating Reports section**
+
+The skill now ships inside the plugin, so its separate installation instructions are wrong. Replace the `### Installation` subsection under `## Creating Reports` with:
+
+```markdown
+The reports skill is included in the plugin. Ask for "a quarterly report" or "a Q4
+board presentation" and it activates automatically.
+
+Installing the desktop extension instead of the plugin? The skill is available
+separately from the [skill repository](https://github.com/PinMeTo/pinmeto-location-reports-skill).
+```
+
+- [ ] **Step 3: Add the same note to the skill repo README**
+
+Above its installation instructions:
+
+```markdown
+> **Most people should install the [PinMeTo Locations
+> plugin](https://github.com/PinMeTo/claude-plugins) instead.** It bundles this skill
+> with the MCP server it depends on, in one install, with matching versions. The
+> standalone instructions below are for pairing this skill with an existing desktop
+> extension install.
+```
+
+- [ ] **Step 4: Write the claude-plugins README**
+
+```markdown
+# PinMeTo plugins for Claude
+
+Official PinMeTo plugins.
+
+## PinMeTo Locations
+
+Your PinMeTo location data in Claude, plus board-ready PDF and PowerPoint reports.
+Bundles the [MCP server](https://github.com/PinMeTo/pinmeto-location-mcp) and the
+[Location Reports skill](https://github.com/PinMeTo/pinmeto-location-reports-skill).
+
+### Install
+
+1. **Customize** -> **Plugins** -> **+** -> **Add marketplace**
+2. Enter `PinMeTo/claude-plugins`
+3. Install **PinMeTo Locations**, enter your API credentials when prompted
+
+Credentials come from [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
+
+### What is inside
+
+Twelve read-only tools covering locations, Google insights, reviews, ratings and
+keywords, Facebook insights and ratings, and Apple Maps insights. Plus a skill that
+turns any of it into monthly, quarterly, half-yearly, or yearly reports.
+
+### Versioning
+
+`plugins/pinmeto-locations/server/` and `skills/` are generated by
+`.github/workflows/sync.yml` and must not be hand-edited. The plugin major tracks the
+MCP server major; `components.json` records which component versions are vendored.
+
+## License
+
+MIT
+```
+
+- [ ] **Step 5: Commit both repos**
+
+```bash
+cd /Users/marcus/Projects/code/pinmeto-location-mcp
+npx changeset add --empty
+git add README.md .changeset
+git commit -m "docs: lead installation with the plugin"
+
+cd ~/Projects/code/claude-plugins
+git add README.md
+git commit -m "docs: add marketplace README"
+git push
+```
+
+- [ ] **Step 6: Open the PR for the MCP repo**
+
+```bash
+cd /Users/marcus/Projects/code/pinmeto-location-mcp
+git push -u origin docs/plugin-bundling-spec
+gh pr create --title "feat: plugin distribution for the MCP server and reports skill" --body "$(cat <<'EOF'
+Ships the server and the Location Reports skill as one installable plugin, replacing
+the two-artifact manual install for Claude Desktop customers.
+
+Changes here (the marketplace itself lives in PinMeTo/claude-plugins):
+
+- `title` on all 12 tools and a Privacy Policy README section, both required for
+  directory submission
+- A single-file esbuild bundle target (`npm run bundle` -> `dist/index.mjs`),
+  attached to releases and vendored by the marketplace repo
+- Package name and version now resolve from a generated module rather than a
+  runtime `package.json` read, which bundling cannot support
+- A release workflow that notifies the marketplace repo
+
+Design: `docs/superpowers/specs/2026-07-31-plugin-bundling-design.md`
+Plan: `docs/superpowers/plans/2026-07-31-plugin-bundling.md`
+EOF
+)"
+```
+
+---
+
+## Follow-up (not in this plan)
+
+1. Confirm PinMeTo has a Team/Enterprise org with directory management access, or a Console org.
+2. Submit the plugin at https://claude.ai/admin-settings/directory/submissions/plugins/new.
+3. Decide whether to keep submitting the `.mcpb` to the Connectors Directory separately, or let the plugin listing carry discovery.
+4. Resolve whether the plugin directory surfaces inside Claude Desktop's Browse plugins view or only Cowork and Claude Code. If not Desktop, the README carries more of the discovery burden.

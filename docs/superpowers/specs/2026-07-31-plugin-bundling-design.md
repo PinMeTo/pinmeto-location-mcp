@@ -202,18 +202,25 @@ const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-
 
 This feeds `serverInfo` and the User-Agent. In a bundle it fails with
 `ReferenceError: __dirname is not defined in ES module scope`, and it would also
-break under any relocation of the entry point. Replace with build-time constants
-injected via esbuild `--define`:
+break under any relocation of the entry point.
+
+Replace it with a generated module, `src/generated/version.ts`, written from
+`package.json` by a `scripts/generate-version.js` that runs in `prebuild` and
+`pretest`, and git-ignored:
 
 ```ts
-declare const __PACKAGE_NAME__: string;
-declare const __PACKAGE_VERSION__: string;
-const PACKAGE_NAME = __PACKAGE_NAME__;
-const PACKAGE_VERSION = __PACKAGE_VERSION__;
+export const PACKAGE_NAME = '@pinmeto/pinmeto-location-mcp';
+export const PACKAGE_VERSION = '4.1.0';
 ```
 
-This also removes a duplicate source of truth. `update-build-version.js` already
-stamps the version at build time.
+Injecting the same constants with esbuild `--define` was considered and rejected:
+it breaks the plain `tsc` build that npm and `.mcpb` consumers use, since
+`declare const` type-checks but nothing defines the identifier at runtime. A
+generated module keeps `package.json` as the single source of truth and behaves
+identically under `tsc`, esbuild, and Vitest.
+
+Lines 4 and 6 of `mcp_server.ts` (`readFileSync` from `fs`, `dirname, join` from
+`path`) become dead once line 27 goes; `dirname` is already unused today.
 
 **2. axios pulls CJS dependencies that call `require`.** With ESM output the
 bundle dies on `Error: Dynamic require of "util" is not supported`, thrown from
@@ -223,15 +230,18 @@ bundle dies on `Error: Dynamic require of "util" is not supported`, thrown from
 --banner:js="import{createRequire as __cr}from'module';const require=__cr(import.meta.url);"
 ```
 
-Full verified invocation:
+Invocation, once the generated version module is in place:
 
 ```bash
+node scripts/generate-version.js
 esbuild src/index.ts --bundle --platform=node --format=esm --target=node18 \
-  --define:__PACKAGE_NAME__='"@pinmeto/pinmeto-location-mcp"' \
-  --define:__PACKAGE_VERSION__='"4.1.0"' \
   --banner:js="import{createRequire as __cr}from'module';const require=__cr(import.meta.url);" \
   --outfile=dist/index.mjs
 ```
+
+The verification run that produced the 1.3 MB figure used `--define` constants in
+place of the generated module, since the module did not exist yet. The bundle
+contents are equivalent either way.
 
 esbuild is already in the dependency tree via vitest, and `package.json` pins it
 through `overrides`. The bundle is a new build target alongside the existing
