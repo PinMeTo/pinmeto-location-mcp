@@ -141,4 +141,7 @@ vite.config.ts.timestamp-*
 .vite/
 *.mcpb
 
+# Generated at build time from package.json
+src/generated/
+
 .DS_Store

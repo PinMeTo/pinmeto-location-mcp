@@ -1,9 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Implementation } from '@modelcontextprotocol/sdk/types.js';
 import axios, { isAxiosError } from 'axios';
-import { readFileSync } from 'fs';
 import os from 'os';
-import { dirname, join } from 'path';
 import { ApiResult, ApiError, AuthError, mapAxiosErrorToApiError } from './errors';
 import { LocationCache } from './cache/location-cache';
 import { getLocations, getLocation, searchLocations } from './tools/locations/locations';
@@ -21,15 +19,10 @@ import {
 } from './tools/networks/facebook';
 import { getAppleInsights } from './tools/networks/apple';
 import { Configs, getConfigs } from './configs';
+import { PACKAGE_NAME, PACKAGE_VERSION } from './generated/version';
 
 import type { ServerOptions } from '@modelcontextprotocol/sdk/server';
 
-const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')) as {
-  name: string;
-  version: string;
-};
-const PACKAGE_NAME = pkg.name;
-const PACKAGE_VERSION = pkg.version;
 const TOKEN_CACHE_SECONDS = 59 * 60;
 
 const SERVER_UA_PART = `${PACKAGE_NAME}-${PACKAGE_VERSION} (${os.type()}; ${os.arch()}; ${os.release()})`;

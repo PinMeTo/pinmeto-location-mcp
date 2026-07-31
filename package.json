@@ -4,8 +4,11 @@
   "description": "PinMeTo Location MCP",
   "main": "index.js",
   "scripts": {
+    "prebuild": "node scripts/generate-version.js",
+    "pretest": "node scripts/generate-version.js",
     "build": "npm run clean && node manifest.js && tsc && cp package.json build/ && node update-build-version.js",
     "build:test": "VERSION_POSTFIX=test-$(date -u +%Y%m%dT%H%M%SZ) npm run build",
+    "bundle": "node scripts/build-bundle.js",
     "pack:test": "npm run build:test && npx @anthropic-ai/mcpb pack",
     "clean": "node -e \"require('fs').rmSync('build', {recursive: true, force: true})\"",
     "prepare": "npm run build",
@@ -17,7 +20,7 @@
     "changeset:add": "changeset add",
     "release:prepare": "changeset status --verbose",
     "release:version": "changeset version && node scripts/format-changelog.js && node scripts/update-readme-badges.js",
-    "release:draft": "npm test && npm run build && npx @anthropic-ai/mcpb pack && node scripts/create-gh-release.js",
+    "release:draft": "npm test && npm run build && npm run bundle && npx @anthropic-ai/mcpb pack && node scripts/create-gh-release.js",
     "release:publish": "gh release edit $(git describe --tags --abbrev=0) --draft=false"
   },
   "repository": {
