@@ -14,7 +14,7 @@ import { statSync } from 'fs';
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-execFileSync('node', [join(rootDir, 'scripts', 'generate-version.js')], {
+execFileSync('node', [join(rootDir, 'scripts', 'generate-version.mjs')], {
   cwd: rootDir,
   stdio: 'inherit'
 });
