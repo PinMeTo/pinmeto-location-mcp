@@ -205,8 +205,10 @@ This feeds `serverInfo` and the User-Agent. In a bundle it fails with
 break under any relocation of the entry point.
 
 Replace it with a generated module, `src/generated/version.ts`, written from
-`package.json` by a `scripts/generate-version.js` that runs in `prebuild` and
-`pretest`, and git-ignored:
+`package.json` by a `scripts/generate-version.mjs` that runs in `prebuild` and
+`pretest`. The file is committed rather than git-ignored, so a bare `npx tsc` or
+`npx vitest` works on a fresh checkout; the hooks still regenerate and overwrite
+it, keeping `package.json` the single source of truth:
 
 ```ts
 export const PACKAGE_NAME = '@pinmeto/pinmeto-location-mcp';
@@ -233,7 +235,7 @@ bundle dies on `Error: Dynamic require of "util" is not supported`, thrown from
 Invocation, once the generated version module is in place:
 
 ```bash
-node scripts/generate-version.js
+node scripts/generate-version.mjs
 esbuild src/index.ts --bundle --platform=node --format=esm --target=node18 \
   --banner:js="import{createRequire as __cr}from'module';const require=__cr(import.meta.url);" \
   --outfile=dist/index.mjs
