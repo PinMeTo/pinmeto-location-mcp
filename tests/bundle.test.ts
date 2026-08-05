@@ -22,7 +22,7 @@ function driveProcess(
   command: string,
   args: string[],
   requests: object[],
-  timeoutMs = 10_000
+  timeoutMs = 4_000
 ): Promise<any[]> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {

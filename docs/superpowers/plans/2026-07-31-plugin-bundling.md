@@ -1239,7 +1239,7 @@ Create the same file in `pinmeto-location-reports-skill`, with `event_type=skill
 
 Two fine-grained PATs, since `GITHUB_TOKEN` cannot dispatch across repos:
 
-- `MARKETPLACE_DISPATCH_TOKEN` — Contents: read, Metadata: read on `PinMeTo/claude-plugins`. Set as a secret in both source repos.
+- `MARKETPLACE_DISPATCH_TOKEN` — Contents: read and write, Metadata: read on `PinMeTo/claude-plugins`. Set as a secret in both source repos. `repository_dispatch` is a write operation; a read-only token gets a 403.
 - `MARKETPLACE_SYNC_TOKEN` — Contents: read on both source repos. Set as a secret in `claude-plugins`.
 
 - [ ] **Step 5: Create the remote and test the workflow end to end**

@@ -34,6 +34,8 @@ Installs the server and the reports skill together.
 3. Enter `PinMeTo/claude-plugins`
 4. Install **PinMeTo Locations** and enter your API credentials when prompted
 
+> **Note:** While the plugin repository is private, installing requires the Claude GitHub App to have access to it.
+
 Get your credentials from [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
 
 ### Other Installation Options

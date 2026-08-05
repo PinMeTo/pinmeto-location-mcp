@@ -386,7 +386,7 @@ describe('Locations', () => {
 });
 
 describe('Tool Annotations', () => {
-  it('should register all 11 tools with readOnlyHint annotations', async () => {
+  it('should register all 12 tools with readOnlyHint annotations and titles', async () => {
     const server = createMcpServer();
     const testTransport = new StdioServerTransport();
 

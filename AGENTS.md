@@ -92,6 +92,11 @@ title on every tool. All other annotations use SDK defaults. If a future tool wr
 `readOnlyHint: false` and consider `destructiveHint: true` for deletes/overwrites and
 `idempotentHint: true` where repeated calls have no additional effect.
 
+## Build Artifacts
+
+- `src/generated/version.ts` is a **tracked, generated file** — regenerated from `package.json` by `scripts/generate-version.mjs` on every `prebuild`/`pretest`. Do not edit it, and do not add it to `.gitignore`; it is committed so bare `npx tsc`/`npx vitest` work on a fresh checkout.
+- `npm run bundle` emits `dist/index.mjs`, a self-contained single-file server consumed by the `PinMeTo/claude-plugins` marketplace repo. It is attached to GitHub releases by `release:draft` and excluded from the `.mcpb` via `.mcpbignore`.
+
 ## Failure Contracts
 
 These are easy to get wrong from reading the call sites alone:

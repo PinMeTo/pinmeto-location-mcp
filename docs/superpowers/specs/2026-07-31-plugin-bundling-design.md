@@ -112,7 +112,8 @@ plugins/pinmeto-locations/
         └── assets/
 ```
 
-Payload is roughly 1.6 MB. The skill's 38 MB working directory (`node_modules`,
+Payload is roughly 3 MB (measured 3.1 MB vendored; the reports' brand fonts and
+logos account for the growth over the early 1.6 MB estimate). The skill's 38 MB working directory (`node_modules`,
 sample `.pdf` and `.pptx` fixtures) must not ship. Syncing from the released
 `.skill` artifact rather than from source inherits `package-skill.sh`'s
 exclusions and makes leakage structurally impossible.
@@ -122,7 +123,7 @@ exclusions and makes leakage structurally impossible.
 ```json
 {
   "name": "pinmeto-locations",
-  "version": "4.1.0",
+  "version": "4.0.0",
   "description": "PinMeTo location data and analytics reports for Google, Facebook and Apple.",
   "userConfig": {
     "PINMETO_ACCOUNT_ID": {
@@ -172,12 +173,17 @@ exclusions and makes leakage structurally impossible.
 4.0.0 and 1.1.0. The skill's `>= 4.0.0` requirement becomes structurally
 unrepresentable rather than documented in three files. Start at `4.1.0` so the
 number reads as continuous with the server line customers already know.
+(Amended during execution: the plugin starts at 4.0.0, matching the vendored
+server, so the first sync lands 4.1.0 honestly — see the plan's
+components.json amendment.)
 
 **`SETUP.md`.** The documented hook for guiding a user through MCP configuration
 on install. It holds the "get your credentials from Account Settings -> API"
 walkthrough, a `pinmeto_get_locations` smoke test so a failed setup surfaces
 immediately rather than on the first report, and the duplicate-server check
-described under Migration.
+described under Migration. (Amended during execution: a root-level SETUP.md is
+not a skill location — the file lives at skills/pinmeto-setup/SKILL.md, where
+the plugin loader actually discovers it.)
 
 **Vendored single-file bundle, not `npx` and not `npm pack`.** `npx -y
 @pinmeto/pinmeto-location-mcp` requires Node on PATH, which this audience does
@@ -269,8 +275,8 @@ pinmeto-location-mcp              pinmeto-location-reports-skill
                         ↓
           1. download bundled index.mjs release asset -> server/
           2. download + unzip *.skill -> skills/pinmeto-location-reports/
-          3. node scripts/bump-version.js
-          4. npm run check-mcp          (parity gate)
+          3. node scripts/bump-version.mjs
+          4. node scripts/check_mcp_parity.js --server ../../server/index.mjs   (parity gate)
           5. claude plugin validate --strict
           6. commit + push
 ```
