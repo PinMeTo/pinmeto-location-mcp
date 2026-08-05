@@ -19,13 +19,27 @@ Ask your AI assistant questions like:
 
 See [Example Prompts](docs/USE-CASES.md) for more ideas.
 
-> 📊 **Turn your data into reports.** Pair this server with the [PinMeTo Location Reports Skill](https://github.com/PinMeTo/pinmeto-location-reports-skill) to generate formatted PDF and PowerPoint reports across all your locations. See [Creating Reports](#creating-reports) below.
+> 📊 **Turn your data into reports.** Install the [PinMeTo Locations plugin](https://github.com/PinMeTo/claude-plugins) to generate formatted PDF and PowerPoint reports across all your locations. See [Creating Reports](#creating-reports) below.
 
 ---
 
 ## Installation
 
 ### Claude Desktop (Recommended)
+
+Installs the server and the reports skill together.
+
+1. Open **Customize** in the sidebar, go to **Plugins**
+2. Click **+** in Personal plugins, choose **Add marketplace**
+3. Enter `PinMeTo/claude-plugins`
+4. Install **PinMeTo Locations** and enter your API credentials when prompted
+
+Get your credentials from [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
+
+### Other Installation Options
+
+**Desktop extension (server only).** Does not include the reports skill. Prefer the
+plugin above unless you specifically want the server on its own.
 
 1. **Download the installer:** [pinmeto-location-mcp.mcpb](https://github.com/PinMeTo/pinmeto-location-mcp/releases/download/v4.0.0/pinmeto-location-mcp.mcpb)
 
@@ -36,12 +50,6 @@ See [Example Prompts](docs/USE-CASES.md) for more ideas.
    <img width="655" alt="Credential dialog" src="https://github.com/user-attachments/assets/30af64b3-81c3-4bb1-9b05-656831004757" />
 
 4. **Done!** Start asking questions about your locations.
-
-### Where to Find Your Credentials
-
-Get your API credentials from [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
-
-### Other Installation Options
 
 | Platform | Method |
 |----------|--------|
@@ -81,11 +89,11 @@ Transforms your multi-location analytics into formatted PDF and PowerPoint repor
 - Search keyword performance
 - Data-driven strategic recommendations
 
-### Installation
+The reports skill is included in the plugin. Ask for "a quarterly report" or "a Q4
+board presentation" and it activates automatically.
 
-**Requirements:** This skill requires the PinMeTo MCP Server (installed above) to access your location data.
-
-Visit the [skill repository](https://github.com/PinMeTo/pinmeto-location-reports-skill) for installation instructions.
+Installing the desktop extension instead of the plugin? The skill is available
+separately from the [skill repository](https://github.com/PinMeTo/pinmeto-location-reports-skill).
 
 ---
 
