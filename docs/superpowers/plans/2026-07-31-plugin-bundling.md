@@ -20,7 +20,7 @@ This plan covers Phase 0 through a plugin that installs and works from a local m
 - The plugin's `.mcp.json` server key is `pinmeto`. The skill's tool calls depend on the twelve `pinmeto_*` tool names, which do not change in this plan.
 - Plugin major version tracks the MCP server major. Server 4.x gives plugin 4.x.
 - Every tool keeps `annotations.readOnlyHint: true`. This server never writes.
-- Never commit `node_modules` or the skill's sample `.pdf` / `.pptx` fixtures into `claude-plugins`. Payload budget is roughly 3 MB.
+- Never commit `node_modules` or the skill's sample `.pdf` / `.pptx` fixtures into `claude-plugins`. Expected payload is roughly 3 MB (measured: 3.1 MB, mostly the 1.3 MB server bundle plus ~1.35 MB of brand fonts and logos the reports depend on). Task 6's automated gate is the enforcing number: it fails above 5 MB.
 - `pinmeto-location-mcp` requires a changeset on every PR. Use `npx changeset add --empty` for changes that do not affect the published package.
 - Never commit to `main` in `pinmeto-location-mcp`. Feature branch and PR, per `AGENTS.md`.
 
@@ -53,7 +53,7 @@ This plan covers Phase 0 through a plugin that installs and works from a local m
 | `plugins/pinmeto-locations/components.json` | Provenance. Which server and skill versions are vendored. |
 | `plugins/pinmeto-locations/server/index.mjs` | Synced artifact. Never hand-edited. |
 | `plugins/pinmeto-locations/skills/pinmeto-location-reports/` | Synced artifact. Never hand-edited. |
-| `scripts/bump-version.js` | Derives `plugin.json` version from `components.json`. |
+| `scripts/bump-version.mjs` | Derives `plugin.json` version from `components.json`. |
 | `.github/workflows/sync.yml` | The single writer. Pulls artifacts, gates, commits. |
 
 ---
@@ -675,7 +675,7 @@ node_modules/
       "name": "pinmeto-locations",
       "source": "./plugins/pinmeto-locations",
       "description": "PinMeTo location data and analytics reports for Google, Facebook and Apple.",
-      "version": "4.1.0",
+      "version": "4.0.0",
       "author": { "name": "PinMeTo", "email": "dev@pinmeto.com" },
       "category": "integration",
       "tags": ["location", "analytics", "reporting", "google", "facebook", "apple"],
@@ -694,7 +694,7 @@ node_modules/
 ```json
 {
   "name": "pinmeto-locations",
-  "version": "4.1.0",
+  "version": "4.0.0",
   "description": "PinMeTo location data and analytics reports for Google, Facebook and Apple.",
   "author": { "name": "PinMeTo", "url": "https://www.pinmeto.com/" },
   "homepage": "https://www.pinmeto.com/",
@@ -806,16 +806,18 @@ it activates on requests like "create a Q4 report".
 
 - [ ] **Step 6: Seed components.json**
 
-`plugins/pinmeto-locations/components.json`:
+`plugins/pinmeto-locations/components.json`, recording what Step 7 actually vendors:
 
 ```json
 {
-  "server": "0.0.0",
-  "skill": "0.0.0"
+  "server": "4.0.0",
+  "skill": "1.2.0"
 }
 ```
 
-Zeroes are correct: nothing is vendored yet. Task 6's first sync overwrites them.
+Read both values off the artifacts rather than copying them from here: the skill's version from its `SKILL.md` frontmatter, the server's from `pinmeto-location-mcp/package.json`, since that is the tree the bundle was built from.
+
+**Amended during execution (human ruling).** This step originally seeded zeroes, reasoning that nothing was vendored yet. That is false — Step 7 vendors real artifacts in the same commit — and it is a live bug in Task 5's arithmetic, not just sloppy bookkeeping. With `before.server = 0.0.0` and `after.server = 4.1.0`, the majors differ, so `nextVersion` returns `4.0.0` and the first sync *downgrades* the plugin from 4.1.0. Seeding the truth and starting the plugin at 4.0.0 instead means the first real sync sees matching majors and a moved minor, cleanly producing plugin 4.1.0.
 
 - [ ] **Step 7: Vendor artifacts by hand once and verify install**
 
@@ -834,7 +836,9 @@ du -sh skills/pinmeto-location-reports
 
 Expected: under 3 MB. If not, something large is still in there; list the biggest files with `du -ah skills | sort -rh | head`.
 
-Install the marketplace from the local path in Claude Desktop and confirm the credential prompt, a working `pinmeto_get_locations`, and that asking for "a quarterly report" activates the reports skill.
+Install the marketplace in Claude Desktop and confirm the credential prompt, a working `pinmeto_get_locations`, and that asking for "a quarterly report" activates the reports skill.
+
+**Amended during execution.** This step originally said "from the local path." Claude Desktop's Add marketplace dialog rejects a bare directory path — the field accepts only a GitHub `owner/repo` or a git repository URL. So `claude-plugins` must be a git repo with a reachable URL before it can be installed at all, which means Step 8's "do not create the GitHub remote yet" cannot hold if you want to verify before the sync workflow exists. Either `git init` locally and install via a `file://` URL, or create the remote private first and make it public once the sync workflow lands.
 
 - [ ] **Step 8: Commit**
 
@@ -851,21 +855,23 @@ Do not create the GitHub remote yet. Task 6 does that, after the sync workflow e
 ### Task 5: Version derivation script
 
 **Files:**
-- Create: `~/Projects/code/claude-plugins/scripts/bump-version.js`
-- Create: `~/Projects/code/claude-plugins/scripts/bump-version.test.js`
+- Create: `~/Projects/code/claude-plugins/scripts/bump-version.mjs`
+- Create: `~/Projects/code/claude-plugins/scripts/bump-version.test.mjs`
 
 **Interfaces:**
 - Consumes: `components.json` written by Task 6's sync steps.
-- Produces: CLI `node scripts/bump-version.js --server X.Y.Z --skill A.B.C`. Writes both `components.json` and the `version` field in `plugin.json` and `marketplace.json`. Exits 0 with `no change` on stdout when neither input moved.
+- Produces: CLI `node scripts/bump-version.mjs --server X.Y.Z --skill A.B.C [--allow-downgrade]`. Writes both `components.json` and the `version` field in `plugin.json` and `marketplace.json`. Exits 0 with `no change` on stdout when neither input moved. Exits 1 with a one-line stderr message on a downgrade or malformed semver.
+
+**Amended during execution (human ruling): downgrades fail the sync.** As originally specified, every comparison in `nextVersion` used `!==` rather than directional comparison, so a component version moving *backward* produced the same bump as moving forward — `before.server 4.2.0` with `after.server 4.1.0` returned a forward minor bump, silently. A backward move is almost always a mistake (a force-moved tag, a typo in a manual `workflow_dispatch`), so `nextVersion` now takes a fourth `allowDowngrade` parameter defaulting to `false` and throws when either component regresses, naming the component, both versions, and the override flag. `main()` wraps its body in a try/catch that prints `error.message` and exits 1, which also turns a malformed-semver `parse()` throw into a clean CI error instead of a raw stack trace. The seven test cases below are unchanged and still pass; the downgrade guard, the skill-major case, and the flag-parsing errors add further cases.
 
 - [ ] **Step 1: Write the failing test**
 
-Create `scripts/bump-version.test.js`, run with the Node test runner to keep the repo dependency-free:
+Create `scripts/bump-version.test.mjs`, run with the Node test runner to keep the repo dependency-free:
 
 ```js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { nextVersion } from './bump-version.js';
+import { nextVersion } from './bump-version.mjs';
 
 test('server major bump drives the plugin major', () => {
   assert.equal(
@@ -919,12 +925,12 @@ test('a server major reset takes precedence over a skill patch', () => {
 
 - [ ] **Step 2: Run the test and confirm it fails**
 
-Run: `node --test scripts/bump-version.test.js`
-Expected: FAIL, `Cannot find module` for `./bump-version.js`.
+Run: `node --test scripts/bump-version.test.mjs`
+Expected: FAIL, `Cannot find module` for `./bump-version.mjs`.
 
 - [ ] **Step 3: Implement**
 
-Create `scripts/bump-version.js`:
+Create `scripts/bump-version.mjs`:
 
 ```js
 #!/usr/bin/env node
@@ -1020,7 +1026,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) main();
 
 - [ ] **Step 4: Run the test and confirm it passes**
 
-Run: `node --test scripts/bump-version.test.js`
+Run: `node --test scripts/bump-version.test.mjs`
 Expected: PASS, 7 tests.
 
 - [ ] **Step 5: Commit**
@@ -1040,8 +1046,17 @@ git commit -m "feat: derive the plugin version from vendored component versions"
 - Create: `pinmeto-location-reports-skill/.github/workflows/notify-marketplace.yml`
 
 **Interfaces:**
-- Consumes: `scripts/bump-version.js` from Task 5; release assets from Task 3.
+- Consumes: `scripts/bump-version.mjs` from Task 5; release assets from Task 3.
 - Produces: a commit on `claude-plugins` `main` per release, containing updated `server/index.mjs`, `skills/`, `components.json`, and version fields.
+
+**Amended during execution: the workflow below has a script-injection defect.** As written, `${{ github.event.client_payload.* }}` is interpolated directly into `run:` script bodies, and `client_payload` is settable by anyone who can dispatch. Because Actions expression substitution happens before bash starts, `bump-version.mjs`'s semver regex cannot protect these sinks — the shell has already run whatever was injected. The job holds `MARKETPLACE_SYNC_TOKEN` and `contents: write`, so the blast radius is token exfiltration plus a push to `main`.
+
+Two layers close it, both applied during execution:
+
+1. **Validate early, fail closed.** In `Resolve target versions`, with the values already in `env:` vars, check each against `^[0-9]+\.[0-9]+\.[0-9]+$` and exit 1 naming the offending value before writing to `$GITHUB_OUTPUT`. A hostile payload dies before any token is in scope.
+2. **Route every use through `env:`.** `steps.versions.outputs.*` is a raw pass-through of the same tainted string, so every downstream point of use needs an `env:` block on its step and a shell-variable reference in the body — not just the point of assignment. Layer 1 arguably suffices, but uniformity stops the next edit from reinventing the hole.
+
+Read the workflow below with that correction in mind: treat any `${{ ... }}` inside a `run:` body as a defect to fix, not a pattern to copy.
 
 - [ ] **Step 1: Write the sync workflow**
 
@@ -1167,7 +1182,7 @@ jobs:
       - name: Derive the plugin version
         id: bump
         run: |
-          NEXT=$(node scripts/bump-version.js \
+          NEXT=$(node scripts/bump-version.mjs \
             --server "${{ steps.versions.outputs.server }}" \
             --skill "${{ steps.versions.outputs.skill }}")
           echo "next=$NEXT" >> "$GITHUB_OUTPUT"
@@ -1239,7 +1254,7 @@ Then trigger a real run:
 ```bash
 gh workflow run sync.yml \
   --field server_version=4.1.0 \
-  --field skill_version=1.1.0
+  --field skill_version=1.2.0
 gh run watch
 ```
 
