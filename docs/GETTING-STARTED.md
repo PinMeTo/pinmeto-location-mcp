@@ -4,6 +4,16 @@ Welcome to PinMeTo MCP. This guide helps you get up and running after installati
 
 ---
 
+## Installing
+
+1. **Install the `.mcpb`.** Download `pinmeto-location-mcp.mcpb` from the [latest release](https://github.com/PinMeTo/pinmeto-location-mcp/releases/latest) and double-click it with Claude Desktop open (or drag it into Claude Desktop → Settings → Extensions). Enter your Account ID, App ID, and App Secret when prompted. This installs the data connection — the MCP server and its twelve tools.
+2. **Add reports (optional).** To also generate PDF/PowerPoint reports, add the `PinMeTo/claude-plugins` marketplace (Customize → Plugins → **+** → Add marketplace) and install **PinMeTo Locations**. This adds the report skill on top of the `.mcpb`.
+3. **Claude Code (CLI).** The plugin doesn't bundle a server. Run the npm package directly — `npx -y @pinmeto/pinmeto-location-mcp` with the three `PINMETO_*` env vars — or use `claude mcp add`.
+
+See the [README](../README.md#installation) for full details.
+
+---
+
 ## Verify Your Installation
 
 After installing, verify that everything is working:

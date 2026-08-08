@@ -19,7 +19,7 @@ Ask your AI assistant questions like:
 
 See [Example Prompts](docs/USE-CASES.md) for more ideas.
 
-> 📊 **Turn your data into reports.** Install the [PinMeTo Locations plugin](https://github.com/PinMeTo/claude-plugins) to generate formatted PDF and PowerPoint reports across all your locations. See [Creating Reports](#creating-reports) below.
+> 📊 **Turn your data into reports.** On top of the `.mcpb` data connection, install the [PinMeTo Locations plugin](https://github.com/PinMeTo/claude-plugins) to add formatted PDF and PowerPoint reports across all your locations. See [Creating Reports](#creating-reports) below.
 
 ---
 
@@ -27,36 +27,34 @@ See [Example Prompts](docs/USE-CASES.md) for more ideas.
 
 ### Claude Desktop (Recommended)
 
-Installs the server and the reports skill together.
+1. **Download the installer:** click the `.mcpb` badge above, or grab [pinmeto-location-mcp.mcpb](https://github.com/PinMeTo/pinmeto-location-mcp/releases/download/v4.0.0/pinmeto-location-mcp.mcpb) from the latest release
+
+2. **Double-click** the downloaded file (with Claude Desktop open), or drag it into Claude Desktop → Settings → Extensions
+
+3. **Enter your PinMeTo API credentials** (Account ID, App ID, App Secret) in the install dialog
+
+   <img width="655" alt="Credential dialog" src="https://github.com/user-attachments/assets/30af64b3-81c3-4bb1-9b05-656831004757" />
+
+4. **Done!** This installs the data connection — the MCP server and its twelve tools. Start asking questions about your locations.
+
+Get your credentials from [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
+
+**Reports (optional).** To also generate PDF and PowerPoint reports:
 
 1. Open **Customize** in the sidebar, go to **Plugins**
 2. Click **+** in Personal plugins, choose **Add marketplace**
 3. Enter `PinMeTo/claude-plugins`
-4. Install **PinMeTo Locations** and enter your API credentials when prompted
+4. Install **PinMeTo Locations** — this adds the report skill
 
 > **Note:** While the plugin repository is private, installing requires the Claude GitHub App to have access to it.
 
-Get your credentials from [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
-
 ### Other Installation Options
-
-**Desktop extension (server only).** Does not include the reports skill. Prefer the
-plugin above unless you specifically want the server on its own.
-
-1. **Download the installer:** [pinmeto-location-mcp.mcpb](https://github.com/PinMeTo/pinmeto-location-mcp/releases/download/v4.0.0/pinmeto-location-mcp.mcpb)
-
-2. **Double-click** the downloaded file (with Claude Desktop open)
-
-3. **Enter your PinMeTo API credentials** when prompted
-
-   <img width="655" alt="Credential dialog" src="https://github.com/user-attachments/assets/30af64b3-81c3-4bb1-9b05-656831004757" />
-
-4. **Done!** Start asking questions about your locations.
 
 | Platform | Method |
 |----------|--------|
 | VS Code | Click the VS Code badge above |
 | Cursor | Click the Cursor badge above |
+| Claude Code (CLI) | The plugin doesn't bundle a server. Run the npm package directly: `npx -y @pinmeto/pinmeto-location-mcp` with the three `PINMETO_*` env vars, or use `claude mcp add` |
 | Manual | See [Manual Installation](docs/MANUAL-INSTALLATION.md) |
 
 ---
@@ -91,11 +89,12 @@ Transforms your multi-location analytics into formatted PDF and PowerPoint repor
 - Search keyword performance
 - Data-driven strategic recommendations
 
-The reports skill is included in the plugin. Ask for "a quarterly report" or "a Q4
-board presentation" and it activates automatically.
+The report skill comes from the [PinMeTo Locations plugin](#claude-desktop-recommended);
+the location data and tools come from the `.mcpb`. With both installed, ask for "a
+quarterly report" or "a Q4 board presentation" and the skill activates automatically.
 
-Installing the desktop extension instead of the plugin? The skill is available
-separately from the [skill repository](https://github.com/PinMeTo/pinmeto-location-reports-skill).
+Prefer not to install the plugin? The skill is also available standalone from the
+[skill repository](https://github.com/PinMeTo/pinmeto-location-reports-skill).
 
 ---
 
