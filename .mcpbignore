@@ -1,2 +1,0 @@
-# The single-file plugin bundle is a separate artifact; the .mcpb runs build/index.js
-dist
