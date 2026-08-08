@@ -134,9 +134,9 @@ remotely and transmits nothing to any third party.
 
 - **Collected:** your PinMeTo Account ID, App ID, and App Secret, supplied by you at install time.
 - **Used for:** authenticating requests to the PinMeTo API on your behalf.
-- **Stored:** credentials are held by your MCP client (macOS Keychain under Claude Desktop). Location and insights data is cached in memory for the duration of a session and never written to disk.
+- **Stored:** credentials remain under your MCP client's control (for example, the macOS Keychain under Claude Desktop); this server never writes them to disk. Location and insights data is cached in memory for the duration of a session and never written to disk.
 - **Shared:** nothing is shared with third parties.
-- **Retained:** nothing is retained after the process exits.
+- **Retained:** the server itself retains nothing after the process exits, and its in-memory location and insights cache is discarded then. Credential persistence is managed by your MCP client, not by this server.
 - **Contact:** [PinMeTo Support](https://www.pinmeto.com/contact)
 
 Full policy: https://places.pinmeto.com/listings/public/legal/privacypolicy

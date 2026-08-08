@@ -74,11 +74,11 @@ does everything — large rewrite of local PDF/PPTX generation, not ship-now;
 
 - Rewrite the `pinmeto-setup` skill onboarding text to the `.mcpb`-first flow
   below, and delete the false line *"Claude prompts for these when the plugin is
-  enabled."* **The plan must first locate the skill's source of truth:** the copy
-  at `claude-plugins/plugins/pinmeto-locations/skills/pinmeto-setup/SKILL.md` is
-  vendored by `sync.yml` and marked "must not be hand-edited", so the edit belongs
-  in whatever upstream `sync.yml` pulls from (confirm: this repo, the
-  `pinmeto-location-reports-skill` repo, or authored directly in `claude-plugins`).
+  enabled."* The `pinmeto-setup` skill is authored directly in `claude-plugins`
+  (`plugins/pinmeto-locations/skills/pinmeto-setup/SKILL.md`); it is **not** vendored
+  by `sync.yml`, which vendors only `pinmeto-location-reports` from the
+  `pinmeto-location-reports-skill` repo. So edit its `SKILL.md` in `claude-plugins`
+  directly.
 - Update `README.md` / `docs/` install instructions to lead with the `.mcpb` for
   Desktop and document the Claude Code CLI path separately (see Decision B).
 - Close out the Phase 0 spike in
@@ -88,7 +88,7 @@ does everything — large rewrite of local PDF/PPTX generation, not ship-now;
 
 ## Onboarding flow (the `pinmeto-setup` skill)
 
-1. **Data connection (required):** download `PinMeTo.mcpb` from the GitHub release,
+1. **Data connection (required):** download `pinmeto-location-mcp.mcpb` from the GitHub release,
    double-click (or drag into Settings), and enter Account ID, App ID, and App
    Secret from [Account Settings → API](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
 2. **Reports (optional):** add the `PinMeTo/claude-plugins` marketplace and install
@@ -124,7 +124,7 @@ customers are on Desktop. Documented CLI path is the npm package / manual
 
 ## Success criteria
 
-- A Claude Desktop customer installs `PinMeTo.mcpb`, is prompted for the three
+- A Claude Desktop customer installs `pinmeto-location-mcp.mcpb`, is prompted for the three
   credentials, and `pinmeto_get_locations` returns data.
 - Installing the marketplace plugin adds the report skill with no second server and
   no duplicate-tools warning.
