@@ -17,7 +17,7 @@ This plan covers Phase 0 through a plugin that installs and works from a local m
 ## Global Constraints
 
 - Node `>= 18`. The skill's `package.json` declares `engines.node: ">=18"`; the esbuild target must match.
-- The plugin's `.mcp.json` server key is `pinmeto`. The skill's tool calls depend on the twelve `pinmeto_*` tool names, which do not change in this plan.
+- The plugin's `.mcp.json` server key is `pinmeto`. The skill's tool calls depend on the twelve `pinmeto_*` tool names, which do not change in this plan. (Amended 2026-08-08: the server key was renamed to `pinmeto-locations` post-release — Claude's plugin UI renders the key verbatim as the connector label, and the bare `pinmeto` read as generic. The rename shifts the tool namespace prefix to `mcp__pinmeto-locations__pinmeto_*`; the skill still calls tools by their bare `pinmeto_*` names, so nothing broke. See PinMeTo/claude-plugins#1.)
 - Plugin major version tracks the MCP server major. Server 4.x gives plugin 4.x.
 - Every tool keeps `annotations.readOnlyHint: true`. This server never writes.
 - Never commit `node_modules` or the skill's sample `.pdf` / `.pptx` fixtures into `claude-plugins`. Expected payload is roughly 3 MB (measured: 3.1 MB, mostly the 1.3 MB server bundle plus ~1.35 MB of brand fonts and logos the reports depend on). Task 6's automated gate is the enforcing number: it fails above 5 MB.
@@ -730,6 +730,10 @@ If Task 1 selected the fallback shape, omit the entire `userConfig` block.
 - [ ] **Step 4: Write the server declaration**
 
 `plugins/pinmeto-locations/.mcp.json`:
+
+> Amended 2026-08-08: the server key `pinmeto` was later renamed to
+> `pinmeto-locations` so the connector label reads consistently in Claude's
+> plugin UI (PinMeTo/claude-plugins#1). The snippet below is as originally scaffolded.
 
 ```json
 {

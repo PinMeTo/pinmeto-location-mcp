@@ -151,6 +151,11 @@ exclusions and makes leakage structurally impossible.
 
 ### .mcp.json
 
+> Amended 2026-08-08: the server key `pinmeto` was later renamed to
+> `pinmeto-locations` so Claude's plugin UI shows a branded connector label
+> instead of the bare `pinmeto` (PinMeTo/claude-plugins#1). Tool names are
+> unaffected; only the `mcp__<key>__*` namespace prefix changes.
+
 ```json
 {
   "mcpServers": {
