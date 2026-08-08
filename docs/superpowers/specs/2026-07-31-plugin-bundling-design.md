@@ -62,7 +62,7 @@ substitute as `${user_config.KEY}` in MCP server configs, and `sensitive: true`
 routes the value to the macOS Keychain. `${user_config.*}` is rejected in fields
 that run through a shell (hook shell-commands, monitor commands) because that
 would be command injection; MCP `env` values are passed to the process directly
-and are an allowed substitution site.
+and are an allowed substitution site. (Superseded 2026-08-08: this proved false for Claude Desktop — see Phase 0 (resolved 2026-08-08) below and `2026-08-08-desktop-install-split-design.md`.)
 
 **Install in Claude Desktop.** Per [Use plugins in
 Claude](https://support.claude.com/en/articles/13837440-use-plugins-in-claude):

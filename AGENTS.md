@@ -95,7 +95,7 @@ title on every tool. All other annotations use SDK defaults. If a future tool wr
 ## Build Artifacts
 
 - `src/generated/version.ts` is a **tracked, generated file** — regenerated from `package.json` by `scripts/generate-version.mjs` on every `prebuild`/`pretest`. Do not edit it, and do not add it to `.gitignore`; it is committed so bare `npx tsc`/`npx vitest` work on a fresh checkout.
-- `npm run bundle` emits `dist/index.mjs`, a self-contained single-file server consumed by the `PinMeTo/claude-plugins` marketplace repo. It is attached to GitHub releases by `release:draft` and excluded from the `.mcpb` via `.mcpbignore`.
+- `npm run bundle` emits `dist/index.mjs`, a self-contained single-file server bundle. It was vendored by the `PinMeTo/claude-plugins` marketplace repo; as of 2026-08-08 that marketplace is skill-only and no longer consumes it, so this artifact is currently unused pending a decision to retire it. It is still attached to GitHub releases by `release:draft` and excluded from the `.mcpb` via `.mcpbignore`.
 
 ## Failure Contracts
 
