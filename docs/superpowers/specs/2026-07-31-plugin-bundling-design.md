@@ -325,7 +325,7 @@ Note the plugin versioning footgun: with `version` set in `plugin.json`, users
 receive nothing until it is bumped, regardless of new commits. The derived bump
 in step 3 is what makes a release visible.
 
-## Phase 0: the spike (blocking)
+## Phase 0: the spike (resolved 2026-08-08)
 
 The plugins reference is written for Claude Code. No page confirms Claude Desktop
 renders the `userConfig` dialog, or that a plugin's stdio server gets Desktop's
@@ -334,7 +334,7 @@ from a local path, and answer four questions in Claude Desktop specifically.
 
 | Question | If no |
 |---|---|
-| Does `userConfig` render a credential prompt? | Fall back: plugin ships the skill only, and `SETUP.md` walks the user through the `.mcpb` install |
+| Does `userConfig` render a credential prompt? | Resolved 2026-08-08: Claude Desktop does NOT render the plugin `userConfig` prompt (verified on the latest Desktop — no dialog, no Customize panel, env left as literal `${user_config.*}`). Shipped the fallback: the credentialed server ships as the `.mcpb` Desktop Extension and the marketplace plugin is skill-only. See [2026-08-08-desktop-install-split-design.md](2026-08-08-desktop-install-split-design.md). |
 | Does the stdio server start, and with whose Node? | Same fallback. Requiring a user-installed Node kills this for the audience |
 | Does the bundled skill activate in Desktop chat? | Approach A is dead; revert to option B |
 | Can `generate_pdf.py` run (reportlab, python-pptx, matplotlib)? | Pre-existing condition, not caused by this change. Record and continue |
