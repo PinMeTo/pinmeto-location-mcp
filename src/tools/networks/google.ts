@@ -236,6 +236,7 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_google_insights',
     {
+      title: 'Google insights',
       description:
         'Fetch Google metrics for all locations, or a single location if storeId provided. ' +
         'Supports time aggregation (default: total) and period comparisons.\n\n' +
@@ -463,6 +464,7 @@ export function getGoogleRatings(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_google_ratings',
     {
+      title: 'Google ratings',
       description:
         'Fetch Google rating statistics (averageRating, totalReviews, distribution) for all locations, or a single location.\n\n' +
         'Returns aggregate statistics only. For individual review text and sentiment analysis, use pinmeto_get_google_reviews.\n\n' +
@@ -563,6 +565,7 @@ export function getGoogleReviews(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_google_reviews',
     {
+      title: 'Google reviews',
       description:
         'Fetch individual Google reviews with pagination and filtering for sentiment analysis.\n\n' +
         'For aggregate statistics (averageRating, totalReviews), use pinmeto_get_google_ratings instead.\n\n' +
@@ -715,6 +718,7 @@ export function getGoogleKeywords(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_google_keywords',
     {
+      title: 'Google search keywords',
       description:
         'Fetch Google keywords for all locations, or a single location if storeId provided.\n\n' +
         'Data Lag Warning:\n' +
@@ -825,6 +829,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_google_review_insights',
     {
+      title: 'Google review analysis',
       description:
         'Summarize Google reviews into rating and sentiment statistics.\n\n' +
         'Computes aggregates over the matched reviews server-side and returns the summary ' +

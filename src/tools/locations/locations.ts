@@ -18,6 +18,7 @@ export function getLocation(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_location',
     {
+      title: 'Get location',
       description:
         'Get details for a SINGLE location by store ID. Returns structured location data including address, contact info, and network connections.\n\n' +
         'Error Handling:\n' +
@@ -96,6 +97,7 @@ export function getLocations(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_locations',
     {
+      title: 'Get all locations',
       description:
         'Get ALL locations with pagination and filtering. Uses in-memory cache (5-min TTL) for fast queries on large datasets.\n\n' +
         'Examples:\n' +
@@ -276,6 +278,7 @@ export function searchLocations(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_search_locations',
     {
+      title: 'Search locations',
       description:
         'Search ALL locations by name, address, store ID, or location descriptor. Returns lightweight results for quick discovery. Use pinmeto_get_location with storeId for full details.\n\n' +
         'Error Handling:\n' +

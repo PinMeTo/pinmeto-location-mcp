@@ -386,7 +386,7 @@ describe('Locations', () => {
 });
 
 describe('Tool Annotations', () => {
-  it('should register all 11 tools with readOnlyHint annotations', async () => {
+  it('should register all 12 tools with readOnlyHint annotations and titles', async () => {
     const server = createMcpServer();
     const testTransport = new StdioServerTransport();
 
@@ -442,10 +442,12 @@ describe('Tool Annotations', () => {
     const tools = toolsResponse.result.tools;
     expect(tools.length).toBe(12);
 
-    // Verify each tool has readOnlyHint: true
+    // Directory submission requires a title and readOnlyHint on every tool.
     for (const tool of tools) {
       expect(tool.annotations).toBeDefined();
       expect(tool.annotations.readOnlyHint).toBe(true);
+      expect(tool.title, `${tool.name} is missing a title`).toBeTruthy();
+      expect(tool.title).not.toMatch(/^pinmeto_/);
     }
   });
 

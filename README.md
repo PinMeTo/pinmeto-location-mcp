@@ -19,7 +19,7 @@ Ask your AI assistant questions like:
 
 See [Example Prompts](docs/USE-CASES.md) for more ideas.
 
-> 📊 **Turn your data into reports.** Pair this server with the [PinMeTo Location Reports Skill](https://github.com/PinMeTo/pinmeto-location-reports-skill) to generate formatted PDF and PowerPoint reports across all your locations. See [Creating Reports](#creating-reports) below.
+> 📊 **Turn your data into reports.** On top of the `.mcpb` data connection, install the [PinMeTo Locations plugin](https://github.com/PinMeTo/claude-plugins) to add formatted PDF and PowerPoint reports across all your locations. See [Creating Reports](#creating-reports) below.
 
 ---
 
@@ -27,19 +27,26 @@ See [Example Prompts](docs/USE-CASES.md) for more ideas.
 
 ### Claude Desktop (Recommended)
 
-1. **Download the installer:** [pinmeto-location-mcp.mcpb](https://github.com/PinMeTo/pinmeto-location-mcp/releases/download/v4.0.0/pinmeto-location-mcp.mcpb)
+1. **Download the installer:** click the `.mcpb` badge above, or grab [pinmeto-location-mcp.mcpb](https://github.com/PinMeTo/pinmeto-location-mcp/releases/download/v4.0.0/pinmeto-location-mcp.mcpb) from the latest release
 
-2. **Double-click** the downloaded file (with Claude Desktop open)
+2. **Double-click** the downloaded file (with Claude Desktop open), or drag it into Claude Desktop → Settings → Extensions
 
-3. **Enter your PinMeTo API credentials** when prompted
+3. **Enter your PinMeTo API credentials** (Account ID, App ID, App Secret) in the install dialog
 
    <img width="655" alt="Credential dialog" src="https://github.com/user-attachments/assets/30af64b3-81c3-4bb1-9b05-656831004757" />
 
-4. **Done!** Start asking questions about your locations.
+4. **Done!** This installs the data connection — the MCP server and its twelve tools. Start asking questions about your locations.
 
-### Where to Find Your Credentials
+Get your credentials from [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
 
-Get your API credentials from [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
+**Reports (optional).** To also generate PDF and PowerPoint reports:
+
+1. Open **Customize** in the sidebar, go to **Plugins**
+2. Click **+** in Personal plugins, choose **Add marketplace**
+3. Enter `PinMeTo/claude-plugins`
+4. Install **PinMeTo Locations** — this adds the report skill
+
+> **Note:** While the plugin repository is private, installing requires the Claude GitHub App to have access to it.
 
 ### Other Installation Options
 
@@ -47,6 +54,7 @@ Get your API credentials from [PinMeTo Account Settings](https://places.pinmeto.
 |----------|--------|
 | VS Code | Click the VS Code badge above |
 | Cursor | Click the Cursor badge above |
+| Claude Code (CLI) | The plugin doesn't bundle a server. Run the npm package directly: `npx -y @pinmeto/pinmeto-location-mcp` with the three `PINMETO_*` env vars, or use `claude mcp add` |
 | Manual | See [Manual Installation](docs/MANUAL-INSTALLATION.md) |
 
 ---
@@ -81,11 +89,12 @@ Transforms your multi-location analytics into formatted PDF and PowerPoint repor
 - Search keyword performance
 - Data-driven strategic recommendations
 
-### Installation
+The report skill comes from the [PinMeTo Locations plugin](#claude-desktop-recommended);
+the location data and tools come from the `.mcpb`. With both installed, ask for "a
+quarterly report" or "a Q4 board presentation" and the skill activates automatically.
 
-**Requirements:** This skill requires the PinMeTo MCP Server (installed above) to access your location data.
-
-Visit the [skill repository](https://github.com/PinMeTo/pinmeto-location-reports-skill) for installation instructions.
+Prefer not to install the plugin? The skill is also available standalone from the
+[skill repository](https://github.com/PinMeTo/pinmeto-location-reports-skill).
 
 ---
 
@@ -114,6 +123,23 @@ Visit the [skill repository](https://github.com/PinMeTo/pinmeto-location-reports
 - **Feature questions**: See [FAQ](docs/GETTING-STARTED.md#faq)
 - **Bug reports**: [GitHub Issues](https://github.com/PinMeTo/pinmeto-location-mcp/issues)
 - **PinMeTo account**: [PinMeTo Support](https://www.pinmeto.com/contact)
+
+---
+
+## Privacy Policy
+
+This server sends your PinMeTo API credentials to PinMeTo's API to fetch your own
+location data, and returns that data to your MCP client. It stores nothing
+remotely and transmits nothing to any third party.
+
+- **Collected:** your PinMeTo Account ID, App ID, and App Secret, supplied by you at install time.
+- **Used for:** authenticating requests to the PinMeTo API on your behalf.
+- **Stored:** credentials remain under your MCP client's control (for example, the macOS Keychain under Claude Desktop); this server never writes them to disk. Location and insights data is cached in memory for the duration of a session and never written to disk.
+- **Shared:** nothing is shared with third parties.
+- **Retained:** the server itself retains nothing after the process exits, and its in-memory location and insights cache is discarded then. Credential persistence is managed by your MCP client, not by this server.
+- **Contact:** [PinMeTo Support](https://www.pinmeto.com/contact)
+
+Full policy: https://places.pinmeto.com/listings/public/legal/privacypolicy
 
 ---
 

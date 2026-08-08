@@ -58,6 +58,7 @@ export function getAppleInsights(server: PinMeToMcpServer) {
   server.registerTool(
     'pinmeto_get_apple_insights',
     {
+      title: 'Apple Maps insights',
       description:
         'Fetch Apple metrics for all locations, or a single location if storeId provided. ' +
         'Supports time aggregation (default: total) and period comparisons.\n\n' +
