@@ -59,6 +59,9 @@ start.
 2. In the ChatGPT desktop app, open **Settings → Plugins**, then select the
    **MCPs** tab.
 3. Select **Add → Add MCP server**.
+
+   <img width="900" alt="ChatGPT desktop Plugins settings with the Add MCP server menu item highlighted" src="docs/images/chatgpt-add-mcp-server.png" />
+
 4. Enter the following values:
 
    | Field | Value |
