@@ -98,16 +98,6 @@ if (!hasArtifact) {
   console.warn('Run "npx @anthropic-ai/mcpb pack" to create it.\n');
 }
 
-// Check for the single-file bundle consumed by the claude-plugins marketplace
-const bundleFile = 'index.mjs';
-const bundlePath = join(rootDir, 'dist', bundleFile);
-const hasBundle = existsSync(bundlePath);
-
-if (!hasBundle) {
-  console.warn(`\nWarning: dist/${bundleFile} not found. Release will omit the plugin bundle.`);
-  console.warn('Run "npm run bundle" to create it.\n');
-}
-
 // Create draft GitHub release
 console.log(`\nCreating draft GitHub release ${tag}...`);
 
@@ -119,9 +109,6 @@ try {
   const ghArgs = ['release', 'create', tag, '--draft', '--title', tag, '--notes-file', notesFile];
   if (hasArtifact) {
     ghArgs.push(mcpbPath);
-  }
-  if (hasBundle) {
-    ghArgs.push(bundlePath);
   }
   run('gh', ghArgs);
   console.log(`\n✅ Draft release ${tag} created successfully!`);
