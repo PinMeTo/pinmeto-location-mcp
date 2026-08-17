@@ -1,6 +1,6 @@
 # PinMeTo Location MCP
 
-[![version](https://img.shields.io/badge/version-v4.0.0-blue)](https://github.com/PinMeTo/pinmeto-location-mcp/releases/tag/v4.0.0) [![download](https://img.shields.io/badge/download-.mcpb-green)](https://github.com/PinMeTo/pinmeto-location-mcp/releases/download/v4.0.0/pinmeto-location-mcp.mcpb) [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-007ACC?logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=pinmeto-location-mcp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40pinmeto%2Fpinmeto-location-mcp%22%5D%2C%22env%22%3A%7B%22PINMETO_ACCOUNT_ID%22%3A%22%24%7Binput%3Apinmeto-account-id%7D%22%2C%22PINMETO_APP_ID%22%3A%22%24%7Binput%3Apinmeto-app-id%7D%22%2C%22PINMETO_APP_SECRET%22%3A%22%24%7Binput%3Apinmeto-app-secret%7D%22%7D%7D) [![Install in Cursor](https://img.shields.io/badge/Cursor-Install-000000?logo=cursor)](https://cursor.com/en/install-mcp?name=PinMeTo&config=eyJ0eXBlIjoic3RkaW8iLCJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBwaW5tZXRvL3Bpbm1ldG8tbG9jYXRpb24tbWNwIl0sImVudiI6eyJQSU5NRVRPX0FDQ09VTlRfSUQiOiIke2lucHV0OnBpbm1ldG8tYWNjb3VudC1pZH0iLCJQSU5NRVRPX0FQUF9JRCI6IiR7aW5wdXQ6cGlubWV0by1hcHAtaWR9IiwiUElOTUVUT19BUFBfU0VDUkVUIjoiJHtpbnB1dDpwaW5tZXRvLWFwcC1zZWNyZXR9In19)
+[![version](https://img.shields.io/badge/version-v4.0.0-blue)](https://github.com/PinMeTo/pinmeto-location-mcp/releases/tag/v4.0.0) [![download](https://img.shields.io/badge/download-.mcpb-green)](https://github.com/PinMeTo/pinmeto-location-mcp/releases/download/v4.0.0/pinmeto-location-mcp.mcpb) [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-007ACC?logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=pinmeto-location-mcp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22github%3APinMeTo%2Fpinmeto-location-mcp%22%5D%2C%22env%22%3A%7B%22PINMETO_ACCOUNT_ID%22%3A%22%24%7Binput%3Apinmeto-account-id%7D%22%2C%22PINMETO_APP_ID%22%3A%22%24%7Binput%3Apinmeto-app-id%7D%22%2C%22PINMETO_APP_SECRET%22%3A%22%24%7Binput%3Apinmeto-app-secret%7D%22%7D%7D) [![Install in Cursor](https://img.shields.io/badge/Cursor-Install-000000?logo=cursor)](https://cursor.com/en/install-mcp?name=PinMeTo&config=eyJ0eXBlIjoic3RkaW8iLCJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImdpdGh1YjpQaW5NZVRvL3Bpbm1ldG8tbG9jYXRpb24tbWNwIl0sImVudiI6eyJQSU5NRVRPX0FDQ09VTlRfSUQiOiIke2lucHV0OnBpbm1ldG8tYWNjb3VudC1pZH0iLCJQSU5NRVRPX0FQUF9JRCI6IiR7aW5wdXQ6cGlubWV0by1hcHAtaWR9IiwiUElOTUVUT19BUFBfU0VDUkVUIjoiJHtpbnB1dDpwaW5tZXRvLWFwcC1zZWNyZXR9In19)
 
 An [MCP server](https://modelcontextprotocol.io/) that connects your [PinMeTo](https://www.pinmeto.com/) locations to AI assistants. Ask questions about your business in natural language and get instant insights from Google, Facebook, and Apple.
 
@@ -51,8 +51,8 @@ Get your credentials from [PinMeTo Account Settings](https://places.pinmeto.com/
 ### ChatGPT Desktop App
 
 The ChatGPT desktop app can run PinMeTo locally as a STDIO MCP server. You need
-[Node.js v22 or later](https://nodejs.org/) and PinMeTo API credentials before you
-start.
+[Node.js v22 or later](https://nodejs.org/), [Git](https://git-scm.com/), and
+PinMeTo API credentials before you start.
 
 1. Get your Account ID, App ID, and App Secret from
    [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
@@ -70,7 +70,7 @@ start.
    | Type | **STDIO** |
    | Command to launch | `npx` |
    | Argument 1 | `-y` |
-   | Argument 2 | `@pinmeto/pinmeto-location-mcp` |
+   | Argument 2 | `github:PinMeTo/pinmeto-location-mcp` |
    | Environment variable | `PINMETO_ACCOUNT_ID` = your Account ID |
    | Environment variable | `PINMETO_APP_ID` = your App ID |
    | Environment variable | `PINMETO_APP_SECRET` = your App Secret |
@@ -96,7 +96,7 @@ Command Prompt. Use the returned absolute path as **Command to launch**.
 |----------|--------|
 | VS Code | Click the VS Code badge above |
 | Cursor | Click the Cursor badge above |
-| Claude Code (CLI) | The plugin doesn't bundle a server. Run the npm package directly: `npx -y @pinmeto/pinmeto-location-mcp` with the three `PINMETO_*` env vars, or use `claude mcp add` |
+| Claude Code (CLI) | The plugin doesn't bundle a server. Run the server directly from GitHub: `npx -y github:PinMeTo/pinmeto-location-mcp` with the three `PINMETO_*` env vars, or use `claude mcp add` |
 | Manual | See [Manual Installation](docs/MANUAL-INSTALLATION.md) |
 
 ---

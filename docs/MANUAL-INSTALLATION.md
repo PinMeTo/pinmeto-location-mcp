@@ -10,6 +10,7 @@ This guide covers manual installation methods for developers and advanced users.
 
 - **Node.js v22+** (recommended: [NVM](https://github.com/nvm-sh/nvm))
 - **npm** (included with Node.js)
+- **Git**
 - **Claude Desktop**
 
 ### Steps
@@ -39,13 +40,13 @@ This guide covers manual installation methods for developers and advanced users.
 
 4. **Add the MCP server configuration:**
 
-   **Option A: Using npx (recommended)**
+   **Option A: Using npx with GitHub (recommended)**
    ```json
    {
      "mcpServers": {
        "PinMeTo": {
          "command": "npx",
-         "args": ["-y", "@pinmeto/pinmeto-location-mcp"],
+         "args": ["-y", "github:PinMeTo/pinmeto-location-mcp"],
          "env": {
            "PINMETO_ACCOUNT_ID": "your-account-id",
            "PINMETO_APP_ID": "your-app-id",
