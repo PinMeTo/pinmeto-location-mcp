@@ -4,7 +4,7 @@
 
 An [MCP server](https://modelcontextprotocol.io/) that connects your [PinMeTo](https://www.pinmeto.com/) locations to AI assistants. Ask questions about your business in natural language and get instant insights from Google, Facebook, and Apple.
 
-Works with any MCP-compatible client including Claude Desktop, the ChatGPT desktop app, VS Code, Cursor, and more.
+Works with MCP-compatible clients that can run local STDIO servers, including Claude Desktop, the ChatGPT desktop app, VS Code, Cursor, and more.
 
 ---
 
@@ -56,7 +56,8 @@ start.
 
 1. Get your Account ID, App ID, and App Secret from
    [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
-2. In the ChatGPT desktop app, open **Settings → Plugins**.
+2. In the ChatGPT desktop app, open **Settings → Plugins**, then select the
+   **MCPs** tab.
 3. Select **Add → Add MCP server**.
 4. Enter the following values:
 
@@ -77,8 +78,9 @@ start.
 6. Start a new Codex task in the desktop app. Enter `/mcp` to confirm that
    `PinMeTo` is connected, then try: “List my PinMeTo locations.”
 
-If the server cannot find `npx`, run `command -v npx` in a terminal and use the
-returned absolute path as **Command to launch**.
+If the server cannot find `npx`, locate it with `command -v npx` on macOS/Linux,
+`(Get-Command npx).Source` in Windows PowerShell, or `where npx` in Windows
+Command Prompt. Use the returned absolute path as **Command to launch**.
 
 > **ChatGPT web:** This local STDIO setup is available to Codex in the ChatGPT
 > desktop app. ChatGPT on the web does not read local MCP configuration; web
