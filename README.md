@@ -25,7 +25,7 @@ See [Example Prompts](docs/USE-CASES.md) for more ideas.
 
 ## Installation
 
-### Claude Desktop (Recommended)
+### Claude Desktop
 
 1. **Download the installer:** click the `.mcpb` badge above, or grab [pinmeto-location-mcp.mcpb](https://github.com/PinMeTo/pinmeto-location-mcp/releases/download/v4.0.0/pinmeto-location-mcp.mcpb) from the latest release
 
@@ -126,7 +126,7 @@ Transforms your multi-location analytics into formatted PDF and PowerPoint repor
 - Search keyword performance
 - Data-driven strategic recommendations
 
-The report skill comes from the [PinMeTo Locations plugin](#claude-desktop-recommended);
+The report skill comes from the [PinMeTo Locations plugin](#claude-desktop);
 the location data and tools come from the `.mcpb`. With both installed, ask for "a
 quarterly report" or "a Q4 board presentation" and the skill activates automatically.
 
