@@ -4,7 +4,7 @@
 
 An [MCP server](https://modelcontextprotocol.io/) that connects your [PinMeTo](https://www.pinmeto.com/) locations to AI assistants. Ask questions about your business in natural language and get instant insights from Google, Facebook, and Apple.
 
-Works with any MCP-compatible client including the ChatGPT desktop app, Claude Desktop, VS Code, Cursor, and more.
+Works with any MCP-compatible client including Claude Desktop, the ChatGPT desktop app, VS Code, Cursor, and more.
 
 ---
 
@@ -24,6 +24,29 @@ See [Example Prompts](docs/USE-CASES.md) for more ideas.
 ---
 
 ## Installation
+
+### Claude Desktop (Recommended)
+
+1. **Download the installer:** click the `.mcpb` badge above, or grab [pinmeto-location-mcp.mcpb](https://github.com/PinMeTo/pinmeto-location-mcp/releases/download/v4.0.0/pinmeto-location-mcp.mcpb) from the latest release
+
+2. **Double-click** the downloaded file (with Claude Desktop open), or drag it into Claude Desktop → Settings → Extensions
+
+3. **Enter your PinMeTo API credentials** (Account ID, App ID, App Secret) in the install dialog
+
+   <img width="655" alt="Credential dialog" src="https://github.com/user-attachments/assets/30af64b3-81c3-4bb1-9b05-656831004757" />
+
+4. **Done!** This installs the data connection — the MCP server and its twelve tools. Start asking questions about your locations.
+
+Get your credentials from [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
+
+**Reports (optional).** To also generate PDF and PowerPoint reports:
+
+1. Open **Customize** in the sidebar, go to **Plugins**
+2. Click **+** in Personal plugins, choose **Add marketplace**
+3. Enter `PinMeTo/claude-plugins`
+4. Install **PinMeTo Locations** — this adds the report skill
+
+> **Note:** While the plugin repository is private, installing requires the Claude GitHub App to have access to it.
 
 ### ChatGPT Desktop App
 
@@ -61,29 +84,6 @@ returned absolute path as **Command to launch**.
 > desktop app. ChatGPT on the web does not read local MCP configuration; web
 > Chat and Work use remote MCP tools supplied by plugins instead. See OpenAI's
 > [MCP documentation](https://learn.chatgpt.com/docs/extend/mcp).
-
-### Claude Desktop (Recommended)
-
-1. **Download the installer:** click the `.mcpb` badge above, or grab [pinmeto-location-mcp.mcpb](https://github.com/PinMeTo/pinmeto-location-mcp/releases/download/v4.0.0/pinmeto-location-mcp.mcpb) from the latest release
-
-2. **Double-click** the downloaded file (with Claude Desktop open), or drag it into Claude Desktop → Settings → Extensions
-
-3. **Enter your PinMeTo API credentials** (Account ID, App ID, App Secret) in the install dialog
-
-   <img width="655" alt="Credential dialog" src="https://github.com/user-attachments/assets/30af64b3-81c3-4bb1-9b05-656831004757" />
-
-4. **Done!** This installs the data connection — the MCP server and its twelve tools. Start asking questions about your locations.
-
-Get your credentials from [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
-
-**Reports (optional).** To also generate PDF and PowerPoint reports:
-
-1. Open **Customize** in the sidebar, go to **Plugins**
-2. Click **+** in Personal plugins, choose **Add marketplace**
-3. Enter `PinMeTo/claude-plugins`
-4. Install **PinMeTo Locations** — this adds the report skill
-
-> **Note:** While the plugin repository is private, installing requires the Claude GitHub App to have access to it.
 
 ### Other Installation Options
 
