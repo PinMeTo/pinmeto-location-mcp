@@ -4,7 +4,7 @@
 
 An [MCP server](https://modelcontextprotocol.io/) that connects your [PinMeTo](https://www.pinmeto.com/) locations to AI assistants. Ask questions about your business in natural language and get instant insights from Google, Facebook, and Apple.
 
-Works with any MCP-compatible client including Claude Desktop, VS Code, Cursor, and more.
+Works with any MCP-compatible client including the ChatGPT desktop app, Claude Desktop, VS Code, Cursor, and more.
 
 ---
 
@@ -24,6 +24,43 @@ See [Example Prompts](docs/USE-CASES.md) for more ideas.
 ---
 
 ## Installation
+
+### ChatGPT Desktop App
+
+The ChatGPT desktop app can run PinMeTo locally as a STDIO MCP server. You need
+[Node.js v22 or later](https://nodejs.org/) and PinMeTo API credentials before you
+start.
+
+1. Get your Account ID, App ID, and App Secret from
+   [PinMeTo Account Settings](https://places.pinmeto.com/account-settings/pinmeto/api/v3).
+2. In the ChatGPT desktop app, open **Settings → Plugins**.
+3. Select **Add → Add MCP server**.
+4. Enter the following values:
+
+   | Field | Value |
+   |-------|-------|
+   | Name | `PinMeTo` |
+   | Type | **STDIO** |
+   | Command to launch | `npx` |
+   | Argument 1 | `-y` |
+   | Argument 2 | `@pinmeto/pinmeto-location-mcp` |
+   | Environment variable | `PINMETO_ACCOUNT_ID` = your Account ID |
+   | Environment variable | `PINMETO_APP_ID` = your App ID |
+   | Environment variable | `PINMETO_APP_SECRET` = your App Secret |
+
+   Add each argument and environment variable in its own row. Leave
+   **Environment variable passthrough** and **Working directory** empty.
+5. Select **Save**, then restart when prompted.
+6. Start a new Codex task in the desktop app. Enter `/mcp` to confirm that
+   `PinMeTo` is connected, then try: “List my PinMeTo locations.”
+
+If the server cannot find `npx`, run `command -v npx` in a terminal and use the
+returned absolute path as **Command to launch**.
+
+> **ChatGPT web:** This local STDIO setup is available to Codex in the ChatGPT
+> desktop app. ChatGPT on the web does not read local MCP configuration; web
+> Chat and Work use remote MCP tools supplied by plugins instead. See OpenAI's
+> [MCP documentation](https://learn.chatgpt.com/docs/extend/mcp).
 
 ### Claude Desktop (Recommended)
 
@@ -113,6 +150,7 @@ Prefer not to install the plugin? The skill is also available standalone from th
 ## Requirements
 
 - An MCP-compatible client ([Claude Desktop](https://claude.ai/download), [VS Code](https://code.visualstudio.com/), [Cursor](https://cursor.com/), or others)
+- For local installation in the ChatGPT desktop app: Node.js v22 or later
 - [PinMeTo](https://www.pinmeto.com/) account with API access
 
 ---

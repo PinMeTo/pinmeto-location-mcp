@@ -7,8 +7,9 @@ Welcome to PinMeTo MCP. This guide helps you get up and running after installati
 ## Installing
 
 1. **Install the `.mcpb`.** Download `pinmeto-location-mcp.mcpb` from the [latest release](https://github.com/PinMeTo/pinmeto-location-mcp/releases/latest) and double-click it with Claude Desktop open (or drag it into Claude Desktop → Settings → Extensions). Enter your Account ID, App ID, and App Secret when prompted. This installs the data connection — the MCP server and its twelve tools.
-2. **Add reports (optional).** To also generate PDF/PowerPoint reports, add the `PinMeTo/claude-plugins` marketplace (Customize → Plugins → **+** → Add marketplace) and install **PinMeTo Locations**. This adds the report skill on top of the `.mcpb`.
-3. **Claude Code (CLI).** The plugin doesn't bundle a server. Run the npm package directly — `npx -y @pinmeto/pinmeto-location-mcp` with the three `PINMETO_*` env vars — or use `claude mcp add`.
+2. **ChatGPT desktop app.** Add a local STDIO server under Settings → Plugins → Add → Add MCP server. Use `npx` as the command, `-y` and `@pinmeto/pinmeto-location-mcp` as separate arguments, and add your Account ID, App ID, and App Secret as the three `PINMETO_*` environment variables.
+3. **Add reports (optional).** To also generate PDF/PowerPoint reports, add the `PinMeTo/claude-plugins` marketplace (Customize → Plugins → **+** → Add marketplace) and install **PinMeTo Locations**. This adds the report skill on top of the `.mcpb`.
+4. **Claude Code (CLI).** The plugin doesn't bundle a server. Run the npm package directly — `npx -y @pinmeto/pinmeto-location-mcp` with the three `PINMETO_*` env vars — or use `claude mcp add`.
 
 See the [README](../README.md#installation) for full details.
 
@@ -18,7 +19,7 @@ See the [README](../README.md#installation) for full details.
 
 After installing, verify that everything is working:
 
-1. **Open your MCP client** (Claude Desktop, VS Code, Cursor, etc.)
+1. **Open your MCP client** (ChatGPT desktop app, Claude Desktop, VS Code, Cursor, etc.)
 2. **Start a new conversation**
 3. **Ask:** "Can you list my PinMeTo locations?"
 
@@ -131,7 +132,7 @@ Each installation is configured with one set of credentials. To work with multip
 You need an active PinMeTo account with API access. Visit [pinmeto.com](https://www.pinmeto.com/) to learn more about PinMeTo.
 
 ### Which AI clients are supported?
-This MCP works with any client that supports the [Model Context Protocol](https://modelcontextprotocol.io/), including Claude Desktop, VS Code, Cursor, and others. Web-based AI interfaces (like claude.ai) typically do not support MCP servers.
+This MCP works with any client that supports the [Model Context Protocol](https://modelcontextprotocol.io/), including the ChatGPT desktop app, Claude Desktop, VS Code, Cursor, and others. The local ChatGPT setup is available to Codex in the desktop app; ChatGPT web does not read local MCP configuration.
 
 ### Can I modify my location data?
 No. The PinMeTo MCP is read-only. You can view and analyze data, but any changes must be made directly in the PinMeTo platform.
