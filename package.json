@@ -9,7 +9,7 @@
     "build": "npm run clean && node manifest.js && tsc && cp package.json build/ && node update-build-version.js",
     "build:test": "VERSION_POSTFIX=test-$(date -u +%Y%m%dT%H%M%SZ) npm run build",
     "bundle": "node scripts/build-bundle.mjs",
-    "pack:test": "npm run build:test && npx @anthropic-ai/mcpb pack",
+    "pack:test": "npm run build:test && npx @anthropic-ai/mcpb pack && npm run verify:mcpb",
     "clean": "node -e \"require('fs').rmSync('build', {recursive: true, force: true})\"",
     "prepare": "npm run build",
     "start": "node --env-file=.env.local build/index.js",
@@ -20,7 +20,8 @@
     "changeset:add": "changeset add",
     "release:prepare": "changeset status --verbose",
     "release:version": "changeset version && node scripts/format-changelog.js && node scripts/update-readme-badges.js",
-    "release:draft": "npm test && npm run build && npm run bundle && npx @anthropic-ai/mcpb pack && node scripts/create-gh-release.js",
+    "verify:mcpb": "node scripts/verify-mcpb.mjs",
+    "release:draft": "npm test && npm run build && npm run bundle && npx @anthropic-ai/mcpb pack && npm run verify:mcpb && node scripts/create-gh-release.js",
     "release:publish": "gh release edit $(git describe --tags --abbrev=0) --draft=false"
   },
   "repository": {

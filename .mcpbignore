@@ -1,2 +1,47 @@
+# Only the runtime ships in the .mcpb: build/, node_modules/, package.json,
+# manifest.json, the icon in img/, README and LICENSE. Everything else is source,
+# tests, tooling, or local agent scratch.
+#
+# Rules use gitignore semantics (the packer uses the `ignore` library). Keep every
+# pattern anchored with a leading "/" so it matches only at the repo root. A bare
+# "dist" also matched node_modules/*/dist and stripped the SDK's compiled files
+# from the v4.1.0 bundle. The packer does not read .gitignore, so untracked local
+# directories end up in the bundle unless listed here; Claude Desktop rejects any
+# bundle containing a path with ".." in it (v4.1.0 shipped .superpowers/ review
+# diffs named "review-<sha>..<sha>.diff" and failed to install).
+
+# Local agent scratch, editor state, CI
+/.superpowers
+/.claude
+/.vscode
+/.github
+
+# Source, tests, docs (the runtime is /build)
+/src
+/tests
+/docs
+/.changeset
+/AGENTS.md
+/CLAUDE.md
+/CHANGELOG.md
+/MIGRATION.md
+
+# Build and release tooling
+/scripts
+/manifest.js
+/update-build-version.js
+/vitest.config.ts
+/commitlint.config.js
+/.prettierrc.js
+/.prettierignore
+/.npmignore
+/tsconfig.json
+/package-lock.json
+
 # The single-file plugin bundle is a separate artifact; the .mcpb runs build/index.js
-dist
+/dist
+
+# Local secrets and artifacts
+/.env.local
+/*.mcpb
+.DS_Store

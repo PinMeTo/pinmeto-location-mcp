@@ -106,10 +106,16 @@ If you want to create the one-click installer (.mcpb file) yourself:
    npm run build
    ```
 
-2. Generate the installer:
+2. Generate and verify the installer:
    ```bash
    npx @anthropic-ai/mcpb pack
+   npm run verify:mcpb
    ```
+
+   The verify step unpacks the bundle, checks it contains only the runtime files and no
+   paths Claude Desktop would reject, and starts the packed server to confirm it answers
+   `tools/list`. Anything untracked in your working directory is packed unless it is
+   listed in `.mcpbignore`, so run this before sharing a bundle.
 
 3. This creates a `.mcpb` file in your project directory.
 
