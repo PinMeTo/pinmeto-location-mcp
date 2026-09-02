@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.1.0] - 2026-09-02
+
+### Added
+
+- Add a single-file esbuild bundle build target for plugin distribution, and resolve the package name and version at build time instead of reading package.json at runtime. (`03a315c`)
+
+### Fixed
+
+- Add display titles to all 12 tools and document the privacy policy, both required for directory submission. (`03a315c`)
+- Fix every tool call failing in Claude Desktop with "invalid outputSchema: JSON Schema declares an unsupported dialect (draft-07)". The v1 MCP SDK (`@modelcontextprotocol/sdk` 1.30.0) emitted draft-07 on every `inputSchema` and `outputSchema` with no way to opt into 2020-12 (modelcontextprotocol/typescript-sdk#2084), and Claude Desktop now rejects that dialect. Migrated to the v2 SDK (`@modelcontextprotocol/server` 2.0.0) and Zod 4, which advertise JSON Schema 2020-12 on all 12 tools. Requires Node 20 or newer. (`c374497`)
+
 ## [4.0.0] - 2026-07-30
 
 ### Changed
