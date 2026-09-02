@@ -53,7 +53,7 @@ export function getLocation(server: PinMeToMcpServer) {
       const textContent = formatContent(result.data, response_format, formatLocationAsMarkdown);
 
       return {
-        content: [{ type: 'text', text: textContent }],
+        content: [{ type: 'text' as const, text: textContent }],
         structuredContent: { data: result.data }
       };
     }
@@ -267,7 +267,7 @@ export function getLocations(server: PinMeToMcpServer) {
       // Note: isError is NOT set because we ARE returning data (albeit stale)
       return {
         ...(stale ? { isStale: true } : {}),
-        content: [{ type: 'text', text: responseText }],
+        content: [{ type: 'text' as const, text: responseText }],
         structuredContent
       };
     }
@@ -332,7 +332,7 @@ export function searchLocations(server: PinMeToMcpServer) {
         const errorMessage = `Error: Failed for search query '${query}': ${lastError.message}`;
         return {
           isError: true,
-          content: [{ type: 'text', text: errorMessage }],
+          content: [{ type: 'text' as const, text: errorMessage }],
           structuredContent: {
             data: [],
             totalMatches: 0,
@@ -397,7 +397,7 @@ export function searchLocations(server: PinMeToMcpServer) {
       }
 
       return {
-        content: [{ type: 'text', text: resultText }],
+        content: [{ type: 'text' as const, text: resultText }],
         structuredContent
       };
     }

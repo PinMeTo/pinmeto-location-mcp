@@ -418,8 +418,8 @@ export const LocationOutputSchema = {
         .describe('Geographic coordinates'),
       contact: ContactSchema.optional().describe('Contact information'),
       openHours: OpenHoursSchema.optional().describe('Opening hours by day'),
-      google: z.record(z.unknown()).optional().describe('Google-specific data'),
-      fb: z.record(z.unknown()).optional().describe('Facebook-specific data')
+      google: z.record(z.string(), z.unknown()).optional().describe('Google-specific data'),
+      fb: z.record(z.string(), z.unknown()).optional().describe('Facebook-specific data')
     })
     .passthrough()
     .optional()
@@ -436,7 +436,7 @@ export const LocationOutputSchema = {
  */
 export const LocationsOutputSchema = {
   data: z
-    .array(z.record(z.unknown()))
+    .array(z.record(z.string(), z.unknown()))
     .optional()
     .describe('Array of location objects (absent on error)'),
   totalCount: z.number().nonnegative().optional().describe('Total locations matching filters'),
@@ -703,7 +703,7 @@ export const LargeDatasetWarningOptionSchema = z.object({
   option: z.string().min(1).describe('Option identifier (e.g., "representative_sample", "proceed_full")'),
   description: z.string().min(1).describe('Human-readable description of this option'),
   estimatedTokens: z.number().int().nonnegative().describe('Estimated tokens for this option'),
-  parameters: z.record(z.unknown()).describe('Parameters to pass to proceed with this option')
+  parameters: z.record(z.string(), z.unknown()).describe('Parameters to pass to proceed with this option')
 });
 
 export const LargeDatasetWarningSchema = z.object({
