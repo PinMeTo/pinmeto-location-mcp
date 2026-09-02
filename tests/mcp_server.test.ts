@@ -462,6 +462,16 @@ describe('Tool Annotations', () => {
     const testTransport = new StdioServerTransport();
 
     const responses: any[] = [];
+    const waitForResponse = async (id: number, timeoutMs = 5000) => {
+      const deadline = Date.now() + timeoutMs;
+      while (Date.now() < deadline) {
+        const match = responses.find(r => r.id === id);
+        if (match) return match;
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      throw new Error(`No response with id ${id} within ${timeoutMs}ms`);
+    };
+
     const originalWrite = process.stdout.write.bind(process.stdout);
     process.stdout.write = ((chunk: any) => {
       try {
@@ -472,34 +482,35 @@ describe('Tool Annotations', () => {
       return true;
     }) as typeof process.stdout.write;
 
-    await server.connect(testTransport);
+    let toolsResponse: any;
+    try {
+      await server.connect(testTransport);
 
-    testTransport.onmessage?.({
-      method: 'initialize',
-      params: {
-        protocolVersion: '2025-06-18',
-        capabilities: {},
-        clientInfo: { name: 'test-client', version: '0.0.0' }
-      },
-      jsonrpc: '2.0',
-      id: 0
-    });
+      testTransport.onmessage?.({
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-06-18',
+          capabilities: {},
+          clientInfo: { name: 'test-client', version: '0.0.0' }
+        },
+        jsonrpc: '2.0',
+        id: 0
+      });
+      await waitForResponse(0);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
+      testTransport.onmessage?.({
+        method: 'tools/list',
+        params: {},
+        jsonrpc: '2.0',
+        id: 1
+      });
+      toolsResponse = await waitForResponse(1);
+    } finally {
+      process.stdout.write = originalWrite;
+      await testTransport.close();
+    }
 
-    testTransport.onmessage?.({
-      method: 'tools/list',
-      params: {},
-      jsonrpc: '2.0',
-      id: 1
-    });
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    process.stdout.write = originalWrite;
-    await testTransport.close();
-
-    const tools = responses.find(r => r.id === 1)?.result?.tools;
+    const tools = toolsResponse?.result?.tools;
     expect(tools).toBeDefined();
     expect(tools.length).toBe(12);
 
