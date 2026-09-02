@@ -7,8 +7,9 @@
  * 1. Claude Desktop refuses to install any bundle containing a path with ".." in it
  *    (path traversal check). Untracked local directories are packed unless listed in
  *    .mcpbignore, and one of them held files named "review-<sha>..<sha>.diff".
- * 2. An unanchored "dist" rule in .mcpbignore stripped node_modules/<pkg>/dist too, so
- *    the server crashed on startup with MODULE_NOT_FOUND once installed.
+ * 2. An unanchored "dist" rule in the old .mcpbignore blocklist stripped
+ *    node_modules/<pkg>/dist too, so the server crashed on startup with MODULE_NOT_FOUND
+ *    once installed. .mcpbignore is now a deny-by-default allowlist.
  *
  * Checks: no unsafe paths, only the expected top-level entries, and the server inside
  * the bundle actually starts and answers tools/list.
@@ -23,6 +24,9 @@ import { dirname } from 'path';
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const mcpbPath = join(rootDir, 'pinmeto-location-mcp.mcpb');
+
+// Keep in step with the "should register all 12 tools" test in tests/mcp_server.test.ts.
+const EXPECTED_TOOL_COUNT = 12;
 
 const ALLOWED_TOP_LEVEL = new Set([
   'build',
@@ -58,7 +62,7 @@ const unexpected = [...topLevel].filter(name => !ALLOWED_TOP_LEVEL.has(name));
 if (unexpected.length > 0) {
   fail(
     `Unexpected top-level entries in bundle: ${unexpected.join(', ')}\n` +
-      'Add them to .mcpbignore (anchor with a leading "/" so the rule only matches the repo root).'
+      'The .mcpbignore allowlist should already exclude them; check that "/*" is still the first rule.'
   );
 }
 
@@ -116,6 +120,9 @@ try {
   }
 
   const tools = toolsResponse.result.tools;
+  if (tools.length !== EXPECTED_TOOL_COUNT) {
+    fail(`Packed server must expose ${EXPECTED_TOOL_COUNT} tools; found ${tools.length}`);
+  }
   const dialects = new Set(tools.flatMap(t => [t.inputSchema?.$schema, t.outputSchema?.$schema]));
   const expectedDialect = 'https://json-schema.org/draft/2020-12/schema';
   if (dialects.size !== 1 || !dialects.has(expectedDialect)) {
