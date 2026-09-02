@@ -114,8 +114,9 @@ If you want to create the one-click installer (.mcpb file) yourself:
 
    The verify step unpacks the bundle, checks it contains only the runtime files and no
    paths Claude Desktop would reject, and starts the packed server to confirm it answers
-   `tools/list`. `.mcpbignore` is an allowlist of runtime files, so anything else in your working
-   directory stays out of the bundle. Run this before sharing a bundle.
+   `tools/list`. `.mcpbignore` is an allowlist: only the runtime (`build/`, `node_modules/`,
+   `package.json`, `manifest.json`), the icon, README, and LICENSE are packed, so anything
+   else in your working directory stays out of the bundle. Run this before sharing a bundle.
 
 3. This creates a `.mcpb` file in your project directory.
 
