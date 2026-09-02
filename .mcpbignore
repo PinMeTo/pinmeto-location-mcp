@@ -1,2 +1,29 @@
-# The single-file plugin bundle is a separate artifact; the .mcpb runs build/index.js
-dist
+# Deny by default, then allow only what the extension needs at runtime.
+#
+# The packer (@anthropic-ai/mcpb) uses the `ignore` library, so this file has gitignore
+# semantics: "/*" excludes every top-level entry, and "!/name" re-includes one. It packs
+# the working directory and does not read .gitignore, so with a blocklist any untracked
+# local directory ends up in the bundle. The first v4.1.0 asset shipped a scratch
+# directory with files named "review-<sha>..<sha>.diff" and Claude Desktop refused to
+# install it (path traversal check). A bare "dist" rule in the old blocklist also matched
+# node_modules/*/dist and stripped the SDK's compiled files.
+#
+# `npm run verify:mcpb` checks the packed bundle against this same list.
+
+/*
+
+# Runtime
+!/build
+!/node_modules
+!/package.json
+!/manifest.json
+
+# Shown in Claude Desktop
+!/img
+!/README.md
+!/LICENSE
+
+# Never needed at runtime even though the directories above are allowed
+/node_modules/.bin
+/node_modules/.cache
+/build/*.map

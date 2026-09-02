@@ -95,6 +95,7 @@ title on every tool. All other annotations use SDK defaults. If a future tool wr
 ## Build Artifacts
 
 - `src/generated/version.ts` is a **tracked, generated file** — regenerated from `package.json` by `scripts/generate-version.mjs` on every `prebuild`/`pretest`. Do not edit it, and do not add it to `.gitignore`; it is committed so bare `npx tsc`/`npx vitest` work on a fresh checkout.
+- The `.mcpb` is packed from the working directory, not from git. `.mcpbignore` is a deny-by-default allowlist (`/*` then `!/build`, `!/node_modules`, ...) with gitignore semantics: the packer uses the `ignore` library and does not read `.gitignore`, so a blocklist lets any untracked local directory into the bundle, and an unanchored rule like `dist` also strips `node_modules/*/dist`. `npm run verify:mcpb` (run by `release:draft` and `pack:test`) unpacks the bundle, rejects unsafe paths and unexpected top-level entries, and starts the packed server. The first v4.1.0 asset shipped without this and failed to install.
 - `npm run bundle` emits `dist/index.mjs`, a self-contained single-file server bundle. It was vendored by the `PinMeTo/claude-plugins` marketplace repo; as of 2026-08-08 that marketplace is skill-only and no longer consumes it, so this artifact is currently unused pending a decision to retire it. It is still attached to GitHub releases by `release:draft` and excluded from the `.mcpb` via `.mcpbignore`.
 
 ## Failure Contracts
