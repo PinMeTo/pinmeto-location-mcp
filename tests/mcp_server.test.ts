@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { createMcpServer } from '../src/mcp_server';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 import { formatErrorResponse, isValidDate } from '../src/helpers';
 import { ApiError } from '../src/errors';
 
@@ -448,6 +448,69 @@ describe('Tool Annotations', () => {
       expect(tool.annotations.readOnlyHint).toBe(true);
       expect(tool.title, `${tool.name} is missing a title`).toBeTruthy();
       expect(tool.title).not.toMatch(/^pinmeto_/);
+    }
+  });
+
+  it('should advertise JSON Schema 2020-12 on every input and output schema', async () => {
+    // Claude Desktop validates outputSchema strictly against 2020-12 and rejects any
+    // tool that declares draft-07 (PinMeTo/issues#6064). The v1 SDK emitted draft-07
+    // unconditionally (modelcontextprotocol/typescript-sdk#2084); the v2 SDK fixes it.
+    // This pins the dialect so a future SDK or Zod change can't silently regress it.
+    const JSON_SCHEMA_2020_12 = 'https://json-schema.org/draft/2020-12/schema';
+
+    const server = createMcpServer();
+    const testTransport = new StdioServerTransport();
+
+    const responses: any[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: any) => {
+      try {
+        responses.push(JSON.parse(chunk.toString()));
+      } catch {
+        // Not JSON, ignore
+      }
+      return true;
+    }) as typeof process.stdout.write;
+
+    await server.connect(testTransport);
+
+    testTransport.onmessage?.({
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test-client', version: '0.0.0' }
+      },
+      jsonrpc: '2.0',
+      id: 0
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    testTransport.onmessage?.({
+      method: 'tools/list',
+      params: {},
+      jsonrpc: '2.0',
+      id: 1
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    process.stdout.write = originalWrite;
+    await testTransport.close();
+
+    const tools = responses.find(r => r.id === 1)?.result?.tools;
+    expect(tools).toBeDefined();
+    expect(tools.length).toBe(12);
+
+    for (const tool of tools) {
+      expect(tool.inputSchema?.$schema, `${tool.name} inputSchema dialect`).toBe(
+        JSON_SCHEMA_2020_12
+      );
+      expect(tool.outputSchema, `${tool.name} is missing an outputSchema`).toBeDefined();
+      expect(tool.outputSchema.$schema, `${tool.name} outputSchema dialect`).toBe(
+        JSON_SCHEMA_2020_12
+      );
     }
   });
 

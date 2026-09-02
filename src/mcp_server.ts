@@ -1,5 +1,4 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Implementation } from '@modelcontextprotocol/sdk/types.js';
+import { McpServer, Implementation } from '@modelcontextprotocol/server';
 import axios, { isAxiosError } from 'axios';
 import os from 'os';
 import { ApiResult, ApiError, AuthError, mapAxiosErrorToApiError } from './errors';
@@ -21,7 +20,7 @@ import { getAppleInsights } from './tools/networks/apple';
 import { Configs, getConfigs } from './configs';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './generated/version';
 
-import type { ServerOptions } from '@modelcontextprotocol/sdk/server';
+import type { ServerOptions } from '@modelcontextprotocol/server';
 
 const TOKEN_CACHE_SECONDS = 59 * 60;
 

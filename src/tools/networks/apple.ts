@@ -188,7 +188,7 @@ export function getAppleInsights(server: PinMeToMcpServer) {
       }
 
       return {
-        content: [{ type: 'text', text: textContent }],
+        content: [{ type: 'text' as const, text: textContent }],
         structuredContent: {
           insights: outputData,
           periodRange,

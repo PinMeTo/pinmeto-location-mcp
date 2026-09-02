@@ -194,7 +194,7 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
       }
 
       return {
-        content: [{ type: 'text', text: textContent }],
+        content: [{ type: 'text' as const, text: textContent }],
         structuredContent: {
           insights: outputData,
           periodRange,
@@ -335,7 +335,7 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
       }
 
       return {
-        content: [{ type: 'text', text: textContent }],
+        content: [{ type: 'text' as const, text: textContent }],
         structuredContent: {
           insights: outputData,
           periodRange,
@@ -407,7 +407,7 @@ export function getFacebookRatings(server: PinMeToMcpServer) {
         : formatContent(result.data, response_format, formatRatingsAsMarkdown);
 
       return {
-        content: [{ type: 'text', text: textContent }],
+        content: [{ type: 'text' as const, text: textContent }],
         structuredContent: { data: result.data }
       };
     }

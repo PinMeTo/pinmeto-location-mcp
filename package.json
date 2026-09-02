@@ -35,14 +35,17 @@
   },
   "author": "pinmeto",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "bugs": {
     "url": "https://github.com/PinMeTo/pinmeto-location-mcp/issues"
   },
   "homepage": "https://github.com/PinMeTo/pinmeto-location-mcp#readme",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
     "axios": "^1.16.0",
-    "zod": "^3.25.76"
+    "zod": "^4.2.0",
+    "@modelcontextprotocol/server": "^2.0.0"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.2",

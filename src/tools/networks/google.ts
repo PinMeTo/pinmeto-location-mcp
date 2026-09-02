@@ -373,7 +373,7 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
       }
 
       return {
-        content: [{ type: 'text', text: textContent }],
+        content: [{ type: 'text' as const, text: textContent }],
         structuredContent: {
           insights: outputData,
           periodRange,
@@ -532,7 +532,7 @@ export function getGoogleRatings(server: PinMeToMcpServer) {
         : formatContent(aggregatedData, response_format, formatRatingsAsMarkdown);
 
       return {
-        content: [{ type: 'text', text: textContent }],
+        content: [{ type: 'text' as const, text: textContent }],
         structuredContent: {
           data: aggregatedData,
           cacheInfo,
@@ -630,7 +630,7 @@ export function getGoogleReviews(server: PinMeToMcpServer) {
       if (minRating !== undefined && maxRating !== undefined && minRating > maxRating) {
         return {
           isError: true,
-          content: [{ type: 'text', text: 'Error: minRating cannot be greater than maxRating' }],
+          content: [{ type: 'text' as const, text: 'Error: minRating cannot be greater than maxRating' }],
           structuredContent: {
             error: 'Error: minRating cannot be greater than maxRating',
             errorCode: 'BAD_REQUEST',
@@ -696,7 +696,7 @@ export function getGoogleReviews(server: PinMeToMcpServer) {
           : JSON.stringify({ data: reviews, ...paginationOptions });
 
       return {
-        content: [{ type: 'text', text: textContent }],
+        content: [{ type: 'text' as const, text: textContent }],
         structuredContent: {
           data: reviews,
           totalCount,
@@ -776,7 +776,7 @@ export function getGoogleKeywords(server: PinMeToMcpServer) {
         : formatContent(result.data, response_format, formatKeywordsAsMarkdown);
 
       return {
-        content: [{ type: 'text', text: textContent }],
+        content: [{ type: 'text' as const, text: textContent }],
         structuredContent: {
           data: result.data,
           ...(lagWarning && lagWarning)
@@ -927,7 +927,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
       if (minRating !== undefined && maxRating !== undefined && minRating > maxRating) {
         return {
           isError: true,
-          content: [{ type: 'text', text: 'Error: minRating cannot be greater than maxRating' }],
+          content: [{ type: 'text' as const, text: 'Error: minRating cannot be greater than maxRating' }],
           structuredContent: {
             error: 'Error: minRating cannot be greater than maxRating',
             errorCode: 'BAD_REQUEST',
@@ -982,7 +982,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
                 : JSON.stringify({ data: cached.data, metadata: cachedMetadata });
 
             return {
-              content: [{ type: 'text', text: textContent }],
+              content: [{ type: 'text' as const, text: textContent }],
               structuredContent: {
                 data: cached.data,
                 metadata: cachedMetadata,
@@ -1067,7 +1067,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         return {
           content: [
             {
-              type: 'text',
+              type: 'text' as const,
               text:
                 response_format === 'markdown'
                   ? '# Review Insights\n\nNo reviews found matching the specified criteria.'
@@ -1138,7 +1138,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         const textContent = analysisNote ? `${baseText}\n\nNote: ${analysisNote}.` : baseText;
 
         return {
-          content: [{ type: 'text', text: textContent }],
+          content: [{ type: 'text' as const, text: textContent }],
           structuredContent: {
             requiresConfirmation: true,
             largeDatasetWarning: warning,
@@ -1208,7 +1208,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         const textContent = analysisNote ? `${baseText}\n\nNote: ${analysisNote}.` : baseText;
 
         return {
-          content: [{ type: 'text', text: textContent }],
+          content: [{ type: 'text' as const, text: textContent }],
           structuredContent: {
             requiresConfirmation: true,
             largeDatasetWarning: warning,
@@ -1285,7 +1285,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
           : JSON.stringify({ data: analysisData, metadata });
 
       return {
-        content: [{ type: 'text', text: textContent }],
+        content: [{ type: 'text' as const, text: textContent }],
         structuredContent: {
           data: analysisData,
           metadata,

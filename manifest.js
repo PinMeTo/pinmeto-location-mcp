@@ -63,7 +63,8 @@ const manifest = {
     }
   },
   compatibility: {
-    platforms: ['darwin', 'win32', 'linux']
+    platforms: ['darwin', 'win32', 'linux'],
+    runtimes: { node: '>=20' }
   },
   repository: {
     type: 'git',
