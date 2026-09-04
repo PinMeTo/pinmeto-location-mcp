@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.2.0] - 2026-09-04
+
+### Added
+
+- Serve MCP protocol revision 2026-07-28 over stdio while retaining legacy client support. Preserve request-scoped client identity in outbound PinMeTo API User-Agent headers for both protocol eras. (`25e6a83`)
+
 ## [4.1.1] - 2026-09-02
 
 ### Fixed
