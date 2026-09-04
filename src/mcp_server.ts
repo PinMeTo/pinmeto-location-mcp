@@ -29,6 +29,15 @@ const TOKEN_CACHE_SECONDS = 59 * 60;
 // bounded after a server upgrade.
 const DISCOVERY_CACHE_TTL_MS = 60 * 60 * 1000;
 
+const SERVER_INSTRUCTIONS =
+  'Use pinmeto_search_locations to find locations by name, address, or store ID; use ' +
+  'pinmeto_get_locations only when you need to browse or filter the full location set. ' +
+  'Use pinmeto_get_google_reviews for raw review records and ' +
+  'pinmeto_get_google_review_insights for aggregate analysis. Always inspect warningCode: ' +
+  'when LARGE_DATASET_WARNING is returned, choose an offered option and call the tool again; ' +
+  'INCOMPLETE_DATA means results are partial. Insights use aggregation=total and ' +
+  'comparison=none unless requested otherwise.';
+
 const SERVER_UA_PART = `${PACKAGE_NAME}-${PACKAGE_VERSION} (${os.type()}; ${os.arch()}; ${os.release()})`;
 
 /** Max characters kept from each client-supplied User-Agent component. */
@@ -257,6 +266,7 @@ export function createMcpServer() {
       websiteUrl: 'https://www.pinmeto.com'
     },
     {
+      instructions: SERVER_INSTRUCTIONS,
       cacheHints: {
         'tools/list': { ttlMs: DISCOVERY_CACHE_TTL_MS, cacheScope: 'public' },
         'server/discover': { ttlMs: DISCOVERY_CACHE_TTL_MS, cacheScope: 'public' }
