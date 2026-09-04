@@ -2904,7 +2904,7 @@ describe('Consolidated Network Tools', () => {
           })
         }
       );
-      const elicitationHandler = vi.fn(async () => elicitationResult);
+      const elicitationHandler = vi.fn(async (_request: unknown) => elicitationResult);
       client.setRequestHandler('elicitation/create', elicitationHandler);
 
       try {
@@ -2964,6 +2964,9 @@ describe('Consolidated Network Tools', () => {
         });
 
         expect(elicitationHandler).toHaveBeenCalledTimes(1);
+        const elicitationRequest = elicitationHandler.mock.calls[0][0] as any;
+        expect(elicitationRequest.params.message).toContain(choice);
+        expect(elicitationRequest.params.requestedSchema.properties.choice.enum).toContain(choice);
         expect(result.isError).not.toBe(true);
         const sc = result.structuredContent as any;
         expect(sc.requiresConfirmation).toBeUndefined();

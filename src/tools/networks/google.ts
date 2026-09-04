@@ -832,6 +832,23 @@ const LargeDatasetChoiceSchema = z.object({
 
 type ReviewInsightsChoice = z.infer<typeof MediumDatasetChoiceSchema>['choice'];
 
+function formatReviewInsightsElicitationMessage(
+  warning: LargeDatasetWarning,
+  analysisNote?: string
+): string {
+  const options = warning.options
+    .map(
+      option =>
+        `- ${option.option}: ${option.description} ` +
+        `(${formatTokenEstimate(option.estimatedTokens)} estimated)`
+    )
+    .join('\n');
+  return (
+    `${warning.message}\n\nOptions:\n${options}` +
+    (analysisNote ? `\n\nNote: ${analysisNote}.` : '')
+  );
+}
+
 /**
  * Modern requests carry capabilities in their per-request envelope. Legacy
  * requests use the capabilities captured during initialize.
@@ -1215,7 +1232,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
           return inputRequired({
             inputRequests: {
               [REVIEW_INSIGHTS_CHOICE_KEY]: inputRequired.elicit({
-                message: warning.message,
+                message: formatReviewInsightsElicitationMessage(warning, analysisNote),
                 requestedSchema: LargeDatasetChoiceSchema
               })
             }
@@ -1300,7 +1317,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
           return inputRequired({
             inputRequests: {
               [REVIEW_INSIGHTS_CHOICE_KEY]: inputRequired.elicit({
-                message: warning.message,
+                message: formatReviewInsightsElicitationMessage(warning, analysisNote),
                 requestedSchema: MediumDatasetChoiceSchema
               })
             }
