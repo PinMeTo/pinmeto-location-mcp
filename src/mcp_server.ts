@@ -36,7 +36,7 @@ const SERVER_INSTRUCTIONS =
   'pinmeto_get_google_review_insights for aggregate analysis. Always inspect warningCode: ' +
   'when LARGE_DATASET_WARNING is returned, choose an offered option and call the tool again; ' +
   'INCOMPLETE_DATA means results are partial. Insights use aggregation=total and ' +
-  'comparison=none unless requested otherwise.';
+  'compare_with=none unless requested otherwise.';
 
 const SERVER_UA_PART = `${PACKAGE_NAME}-${PACKAGE_VERSION} (${os.type()}; ${os.arch()}; ${os.release()})`;
 
