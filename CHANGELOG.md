@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.3.0] - 2026-09-04
+
+### Added
+
+- Advertise one-hour public cache hints for the static tool catalog and server discovery metadata. (`52eadc5`)
+- Use MCP multi-round-trip elicitation for large Google review analysis choices while preserving the explicit confirmation fallback for clients without form elicitation. (`f3b3aed`)
+
+### Fixed
+
+- Advertise concise tool-selection and warning-handling instructions during MCP discovery and initialization. (`f803669`)
+- Forward valid MCP `traceparent` and `tracestate` metadata to PinMeTo API requests while keeping baggage and malformed values out of outbound headers. (`fb91dcc`)
+
 ## [4.2.0] - 2026-09-04
 
 ### Added
