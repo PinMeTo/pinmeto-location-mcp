@@ -10,9 +10,11 @@ const EXPECTED_SERVER_INSTRUCTIONS =
   'Use pinmeto_search_locations to find locations by name, address, or store ID; use ' +
   'pinmeto_get_locations only when you need to browse or filter the full location set. ' +
   'Use pinmeto_get_google_reviews for raw review records and ' +
-  'pinmeto_get_google_review_insights for aggregate analysis. Always inspect warningCode: ' +
+  'pinmeto_get_google_ratings for basic rating statistics; use ' +
+  'pinmeto_get_google_review_insights for review analysis. Always inspect warningCode: ' +
   'when LARGE_DATASET_WARNING is returned, choose an offered option and call the tool again; ' +
-  'INCOMPLETE_DATA means results are partial. Insights use aggregation=total and ' +
+  'INCOMPLETE_DATA means results are partial or no data matched; inspect the warning and message. ' +
+  'Insights use aggregation=total and ' +
   'compare_with=none unless requested otherwise.';
 const EXPECTED_TOOL_ORDER = [
   'pinmeto_get_location',
