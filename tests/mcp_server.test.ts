@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { createMcpServer } from '../src/mcp_server';
-import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
+import { Client } from '@modelcontextprotocol/client';
+import { InMemoryTransport } from '@modelcontextprotocol/server';
+import { serveStdio, StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 import { formatErrorResponse, isValidDate } from '../src/helpers';
 import { ApiError } from '../src/errors';
 
@@ -2861,6 +2863,71 @@ describe('Consolidated Network Tools', () => {
   });
 
   describe('pinmeto_get_google_review_insights', () => {
+    const mockReviewDataset = (reviewCount: number) => {
+      vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
+        if (headers['Authorization'] !== `Bearer ${testAccessToken}`) {
+          return Promise.reject(new Error('Unauthorized'));
+        }
+        if (url.includes('/ratings/google')) {
+          return Promise.resolve({
+            data: Array.from({ length: reviewCount }, (_, i) => ({
+              storeId: `store-${i % 3}`,
+              rating: (i % 5) + 1,
+              comment: `Review number ${i}`,
+              date: '2024-01-15'
+            }))
+          });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+    };
+
+    const callReviewInsightsWithElicitation = async (
+      era: 'legacy' | 'modern',
+      elicitationResult: {
+        action: 'accept' | 'decline' | 'cancel';
+        content?: Record<string, unknown>;
+      }
+    ) => {
+      const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+      const serverHandle = serveStdio(() => createMcpServer(), { transport: serverTransport });
+      const client = new Client(
+        { name: `review-insights-${era}`, version: '1.0.0' },
+        {
+          capabilities: { elicitation: { form: {} } },
+          inputRequired: { autoFulfill: true },
+          ...(era === 'modern' && {
+            versionNegotiation: {
+              mode: { pin: '2026-07-28' as const },
+              probe: { timeoutMs: 2_000 }
+            }
+          })
+        }
+      );
+      const elicitationHandler = vi.fn(async () => elicitationResult);
+      client.setRequestHandler('elicitation/create', elicitationHandler);
+
+      try {
+        await client.connect(clientTransport);
+        await client.listTools();
+        const result = await client.callTool({
+          name: 'pinmeto_get_google_review_insights',
+          arguments: {
+            // Keep MRTR fixtures out of the module-level raw review cache
+            // entries used by the older review-insights tests below.
+            from: '2030-01-01',
+            to: '2030-12-31',
+            analysisType: 'summary',
+            forceRefresh: true
+          }
+        });
+        return { result, elicitationHandler };
+      } finally {
+        await client.close();
+        await serverHandle.close();
+      }
+    };
+
     beforeEach(() => {
       vi.clearAllMocks();
       vi.mocked(axios.get).mockImplementation((url: string, { headers }: any) => {
@@ -2881,6 +2948,91 @@ describe('Consolidated Network Tools', () => {
         }
         return Promise.reject(new Error('Not found'));
       });
+    });
+
+    it.each([
+      ['medium', 1500, 'proceed_full', undefined, 1500],
+      ['large', 10500, 'representative_sample', 'representative', 500]
+    ] as const)(
+      'should complete the modern MRTR flow for a %s dataset',
+      async (_label, reviewCount, choice, expectedStrategy, expectedAnalyzedCount) => {
+        mockReviewDataset(reviewCount);
+
+        const { result, elicitationHandler } = await callReviewInsightsWithElicitation('modern', {
+          action: 'accept',
+          content: { choice }
+        });
+
+        expect(elicitationHandler).toHaveBeenCalledTimes(1);
+        expect(result.isError).not.toBe(true);
+        const sc = result.structuredContent as any;
+        expect(sc.requiresConfirmation).toBeUndefined();
+        expect(sc.metadata.totalReviewCount).toBe(reviewCount);
+        expect(sc.metadata.analyzedReviewCount).toBe(expectedAnalyzedCount);
+        expect(sc.metadata.samplingStrategy).toBe(expectedStrategy);
+        expect(sc.warningCode).toBe(expectedStrategy ? 'SAMPLED_ANALYSIS' : undefined);
+      }
+    );
+
+    it('should complete elicitation through the legacy compatibility path', async () => {
+      mockReviewDataset(1500);
+
+      const { result, elicitationHandler } = await callReviewInsightsWithElicitation('legacy', {
+        action: 'accept',
+        content: { choice: 'recent_weighted' }
+      });
+
+      expect(elicitationHandler).toHaveBeenCalledTimes(1);
+      expect(result.isError).not.toBe(true);
+      const sc = result.structuredContent as any;
+      expect(sc.metadata.samplingStrategy).toBe('recent_weighted');
+      expect(sc.metadata.analyzedReviewCount).toBe(500);
+      expect(sc.warningCode).toBe('SAMPLED_ANALYSIS');
+    });
+
+    it('should preserve the confirmation fallback without elicitation support', async () => {
+      mockReviewDataset(1500);
+
+      const response = await callNetworkTool('pinmeto_get_google_review_insights', {
+        from: '2031-01-01',
+        to: '2031-12-31',
+        analysisType: 'summary',
+        forceRefresh: true
+      });
+
+      expect(response.result.structuredContent).toMatchObject({
+        requiresConfirmation: true,
+        warningCode: 'LARGE_DATASET_WARNING'
+      });
+      expect(response.result.structuredContent.largeDatasetWarning.options).toHaveLength(3);
+    });
+
+    it('should fall back to explicit confirmation when elicitation is cancelled', async () => {
+      mockReviewDataset(1500);
+
+      const { result } = await callReviewInsightsWithElicitation('modern', { action: 'cancel' });
+
+      expect(result.isError).not.toBe(true);
+      expect(result.structuredContent).toMatchObject({
+        requiresConfirmation: true,
+        warningCode: 'LARGE_DATASET_WARNING'
+      });
+    });
+
+    it('should reject invalid elicitation content without selecting full analysis', async () => {
+      mockReviewDataset(10500);
+
+      const { result } = await callReviewInsightsWithElicitation('modern', {
+        action: 'accept',
+        content: { choice: 'proceed_full' }
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.structuredContent).toMatchObject({
+        errorCode: 'BAD_REQUEST',
+        retryable: false
+      });
+      expect((result.structuredContent as any).data).toBeUndefined();
     });
 
     it('should not warn for summary, which is genuinely differentiated', async () => {
