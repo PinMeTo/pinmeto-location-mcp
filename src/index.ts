@@ -1,18 +1,12 @@
 #!/usr/bin/env node
 
-import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
+import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import { createMcpServer } from './mcp_server.js';
 
-const server = createMcpServer();
-
-const transport = new StdioServerTransport();
-
-server
-  .connect(transport)
-  .then(() => {
-    console.error('PinMeTo MCP running on stdio');
-  })
-  .catch(error => {
+serveStdio(() => createMcpServer(), {
+  onerror(error) {
     console.error('Fatal error in main():', error);
-    process.exit(1);
-  });
+  }
+});
+
+console.error('PinMeTo MCP running on stdio');

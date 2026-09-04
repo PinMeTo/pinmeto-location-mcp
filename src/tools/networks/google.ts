@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { ServerContext } from '@modelcontextprotocol/server';
 import { PinMeToMcpServer } from '../../mcp_server';
 import { ApiError } from '../../errors';
 import {
@@ -139,7 +140,8 @@ async function getCachedOrFetchReviews(
   storeId: string | undefined,
   from: string,
   to: string,
-  forceRefresh: boolean = false
+  forceRefresh: boolean = false,
+  requestContext?: ServerContext
 ): Promise<ReviewsCacheResult> {
   const { apiBaseUrl, accountId } = server.configs;
   const cacheKey = buildReviewsCacheKey(accountId, storeId, from, to);
@@ -169,7 +171,7 @@ async function getCachedOrFetchReviews(
     ? `${apiBaseUrl}/listings/v3/${accountId}/ratings/google/${storeId}?from=${from}&to=${to}`
     : `${apiBaseUrl}/listings/v3/${accountId}/ratings/google?from=${from}&to=${to}`;
 
-  const result = await server.makePinMeToRequest(url);
+  const result = await server.makePinMeToRequest(url, requestContext);
 
   if (!result.ok) {
     return { ok: false, error: result.error };
@@ -278,7 +280,7 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
       aggregation?: AggregationPeriod;
       compare_with?: CompareWithType;
       response_format?: ResponseFormat;
-    }) => {
+    }, requestContext) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       // Check for data lag warning
@@ -288,7 +290,7 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
         ? `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/google?from=${from}&to=${to}`
         : `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/google?from=${from}&to=${to}`;
 
-      const result = await server.makePinMeToRequest(url);
+      const result = await server.makePinMeToRequest(url, requestContext);
 
       if (!result.ok) {
         const context = storeId ? `storeId '${storeId}'` : `all Google insights (${from} to ${to})`;
@@ -311,7 +313,7 @@ export function getGoogleInsights(server: PinMeToMcpServer) {
           ? `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/google?from=${priorPeriod.from}&to=${priorPeriod.to}`
           : `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/google?from=${priorPeriod.from}&to=${priorPeriod.to}`;
 
-        const priorResult = await server.makePinMeToRequest(priorUrl);
+        const priorResult = await server.makePinMeToRequest(priorUrl, requestContext);
 
         if (priorResult.ok) {
           priorInsights = aggregateInsights(convertApiDataToInsights(priorResult.data), aggregation);
@@ -503,12 +505,12 @@ export function getGoogleRatings(server: PinMeToMcpServer) {
       to: string;
       forceRefresh?: boolean;
       response_format?: ResponseFormat;
-    }) => {
+    }, requestContext) => {
       // Check for data lag warning
       const lagWarning = checkGoogleDataLag(to);
 
       // Fetch reviews (from cache or API)
-      const result = await getCachedOrFetchReviews(server, storeId, from, to, forceRefresh);
+      const result = await getCachedOrFetchReviews(server, storeId, from, to, forceRefresh, requestContext);
 
       if (!result.ok) {
         const context = storeId ? `storeId '${storeId}'` : `all Google ratings (${from} to ${to})`;
@@ -625,7 +627,7 @@ export function getGoogleReviews(server: PinMeToMcpServer) {
       hasResponse?: boolean;
       forceRefresh?: boolean;
       response_format?: ResponseFormat;
-    }) => {
+    }, requestContext) => {
       // Validate filter combination
       if (minRating !== undefined && maxRating !== undefined && minRating > maxRating) {
         return {
@@ -643,7 +645,7 @@ export function getGoogleReviews(server: PinMeToMcpServer) {
       const lagWarning = checkGoogleDataLag(to);
 
       // Fetch reviews (from cache or API)
-      const result = await getCachedOrFetchReviews(server, storeId, from, to, forceRefresh);
+      const result = await getCachedOrFetchReviews(server, storeId, from, to, forceRefresh, requestContext);
 
       if (!result.ok) {
         const context = storeId ? `storeId '${storeId}'` : `all Google reviews (${from} to ${to})`;
@@ -749,7 +751,7 @@ export function getGoogleKeywords(server: PinMeToMcpServer) {
       from: string;
       to: string;
       response_format?: ResponseFormat;
-    }) => {
+    }, requestContext) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       // Check for data lag warning (convert month to last day of month for comparison)
@@ -762,7 +764,7 @@ export function getGoogleKeywords(server: PinMeToMcpServer) {
         ? `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords/${storeId}?from=${from}&to=${to}`
         : `${apiBaseUrl}/listings/v3/${accountId}/insights/google-keywords?from=${from}&to=${to}`;
 
-      const result = await server.makePinMeToRequest(url);
+      const result = await server.makePinMeToRequest(url, requestContext);
 
       if (!result.ok) {
         const context = storeId ? `storeId '${storeId}'` : `all Google keywords (${from} to ${to})`;
@@ -920,7 +922,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
       maxRating?: number;
       forceRefresh?: boolean;
       response_format?: ResponseFormat;
-    }) => {
+    }, requestContext) => {
       const { accountId } = server.configs;
 
       // Validate filter combination
@@ -1006,7 +1008,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
       if (storeIds && storeIds.length > 0) {
         // Fetch reviews for specific stores in parallel
         const fetchPromises = storeIds.map(storeId =>
-          getCachedOrFetchReviews(server, storeId, from, to, forceRefresh)
+          getCachedOrFetchReviews(server, storeId, from, to, forceRefresh, requestContext)
         );
         const results = await Promise.all(fetchPromises);
 
@@ -1030,7 +1032,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         }
       } else {
         // Fetch all reviews
-        const result = await getCachedOrFetchReviews(server, undefined, from, to, forceRefresh);
+        const result = await getCachedOrFetchReviews(server, undefined, from, to, forceRefresh, requestContext);
         if (!result.ok) {
           return formatErrorResponse(result.error, `all Google reviews (${from} to ${to})`);
         }

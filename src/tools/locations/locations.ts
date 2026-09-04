@@ -40,11 +40,11 @@ export function getLocation(server: PinMeToMcpServer) {
     }: {
       storeId: string;
       response_format?: ResponseFormat;
-    }) => {
+    }, context) => {
       const { locationsApiBaseUrl, accountId } = server.configs;
 
       const locationUrl = `${locationsApiBaseUrl}/v4/${accountId}/locations/${storeId}`;
-      const result = await server.makePinMeToRequest(locationUrl);
+      const result = await server.makePinMeToRequest(locationUrl, context);
 
       if (!result.ok) {
         return formatErrorResponse(result.error, `storeId '${storeId}'`);
@@ -154,13 +154,13 @@ export function getLocations(server: PinMeToMcpServer) {
       country?: string;
       forceRefresh?: boolean;
       response_format?: ResponseFormat;
-    }) => {
+    }, context) => {
       const limit = args.limit ?? 50;
       const offset = args.offset ?? 0;
       const forceRefresh = args.forceRefresh ?? false;
 
       // 1. Get data from cache (or fetch if expired/forced)
-      const cacheResult = await server.locationCache.getLocations(forceRefresh);
+      const cacheResult = await server.getCachedLocations(forceRefresh, context);
       const { data: allData, allPagesFetched, error, stale, staleAgeSeconds } = cacheResult;
 
       // Handle complete API failure (no data and no stale cache)
@@ -314,7 +314,7 @@ export function searchLocations(server: PinMeToMcpServer) {
       query: string;
       limit?: number;
       response_format?: ResponseFormat;
-    }) => {
+    }, context) => {
       const { locationsApiBaseUrl, accountId } = server.configs;
 
       // NOTE: pinmeto_search_locations intentionally bypasses LocationCache and fetches directly.
@@ -325,7 +325,7 @@ export function searchLocations(server: PinMeToMcpServer) {
       // For bulk operations with resilience, use pinmeto_get_locations which uses the cached data.
       const fieldsParam = 'fields=storeId,name,locationDescriptor,address';
       const url = `${locationsApiBaseUrl}/v4/${accountId}/locations?pagesize=1000&${fieldsParam}`;
-      const [data, areAllPagesFetched, lastError] = await server.makePaginatedPinMeToRequest(url);
+      const [data, areAllPagesFetched, lastError] = await server.makePaginatedPinMeToRequest(url, context);
 
       // Detect API failure: empty array + incomplete pagination = first page failed
       if (data.length === 0 && !areAllPagesFetched && lastError) {

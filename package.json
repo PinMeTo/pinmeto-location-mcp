@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "prebuild": "node scripts/generate-version.mjs",
-    "pretest": "node scripts/generate-version.mjs",
+    "pretest": "npm run build",
     "build": "npm run clean && node manifest.js && tsc && cp package.json build/ && node update-build-version.js",
     "build:test": "VERSION_POSTFIX=test-$(date -u +%Y%m%dT%H%M%SZ) npm run build",
     "bundle": "node scripts/build-bundle.mjs",
@@ -16,6 +16,7 @@
     "format": "prettier --write \"**/*.{js,ts}\"",
     "inspector": "npx @modelcontextprotocol/inspector node --env-file=.env.local build/index.js",
     "test": "vitest --run",
+    "test:stdio-eras": "npm run build && vitest --run tests/stdio-protocol-eras.test.ts",
     "changeset": "changeset",
     "changeset:add": "changeset add",
     "release:prepare": "changeset status --verbose",
@@ -44,15 +45,16 @@
   },
   "homepage": "https://github.com/PinMeTo/pinmeto-location-mcp#readme",
   "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
     "axios": "^1.16.0",
-    "zod": "^4.2.0",
-    "@modelcontextprotocol/server": "^2.0.0"
+    "zod": "^4.2.0"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.2",
     "@changesets/cli": "^2.29.8",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
+    "@modelcontextprotocol/client": "^2.0.0",
     "@types/node": "^24.5.1",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",

@@ -97,14 +97,14 @@ export function getAppleInsights(server: PinMeToMcpServer) {
       aggregation?: AggregationPeriod;
       compare_with?: CompareWithType;
       response_format?: ResponseFormat;
-    }) => {
+    }, requestContext) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const url = storeId
         ? `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/apple?from=${from}&to=${to}`
         : `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/apple?from=${from}&to=${to}`;
 
-      const result = await server.makePinMeToRequest(url);
+      const result = await server.makePinMeToRequest(url, requestContext);
 
       if (!result.ok) {
         const context = storeId ? `storeId '${storeId}'` : `all Apple insights (${from} to ${to})`;
@@ -127,7 +127,7 @@ export function getAppleInsights(server: PinMeToMcpServer) {
           ? `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/apple?from=${priorPeriod.from}&to=${priorPeriod.to}`
           : `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/apple?from=${priorPeriod.from}&to=${priorPeriod.to}`;
 
-        const priorResult = await server.makePinMeToRequest(priorUrl);
+        const priorResult = await server.makePinMeToRequest(priorUrl, requestContext);
 
         if (priorResult.ok) {
           priorInsights = aggregateInsights(convertApiDataToInsights(priorResult.data), aggregation);

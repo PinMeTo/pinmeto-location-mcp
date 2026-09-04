@@ -1,4 +1,4 @@
-import { McpServer, Implementation } from '@modelcontextprotocol/server';
+import { CLIENT_INFO_META_KEY, McpServer, Implementation } from '@modelcontextprotocol/server';
 import axios, { isAxiosError } from 'axios';
 import os from 'os';
 import { ApiResult, ApiError, AuthError, mapAxiosErrorToApiError } from './errors';
@@ -20,7 +20,7 @@ import { getAppleInsights } from './tools/networks/apple';
 import { Configs, getConfigs } from './configs';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './generated/version';
 
-import type { ServerOptions } from '@modelcontextprotocol/server';
+import type { ServerContext, ServerOptions } from '@modelcontextprotocol/server';
 
 const TOKEN_CACHE_SECONDS = 59 * 60;
 
@@ -71,35 +71,39 @@ export class PinMeToMcpServer extends McpServer {
    * Used by LocationCache for cache population.
    * Returns [data, allPagesFetched, error] to propagate error info to cache.
    */
-  private async _fetchAllLocations(): Promise<[any[], boolean, ApiError | null]> {
+  private async _fetchAllLocations(context?: ServerContext): Promise<[any[], boolean, ApiError | null]> {
     const url = `${this._configs.locationsApiBaseUrl}/v4/${this._configs.accountId}/locations?pagesize=1000`;
-    return await this.makePaginatedPinMeToRequest(url);
+    return await this.makePaginatedPinMeToRequest(url, context);
+  }
+
+  public async getCachedLocations(forceRefresh: boolean, context: ServerContext) {
+    return this._locationCache.getLocationsWithFetcher(forceRefresh, () => this._fetchAllLocations(context));
   }
 
   /**
    * Builds the User-Agent for outbound PinMeTo API calls, prefixed with the
    * connected client's identity when it is known.
    *
-   * Resolved per request rather than cached at connection time: MCP 2026-07-28
-   * removes the initialize handshake and moves client identity into each
-   * request's `_meta`, so there is no single moment at which to latch it. When
-   * we migrate to that revision, only this method needs to change.
+   * MCP 2026-07-28 carries client identity in each request envelope. Legacy
+   * connections still expose the initialize-scoped identity on the server.
    */
-  private _userAgent(): string {
-    const clientInfo = this.server.getClientVersion();
+  private _userAgent(context?: ServerContext): string {
+    const envelope = context?.mcpReq.envelope as Record<string, unknown> | undefined;
+    const requestClientInfo = envelope?.[CLIENT_INFO_META_KEY] as Implementation | undefined;
+    const clientInfo = requestClientInfo ?? this.server.getClientVersion();
     const name = sanitizeUserAgentComponent(clientInfo?.name);
     if (!name) return SERVER_UA_PART;
     const version = sanitizeUserAgentComponent(clientInfo?.version) || 'unknown';
     return `${name}/${version} ${SERVER_UA_PART}`;
   }
 
-  public async makePinMeToRequest<T = any>(url: string): Promise<ApiResult<T>> {
+  public async makePinMeToRequest<T = any>(url: string, context?: ServerContext): Promise<ApiResult<T>> {
     try {
       const token = await this._getPinMeToAccessToken();
       const headers = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
-        'User-Agent': this._userAgent()
+        'User-Agent': this._userAgent(context)
       };
 
       const response = await axios.get(url, { headers, timeout: 30000 });
@@ -112,7 +116,8 @@ export class PinMeToMcpServer extends McpServer {
   }
 
   public async makePaginatedPinMeToRequest(
-    url: string
+    url: string,
+    context?: ServerContext
   ): Promise<[any[], boolean, ApiError | null]> {
     type PaginatedResponse = { data?: any[]; paging?: { nextUrl?: string } };
     const allData: any[] = [];
@@ -122,7 +127,7 @@ export class PinMeToMcpServer extends McpServer {
 
     while (nextUrl) {
       const result: ApiResult<PaginatedResponse> =
-        await this.makePinMeToRequest<PaginatedResponse>(nextUrl);
+        await this.makePinMeToRequest<PaginatedResponse>(nextUrl, context);
       if (!result.ok) {
         const pageContext = allData.length > 0 ? `after ${allData.length} records` : '(first page)';
         console.warn(
@@ -237,18 +242,9 @@ export function createMcpServer() {
   const mcpServer = new PinMeToMcpServer({
     name: 'PinMeTo Location MCP',
     version: PACKAGE_VERSION,
-    // MCP 2025-11-25 `Implementation` metadata. The SDK's ImplementationSchema
-    // carries these through to the initialize result, so no custom handler is
-    // needed to advertise them.
-    //
-    // Sent unconditionally, including to clients that negotiate an earlier
-    // revision. That is deliberate: the SDK returns `serverInfo` verbatim and
-    // exposes no hook to vary it by negotiated version, and MCP client schemas
-    // are plain Zod objects that strip unknown keys rather than reject them.
-    // Gating these would mean restoring the custom initialize handler removed
-    // in #49, which had been mis-advertising a `resources` capability this
-    // server does not implement - a concrete regression traded for a
-    // hypothetical strict client the official SDKs do not produce.
+    // The SDK sends this identity in the legacy initialize result and stamps it
+    // into every modern response's serverInfo metadata. No custom handshake
+    // handler is needed.
     description:
       'Read-only access to the PinMeTo location management platform: locations, ' +
       'plus Google/Facebook/Apple insights, ratings, reviews, and keywords.',
