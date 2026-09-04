@@ -6,6 +6,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const CLIENT_VERSION = '1.0.0';
 const DISCOVERY_CACHE_TTL_MS = 60 * 60 * 1000;
+const EXPECTED_SERVER_INSTRUCTIONS =
+  'Use pinmeto_search_locations to find locations by name, address, or store ID; use ' +
+  'pinmeto_get_locations only when you need to browse or filter the full location set. ' +
+  'Use pinmeto_get_google_reviews for raw review records and ' +
+  'pinmeto_get_google_ratings for basic rating statistics; use ' +
+  'pinmeto_get_google_review_insights for review analysis. Always inspect warningCode: ' +
+  'when LARGE_DATASET_WARNING is returned, choose an offered option and call the tool again; ' +
+  'INCOMPLETE_DATA means results are partial or no data matched; inspect the warning and message. ' +
+  'Insights use aggregation=total and ' +
+  'compare_with=none unless requested otherwise.';
 const EXPECTED_TOOL_ORDER = [
   'pinmeto_get_location',
   'pinmeto_get_locations',
@@ -163,11 +173,13 @@ describe('stdio protocol eras', () => {
         });
 
         const discovery = client.getDiscoverResult();
+        expect(client.getInstructions()).toBe(EXPECTED_SERVER_INSTRUCTIONS);
         const toolCatalog = await client.listTools();
         expect(toolCatalog.tools.map(tool => tool.name)).toEqual(EXPECTED_TOOL_ORDER);
 
         if (era === 'modern') {
           expect(discovery).toMatchObject({
+            instructions: EXPECTED_SERVER_INSTRUCTIONS,
             ttlMs: DISCOVERY_CACHE_TTL_MS,
             cacheScope: 'public'
           });
