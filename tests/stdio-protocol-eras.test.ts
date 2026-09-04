@@ -5,6 +5,21 @@ import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const CLIENT_VERSION = '1.0.0';
+const DISCOVERY_CACHE_TTL_MS = 60 * 60 * 1000;
+const EXPECTED_TOOL_ORDER = [
+  'pinmeto_get_location',
+  'pinmeto_get_locations',
+  'pinmeto_search_locations',
+  'pinmeto_get_google_insights',
+  'pinmeto_get_google_ratings',
+  'pinmeto_get_google_reviews',
+  'pinmeto_get_google_keywords',
+  'pinmeto_get_google_review_insights',
+  'pinmeto_get_facebook_insights',
+  'pinmeto_get_facebook_brandpage_insights',
+  'pinmeto_get_facebook_ratings',
+  'pinmeto_get_apple_insights'
+];
 
 describe('stdio protocol eras', () => {
   let apiServer: Server;
@@ -91,8 +106,24 @@ describe('stdio protocol eras', () => {
           websiteUrl: 'https://www.pinmeto.com'
         });
 
-        const { tools } = await client.listTools();
-        expect(tools).toHaveLength(12);
+        const discovery = client.getDiscoverResult();
+        const toolCatalog = await client.listTools();
+        expect(toolCatalog.tools.map(tool => tool.name)).toEqual(EXPECTED_TOOL_ORDER);
+
+        if (era === 'modern') {
+          expect(discovery).toMatchObject({
+            ttlMs: DISCOVERY_CACHE_TTL_MS,
+            cacheScope: 'public'
+          });
+          expect(toolCatalog).toMatchObject({
+            ttlMs: DISCOVERY_CACHE_TTL_MS,
+            cacheScope: 'public'
+          });
+        } else {
+          expect(discovery).toBeUndefined();
+          expect(toolCatalog).not.toHaveProperty('ttlMs');
+          expect(toolCatalog).not.toHaveProperty('cacheScope');
+        }
 
         const result = await client.callTool({
           name: 'pinmeto_get_locations',

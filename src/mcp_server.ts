@@ -24,6 +24,11 @@ import type { ServerContext, ServerOptions } from '@modelcontextprotocol/server'
 
 const TOKEN_CACHE_SECONDS = 59 * 60;
 
+// The tool catalog and discovery metadata are fixed for the lifetime of a
+// release, so clients may safely share them. One hour keeps stale discovery
+// bounded after a server upgrade.
+const DISCOVERY_CACHE_TTL_MS = 60 * 60 * 1000;
+
 const SERVER_UA_PART = `${PACKAGE_NAME}-${PACKAGE_VERSION} (${os.type()}; ${os.arch()}; ${os.release()})`;
 
 /** Max characters kept from each client-supplied User-Agent component. */
@@ -239,17 +244,25 @@ export function createMcpServer() {
   // initialize handler advertises them. Overriding that handler would force us
   // to hand-maintain the list, and previously advertised a `resources`
   // capability this server never implemented.
-  const mcpServer = new PinMeToMcpServer({
-    name: 'PinMeTo Location MCP',
-    version: PACKAGE_VERSION,
-    // The SDK sends this identity in the legacy initialize result and stamps it
-    // into every modern response's serverInfo metadata. No custom handshake
-    // handler is needed.
-    description:
-      'Read-only access to the PinMeTo location management platform: locations, ' +
-      'plus Google/Facebook/Apple insights, ratings, reviews, and keywords.',
-    websiteUrl: 'https://www.pinmeto.com'
-  });
+  const mcpServer = new PinMeToMcpServer(
+    {
+      name: 'PinMeTo Location MCP',
+      version: PACKAGE_VERSION,
+      // The SDK sends this identity in the legacy initialize result and stamps it
+      // into every modern response's serverInfo metadata. No custom handshake
+      // handler is needed.
+      description:
+        'Read-only access to the PinMeTo location management platform: locations, ' +
+        'plus Google/Facebook/Apple insights, ratings, reviews, and keywords.',
+      websiteUrl: 'https://www.pinmeto.com'
+    },
+    {
+      cacheHints: {
+        'tools/list': { ttlMs: DISCOVERY_CACHE_TTL_MS, cacheScope: 'public' },
+        'server/discover': { ttlMs: DISCOVERY_CACHE_TTL_MS, cacheScope: 'public' }
+      }
+    }
+  );
 
   // Locations
   getLocation(mcpServer);
