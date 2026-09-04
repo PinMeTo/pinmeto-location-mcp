@@ -11,6 +11,24 @@ const testAppSecret = 'test_secret';
 const testApiBaseUrl = 'https://api.example.com';
 const testLocationApiBaseUrl = 'https://locations.api.example.com';
 const testAccessToken = 'test_token';
+const validTraceparent = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+
+function requestContext(metadata: Record<string, unknown>): any {
+  return {
+    mcpReq: {
+      id: 1,
+      method: 'tools/call',
+      _meta: metadata
+    }
+  };
+}
+
+function serverWithCachedToken() {
+  const server = createMcpServer();
+  server.configs.accessToken = testAccessToken;
+  server.configs.accessTokenTime = Date.now() / 1000;
+  return server;
+}
 
 vi.mock('axios', async importOriginal => {
   const actual = (await importOriginal()) as any;
@@ -1429,6 +1447,135 @@ describe('User-Agent', () => {
     const [, config] = vi.mocked(axios.get).mock.calls.at(-1) as [string, any];
     expect(config.headers['User-Agent'].length).toBeLessThan(200);
     expect(config.headers['User-Agent']).toContain('@pinmeto/pinmeto-location-mcp');
+  });
+});
+
+describe('W3C trace context', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should forward valid traceparent and tracestate without baggage', async () => {
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: { data: [] } });
+    const server = serverWithCachedToken();
+    const tracestate = 'rojo=00f067aa0ba902b7,congo=t61rcWkgMzE';
+
+    await server.makePinMeToRequest(
+      `${testApiBaseUrl}/locations`,
+      requestContext({
+        traceparent: validTraceparent,
+        tracestate,
+        baggage: 'customer-id=secret'
+      })
+    );
+
+    const [, config] = vi.mocked(axios.get).mock.calls[0] as [string, any];
+    expect(config.headers.traceparent).toBe(validTraceparent);
+    expect(config.headers.tracestate).toBe(tracestate);
+    expect(config.headers.baggage).toBeUndefined();
+  });
+
+  it('should omit trace headers when request metadata is missing', async () => {
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: { data: [] } });
+    const server = serverWithCachedToken();
+
+    await server.makePinMeToRequest(`${testApiBaseUrl}/locations`);
+
+    const [, config] = vi.mocked(axios.get).mock.calls[0] as [string, any];
+    expect(config.headers.traceparent).toBeUndefined();
+    expect(config.headers.tracestate).toBeUndefined();
+  });
+
+  it.each([
+    ['a non-string value', 42],
+    ['uppercase hex', validTraceparent.toUpperCase()],
+    ['an all-zero trace ID', `00-${'0'.repeat(32)}-00f067aa0ba902b7-01`],
+    ['an all-zero parent ID', `00-4bf92f3577b34da6a3ce929d0e0e4736-${'0'.repeat(16)}-01`],
+    ['reserved version ff', 'ff-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'],
+    ['unsupported version 00 flags', '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-03'],
+    [
+      'an oversized value',
+      `01-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01-${'x'.repeat(500)}`
+    ],
+    ['header injection', `${validTraceparent}\r\nx-injected: 1`]
+  ])('should drop %s and its tracestate', async (_label, traceparent) => {
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: { data: [] } });
+    const server = serverWithCachedToken();
+
+    await server.makePinMeToRequest(
+      `${testApiBaseUrl}/locations`,
+      requestContext({ traceparent, tracestate: 'rojo=value' })
+    );
+
+    const [, config] = vi.mocked(axios.get).mock.calls[0] as [string, any];
+    expect(config.headers.traceparent).toBeUndefined();
+    expect(config.headers.tracestate).toBeUndefined();
+  });
+
+  it.each([
+    ['an oversized value', `vendor=${'x'.repeat(506)}`],
+    ['more than 32 members', Array.from({ length: 33 }, (_, index) => `v${index}=x`).join(',')],
+    ['a duplicate key', 'vendor=one,vendor=two'],
+    ['an invalid key', 'Vendor=value'],
+    ['an invalid value', 'vendor=value=extra']
+  ])('should keep traceparent but drop tracestate with %s', async (_label, tracestate) => {
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: { data: [] } });
+    const server = serverWithCachedToken();
+
+    await server.makePinMeToRequest(
+      `${testApiBaseUrl}/locations`,
+      requestContext({ traceparent: validTraceparent, tracestate })
+    );
+
+    const [, config] = vi.mocked(axios.get).mock.calls[0] as [string, any];
+    expect(config.headers.traceparent).toBe(validTraceparent);
+    expect(config.headers.tracestate).toBeUndefined();
+  });
+
+  it('should forward the same trace context across paginated requests', async () => {
+    vi.mocked(axios.get).mockImplementation((url: string) => {
+      if (url === `${testApiBaseUrl}/page1`) {
+        return Promise.resolve({
+          data: { data: [{ id: 1 }], paging: { nextUrl: `${testApiBaseUrl}/page2` } }
+        });
+      }
+      return Promise.resolve({ data: { data: [{ id: 2 }], paging: {} } });
+    });
+    const server = serverWithCachedToken();
+    const context = requestContext({ traceparent: validTraceparent });
+
+    await server.makePaginatedPinMeToRequest(`${testApiBaseUrl}/page1`, context);
+
+    expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2);
+    for (const [, config] of vi.mocked(axios.get).mock.calls as [string, any][]) {
+      expect(config.headers.traceparent).toBe(validTraceparent);
+    }
+  });
+
+  it('should isolate trace context between concurrent requests', async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { data: [] } });
+    const server = serverWithCachedToken();
+    const secondTraceparent = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-00';
+
+    await Promise.all([
+      server.makePinMeToRequest(
+        `${testApiBaseUrl}/trace-one`,
+        requestContext({ traceparent: validTraceparent })
+      ),
+      server.makePinMeToRequest(
+        `${testApiBaseUrl}/trace-two`,
+        requestContext({ traceparent: secondTraceparent })
+      )
+    ]);
+
+    const headersByUrl = new Map(
+      (vi.mocked(axios.get).mock.calls as [string, any][]).map(([url, config]) => [
+        url,
+        config.headers
+      ])
+    );
+    expect(headersByUrl.get(`${testApiBaseUrl}/trace-one`).traceparent).toBe(validTraceparent);
+    expect(headersByUrl.get(`${testApiBaseUrl}/trace-two`).traceparent).toBe(secondTraceparent);
   });
 });
 

@@ -15,7 +15,7 @@ The current release already covers the essential protocol migration. It serves b
 | 1 | Cache `tools/list` and `server/discover` | High | Low | Do next |
 | 2 | MRTR elicitation for review-analysis choices | Medium-high | Medium | Prototype behind capability detection |
 | 3 | Add concise server instructions | Medium | Low | Bundle with a nearby protocol change |
-| 4 | Propagate trace context | Conditional | Medium | Wait for a PinMeTo tracing consumer |
+| 4 | Propagate trace context | Low-medium | Low | Forward approved W3C trace headers |
 
 ### 1. Advertise real cache hints
 
@@ -39,11 +39,13 @@ Keep the current structured warning when the request's client capabilities do no
 
 The current server sets an implementation description but no instructions ([constructor](../../src/mcp_server.ts#L242)). A short block could explain when to use location search versus bulk location retrieval, when to choose raw reviews versus review insights, and how to respond to `warningCode`. Keep it brief because clients may place it in model context.
 
-### 4. Propagate trace context only when it has somewhere to go
+### 4. Propagate approved trace context
 
 The revision standardizes W3C `traceparent`, `tracestate`, and `baggage` keys in request `_meta`, allowing a trace to continue through the MCP server to downstream calls ([official changelog](https://modelcontextprotocol.io/specification/2026-07-28/changelog#minor-changes)). The request context already reaches the outbound Axios seam ([request helper](../../src/mcp_server.ts#L100)), so this has a clear implementation point.
 
-Do it only if PinMeTo's API ingress and observability stack consume W3C trace context. Otherwise it adds validation and data-handling work without producing usable traces. Treat incoming metadata as untrusted, and be especially conservative about forwarding `baggage`.
+The follow-up review confirmed that both downstream API paths use OpenTelemetry HTTP instrumentation. The Locations API explicitly enables the W3C `tracecontext` propagator. This gives valid `traceparent` and `tracestate` values a consumer and keeps the implementation useful even though MCP clients are not required to send them.
+
+Forward valid `traceparent` values unchanged. Forward a valid, bounded `tracestate` only when its `traceparent` is valid. Do not forward `baggage`: it may contain arbitrary client-controlled data, and the Locations API does not enable the baggage propagator. Keep the values request-scoped and drop malformed metadata without failing the tool call.
 
 ## Changes not worth adding now
 
@@ -59,4 +61,4 @@ Do it only if PinMeTo's API ingress and observability stack consume W3C trace co
 1. Add `public` cache hints for `tools/list` and `server/discover`, plus wire-level tests for the TTL, scope, and stable order.
 2. Add concise server instructions in the same small release if the wording is settled.
 3. Prototype MRTR on the two review-insights confirmation branches and test modern elicitation, capable legacy elicitation, and no-capability fallback.
-4. Revisit trace propagation only with an agreed PinMeTo OpenTelemetry path.
+4. Propagate approved W3C trace context at the shared outbound request seam.

@@ -35,6 +35,11 @@ describe('stdio protocol eras', () => {
   let apiServer: Server;
   let apiBaseUrl: string;
   const userAgents: string[] = [];
+  const traceContexts: Array<{
+    traceparent?: string;
+    tracestate?: string;
+    baggage?: string;
+  }> = [];
 
   beforeAll(async () => {
     apiServer = createServer((request, response) => {
@@ -46,6 +51,11 @@ describe('stdio protocol eras', () => {
 
       if (request.method === 'GET' && request.url === '/v4/test-account/locations?pagesize=1000') {
         userAgents.push(request.headers['user-agent'] ?? '');
+        traceContexts.push({
+          traceparent: request.headers.traceparent,
+          tracestate: request.headers.tracestate,
+          baggage: request.headers.baggage
+        });
         response.writeHead(200, { 'Content-Type': 'application/json' });
         response.end(
           JSON.stringify({
@@ -209,6 +219,35 @@ describe('stdio protocol eras', () => {
       }
     });
   }
+
+  it('forwards approved trace metadata from a modern MCP request', async () => {
+    const client = createClient('modern');
+    const transport = createTransport();
+    const traceparent = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+    const tracestate = 'rojo=00f067aa0ba902b7';
+
+    try {
+      await client.connect(transport);
+      const result = await client.callTool({
+        name: 'pinmeto_get_locations',
+        arguments: { fields: ['_id'] },
+        _meta: {
+          traceparent,
+          tracestate,
+          baggage: 'customer-id=secret'
+        }
+      });
+
+      expect(result.isError).not.toBe(true);
+      expect(traceContexts.at(-1)).toEqual({
+        traceparent,
+        tracestate,
+        baggage: undefined
+      });
+    } finally {
+      await client.close();
+    }
+  });
 
   it.each([
     ['medium', '2030-01-01', 'proceed_full', undefined, 1_500],
