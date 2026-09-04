@@ -1,4 +1,10 @@
-import { CLIENT_INFO_META_KEY, McpServer, Implementation } from '@modelcontextprotocol/server';
+import {
+  CLIENT_INFO_META_KEY,
+  McpServer,
+  Implementation,
+  TRACEPARENT_META_KEY,
+  TRACESTATE_META_KEY
+} from '@modelcontextprotocol/server';
 import axios, { isAxiosError } from 'axios';
 import os from 'os';
 import { ApiResult, ApiError, AuthError, mapAxiosErrorToApiError } from './errors';
@@ -45,6 +51,97 @@ const SERVER_UA_PART = `${PACKAGE_NAME}-${PACKAGE_VERSION} (${os.type()}; ${os.a
 /** Max characters kept from each client-supplied User-Agent component. */
 const UA_COMPONENT_MAX_LENGTH = 64;
 
+/** Maximum trace header size accepted from MCP metadata. */
+const TRACE_HEADER_MAX_LENGTH = 512;
+
+const TRACEPARENT_PREFIX_PATTERN =
+  /^([0-9a-f]{2})-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})(?:-|$)/;
+const SIMPLE_TRACESTATE_KEY_PATTERN = /^[a-z][a-z0-9_\-*\/]{0,255}$/;
+const MULTI_TENANT_TRACESTATE_KEY_PATTERN =
+  /^[a-z0-9][a-z0-9_\-*\/]{0,240}@[a-z][a-z0-9_\-*\/]{0,13}$/;
+const TRACESTATE_VALUE_PATTERN =
+  /^[\x20-\x2B\x2D-\x3C\x3E-\x7E]{0,255}[\x21-\x2B\x2D-\x3C\x3E-\x7E]$/;
+
+function isValidTraceparent(value: unknown): value is string {
+  if (
+    typeof value !== 'string' ||
+    value.length < 55 ||
+    value.length > TRACE_HEADER_MAX_LENGTH ||
+    !/^[\x20-\x7E]+$/.test(value)
+  ) {
+    return false;
+  }
+
+  const match = TRACEPARENT_PREFIX_PATTERN.exec(value);
+  if (!match) return false;
+
+  const [, version, traceId, parentId, flags] = match;
+  if (version === 'ff' || /^0{32}$/.test(traceId) || /^0{16}$/.test(parentId)) {
+    return false;
+  }
+
+  // Version 00 has a fixed length and only defines the sampled flag.
+  if (version === '00') {
+    return value.length === 55 && (flags === '00' || flags === '01');
+  }
+
+  // Future versions may append fields. The current fields must still end at
+  // character 55 or be followed by a dash.
+  return value.length === 55 || value[55] === '-';
+}
+
+function isValidTracestate(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length === 0 || value.length > TRACE_HEADER_MAX_LENGTH) {
+    return false;
+  }
+
+  const members = value.split(',');
+  if (members.length > 32) return false;
+
+  const keys = new Set<string>();
+  let hasEntry = false;
+
+  for (const rawMember of members) {
+    const member = rawMember.replace(/^[ \t]+|[ \t]+$/g, '');
+    if (!member) continue;
+
+    const separator = member.indexOf('=');
+    if (separator <= 0 || member.indexOf('=', separator + 1) !== -1) return false;
+
+    const key = member.slice(0, separator);
+    const memberValue = member.slice(separator + 1);
+    const validKey =
+      SIMPLE_TRACESTATE_KEY_PATTERN.test(key) || MULTI_TENANT_TRACESTATE_KEY_PATTERN.test(key);
+
+    if (!validKey || !TRACESTATE_VALUE_PATTERN.test(memberValue) || keys.has(key)) {
+      return false;
+    }
+
+    keys.add(key);
+    hasEntry = true;
+  }
+
+  return hasEntry;
+}
+
+/**
+ * Returns approved W3C trace headers from request-scoped MCP metadata.
+ *
+ * The server acts as a pass-through and does not create its own span, so valid
+ * values are forwarded unchanged. Baggage is intentionally excluded because
+ * it may contain arbitrary client-controlled data.
+ */
+function traceContextHeaders(context?: ServerContext): Record<string, string> {
+  const metadata = context?.mcpReq._meta as Record<string, unknown> | undefined;
+  const traceparent = metadata?.[TRACEPARENT_META_KEY];
+  if (!isValidTraceparent(traceparent)) return {};
+
+  const headers: Record<string, string> = { traceparent };
+  const tracestate = metadata?.[TRACESTATE_META_KEY];
+  if (isValidTracestate(tracestate)) headers.tracestate = tracestate;
+  return headers;
+}
+
 /**
  * Strips anything an HTTP header cannot carry from a peer-supplied string.
  *
@@ -87,13 +184,17 @@ export class PinMeToMcpServer extends McpServer {
    * Used by LocationCache for cache population.
    * Returns [data, allPagesFetched, error] to propagate error info to cache.
    */
-  private async _fetchAllLocations(context?: ServerContext): Promise<[any[], boolean, ApiError | null]> {
+  private async _fetchAllLocations(
+    context?: ServerContext
+  ): Promise<[any[], boolean, ApiError | null]> {
     const url = `${this._configs.locationsApiBaseUrl}/v4/${this._configs.accountId}/locations?pagesize=1000`;
     return await this.makePaginatedPinMeToRequest(url, context);
   }
 
   public async getCachedLocations(forceRefresh: boolean, context: ServerContext) {
-    return this._locationCache.getLocationsWithFetcher(forceRefresh, () => this._fetchAllLocations(context));
+    return this._locationCache.getLocationsWithFetcher(forceRefresh, () =>
+      this._fetchAllLocations(context)
+    );
   }
 
   /**
@@ -113,13 +214,17 @@ export class PinMeToMcpServer extends McpServer {
     return `${name}/${version} ${SERVER_UA_PART}`;
   }
 
-  public async makePinMeToRequest<T = any>(url: string, context?: ServerContext): Promise<ApiResult<T>> {
+  public async makePinMeToRequest<T = any>(
+    url: string,
+    context?: ServerContext
+  ): Promise<ApiResult<T>> {
     try {
       const token = await this._getPinMeToAccessToken();
       const headers = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
-        'User-Agent': this._userAgent(context)
+        'User-Agent': this._userAgent(context),
+        ...traceContextHeaders(context)
       };
 
       const response = await axios.get(url, { headers, timeout: 30000 });
@@ -142,8 +247,10 @@ export class PinMeToMcpServer extends McpServer {
     let lastError: ApiError | null = null;
 
     while (nextUrl) {
-      const result: ApiResult<PaginatedResponse> =
-        await this.makePinMeToRequest<PaginatedResponse>(nextUrl, context);
+      const result: ApiResult<PaginatedResponse> = await this.makePinMeToRequest<PaginatedResponse>(
+        nextUrl,
+        context
+      );
       if (!result.ok) {
         const pageContext = allData.length > 0 ? `after ${allData.length} records` : '(first page)';
         console.warn(
