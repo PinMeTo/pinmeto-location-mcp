@@ -903,6 +903,80 @@ function invalidReviewInsightsChoice(message: string) {
   };
 }
 
+type ReviewInsightsConfirmationResolution =
+  | {
+      kind: 'result';
+      result:
+        | ReturnType<typeof formatReviewInsightsConfirmation>
+        | ReturnType<typeof invalidReviewInsightsChoice>
+        | ReturnType<typeof inputRequired>;
+    }
+  | { kind: 'choice'; choice: ReviewInsightsChoice };
+
+function resolveReviewInsightsConfirmation(
+  server: PinMeToMcpServer,
+  requestContext: ServerContext,
+  warning: LargeDatasetWarning,
+  responseFormat: ResponseFormat,
+  analysisNote: string | undefined,
+  choiceSchema: typeof MediumDatasetChoiceSchema | typeof LargeDatasetChoiceSchema,
+  invalidChoiceMessage: string
+): ReviewInsightsConfirmationResolution {
+  if (!supportsFormElicitation(server, requestContext)) {
+    return {
+      kind: 'result',
+      result: formatReviewInsightsConfirmation(warning, responseFormat, analysisNote)
+    };
+  }
+
+  const response = inputResponse(
+    requestContext.mcpReq.inputResponses,
+    REVIEW_INSIGHTS_CHOICE_KEY
+  );
+  if (response.kind === 'missing') {
+    // Do not round-trip dataset facts in requestState. The resumed call
+    // fetches the reviews again and re-applies the current threshold, so no
+    // client-controlled state can relax the sampling requirement.
+    return {
+      kind: 'result',
+      result: inputRequired({
+        inputRequests: {
+          [REVIEW_INSIGHTS_CHOICE_KEY]: inputRequired.elicit({
+            message: formatReviewInsightsElicitationMessage(warning, analysisNote),
+            requestedSchema: choiceSchema
+          })
+        }
+      })
+    };
+  }
+
+  if (response.kind !== 'elicit') {
+    return {
+      kind: 'result',
+      result: invalidReviewInsightsChoice('Unexpected response to review analysis confirmation')
+    };
+  }
+  if (response.action !== 'accept') {
+    return {
+      kind: 'result',
+      result: formatReviewInsightsConfirmation(warning, responseFormat, analysisNote)
+    };
+  }
+
+  const accepted = acceptedContent(
+    requestContext.mcpReq.inputResponses,
+    REVIEW_INSIGHTS_CHOICE_KEY,
+    choiceSchema
+  );
+  if (!accepted) {
+    return {
+      kind: 'result',
+      result: invalidReviewInsightsChoice(invalidChoiceMessage)
+    };
+  }
+  return { kind: 'choice', choice: accepted.choice as ReviewInsightsChoice };
+}
+
 // ============================================================================
 // Review Insights Tool
 // ============================================================================
@@ -1221,43 +1295,18 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         // LARGE_DATASET_WARNING because the caller keys off it to know a
         // re-call is required - but without this note they would only learn
         // their analysisType is undifferentiated after that second round trip.
-        if (!supportsFormElicitation(server, requestContext)) {
-          return formatReviewInsightsConfirmation(warning, response_format, analysisNote);
-        }
-
-        if (confirmationResponse.kind === 'missing') {
-          // Do not round-trip dataset facts in requestState. The resumed call
-          // fetches the reviews again and re-applies the current threshold, so
-          // no client-controlled state can relax the sampling requirement.
-          return inputRequired({
-            inputRequests: {
-              [REVIEW_INSIGHTS_CHOICE_KEY]: inputRequired.elicit({
-                message: formatReviewInsightsElicitationMessage(warning, analysisNote),
-                requestedSchema: LargeDatasetChoiceSchema
-              })
-            }
-          });
-        }
-
-        if (confirmationResponse.kind !== 'elicit') {
-          return invalidReviewInsightsChoice('Unexpected response to review analysis confirmation');
-        }
-        if (confirmationResponse.action !== 'accept') {
-          return formatReviewInsightsConfirmation(warning, response_format, analysisNote);
-        }
-
-        const accepted = acceptedContent(
-          requestContext.mcpReq.inputResponses,
-          REVIEW_INSIGHTS_CHOICE_KEY,
-          LargeDatasetChoiceSchema
+        const confirmation = resolveReviewInsightsConfirmation(
+          server,
+          requestContext,
+          warning,
+          response_format,
+          analysisNote,
+          LargeDatasetChoiceSchema,
+          'Invalid sampling choice for a dataset over 10,000 reviews'
         );
-        if (!accepted) {
-          return invalidReviewInsightsChoice(
-            'Invalid sampling choice for a dataset over 10,000 reviews'
-          );
-        }
+        if (confirmation.kind === 'result') return confirmation.result;
         samplingStrategy =
-          accepted.choice === 'representative_sample' ? 'representative' : 'recent_weighted';
+          confirmation.choice === 'representative_sample' ? 'representative' : 'recent_weighted';
       }
 
       // Medium dataset requiring confirmation
@@ -1309,38 +1358,18 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         // LARGE_DATASET_WARNING because the caller keys off it to know a
         // re-call is required - but without this note they would only learn
         // their analysisType is undifferentiated after that second round trip.
-        if (!supportsFormElicitation(server, requestContext)) {
-          return formatReviewInsightsConfirmation(warning, response_format, analysisNote);
-        }
-
-        if (confirmationResponse.kind === 'missing') {
-          return inputRequired({
-            inputRequests: {
-              [REVIEW_INSIGHTS_CHOICE_KEY]: inputRequired.elicit({
-                message: formatReviewInsightsElicitationMessage(warning, analysisNote),
-                requestedSchema: MediumDatasetChoiceSchema
-              })
-            }
-          });
-        }
-
-        if (confirmationResponse.kind !== 'elicit') {
-          return invalidReviewInsightsChoice('Unexpected response to review analysis confirmation');
-        }
-        if (confirmationResponse.action !== 'accept') {
-          return formatReviewInsightsConfirmation(warning, response_format, analysisNote);
-        }
-
-        const accepted = acceptedContent(
-          requestContext.mcpReq.inputResponses,
-          REVIEW_INSIGHTS_CHOICE_KEY,
-          MediumDatasetChoiceSchema
+        const confirmation = resolveReviewInsightsConfirmation(
+          server,
+          requestContext,
+          warning,
+          response_format,
+          analysisNote,
+          MediumDatasetChoiceSchema,
+          'Invalid review analysis confirmation choice'
         );
-        if (!accepted) {
-          return invalidReviewInsightsChoice('Invalid review analysis confirmation choice');
-        }
+        if (confirmation.kind === 'result') return confirmation.result;
 
-        const choice: ReviewInsightsChoice = accepted.choice;
+        const choice = confirmation.choice;
         if (choice === 'representative_sample') samplingStrategy = 'representative';
         if (choice === 'recent_weighted') samplingStrategy = 'recent_weighted';
         // proceed_full retains the caller's full strategy. The accepted,
