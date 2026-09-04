@@ -101,14 +101,14 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
       aggregation?: AggregationPeriod;
       compare_with?: CompareWithType;
       response_format?: ResponseFormat;
-    }) => {
+    }, requestContext) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const url = storeId
         ? `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/facebook?from=${from}&to=${to}`
         : `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/facebook?from=${from}&to=${to}`;
 
-      const result = await server.makePinMeToRequest(url);
+      const result = await server.makePinMeToRequest(url, requestContext);
 
       if (!result.ok) {
         const context = storeId
@@ -133,7 +133,7 @@ export function getFacebookInsights(server: PinMeToMcpServer) {
           ? `${apiBaseUrl}/listings/v4/${accountId}/locations/${storeId}/insights/facebook?from=${priorPeriod.from}&to=${priorPeriod.to}`
           : `${apiBaseUrl}/listings/v4/${accountId}/locations/insights/facebook?from=${priorPeriod.from}&to=${priorPeriod.to}`;
 
-        const priorResult = await server.makePinMeToRequest(priorUrl);
+        const priorResult = await server.makePinMeToRequest(priorUrl, requestContext);
 
         if (priorResult.ok) {
           priorInsights = aggregateInsights(convertApiDataToInsights(priorResult.data), aggregation);
@@ -251,11 +251,11 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
       aggregation?: AggregationPeriod;
       compare_with?: CompareWithType;
       response_format?: ResponseFormat;
-    }) => {
+    }, requestContext) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const url = `${apiBaseUrl}/listings/v4/${accountId}/brand-page/insights/facebook?from=${from}&to=${to}`;
-      const result = await server.makePinMeToRequest(url);
+      const result = await server.makePinMeToRequest(url, requestContext);
 
       if (!result.ok) {
         return formatErrorResponse(
@@ -276,7 +276,7 @@ export function getFacebookBrandpageInsights(server: PinMeToMcpServer) {
       if (compare_with !== 'none') {
         const priorPeriod = calculatePriorPeriod(from, to, compare_with);
         const priorUrl = `${apiBaseUrl}/listings/v4/${accountId}/brand-page/insights/facebook?from=${priorPeriod.from}&to=${priorPeriod.to}`;
-        const priorResult = await server.makePinMeToRequest(priorUrl);
+        const priorResult = await server.makePinMeToRequest(priorUrl, requestContext);
 
         if (priorResult.ok) {
           priorInsights = aggregateInsights(convertApiDataToInsights(priorResult.data), aggregation);
@@ -384,14 +384,14 @@ export function getFacebookRatings(server: PinMeToMcpServer) {
       from: string;
       to: string;
       response_format?: ResponseFormat;
-    }) => {
+    }, requestContext) => {
       const { apiBaseUrl, accountId } = server.configs;
 
       const url = storeId
         ? `${apiBaseUrl}/listings/v3/${accountId}/ratings/facebook/${storeId}?from=${from}&to=${to}`
         : `${apiBaseUrl}/listings/v3/${accountId}/ratings/facebook?from=${from}&to=${to}`;
 
-      const result = await server.makePinMeToRequest(url);
+      const result = await server.makePinMeToRequest(url, requestContext);
 
       if (!result.ok) {
         const context = storeId

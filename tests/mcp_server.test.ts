@@ -300,7 +300,8 @@ describe('Locations', () => {
     await testTransport.close();
     // Cache now fetches all data without field filtering at API level
     expect(spy).toHaveBeenCalledWith(
-      `${testLocationApiBaseUrl}/v4/test_account/locations?pagesize=1000`
+      `${testLocationApiBaseUrl}/v4/test_account/locations?pagesize=1000`,
+      expect.objectContaining({ mcpReq: expect.objectContaining({ method: 'tools/call' }) })
     );
   });
 

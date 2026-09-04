@@ -54,6 +54,18 @@ export class LocationCache {
    * @returns CacheResult with data, status, error, and staleness info
    */
   async getLocations(forceRefresh = false): Promise<CacheResult> {
+    return this.getLocationsWithFetcher(forceRefresh, this.fetchFn);
+  }
+
+  /**
+   * Gets locations while attributing a cache miss to the request that caused it.
+   * The default fetcher remains available through getLocations() for callers
+   * that do not have MCP request context, including tests and internal use.
+   */
+  async getLocationsWithFetcher(
+    forceRefresh: boolean,
+    fetchFn: () => Promise<[any[], boolean, ApiError | null]>
+  ): Promise<CacheResult> {
     // Return cached data if valid and not forcing refresh
     if (!forceRefresh && this.cache && !this.isExpired()) {
       return {
@@ -70,7 +82,7 @@ export class LocationCache {
     }
 
     // Start fetch and store promise for deduplication
-    this.fetchPromise = this._performFetch();
+    this.fetchPromise = this._performFetch(fetchFn);
 
     try {
       return await this.fetchPromise;
@@ -84,8 +96,8 @@ export class LocationCache {
    * Only caches successful fetches or partial data.
    * On complete failure, preserves stale cache if available (marked as stale).
    */
-  private async _performFetch(): Promise<CacheResult> {
-    const [data, allPagesFetched, error] = await this.fetchFn();
+  private async _performFetch(fetchFn: () => Promise<[any[], boolean, ApiError | null]>): Promise<CacheResult> {
+    const [data, allPagesFetched, error] = await fetchFn();
 
     // Complete failure: no data and pagination incomplete
     if (data.length === 0 && !allPagesFetched) {
