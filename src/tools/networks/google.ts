@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import type { ServerContext } from '@modelcontextprotocol/server';
+import { acceptedContent, CLIENT_CAPABILITIES_META_KEY, inputRequired, inputResponse } from '@modelcontextprotocol/server';
+import type { ClientCapabilities, ServerContext } from '@modelcontextprotocol/server';
 import { PinMeToMcpServer } from '../../mcp_server';
 import { ApiError } from '../../errors';
 import {
@@ -819,6 +820,163 @@ const insightsCache = new Map<string, InsightsCacheEntry>();
  */
 const INSIGHTS_CACHE_TTL_MS = 60 * 60 * 1000;
 
+const REVIEW_INSIGHTS_CHOICE_KEY = 'reviewAnalysisChoice';
+
+const MediumDatasetChoiceSchema = z.object({
+  choice: z.enum(['proceed_full', 'representative_sample', 'recent_weighted'])
+});
+
+const LargeDatasetChoiceSchema = z.object({
+  choice: z.enum(['representative_sample', 'recent_weighted'])
+});
+
+type ReviewInsightsChoice = z.infer<typeof MediumDatasetChoiceSchema>['choice'];
+
+function formatReviewInsightsElicitationMessage(
+  warning: LargeDatasetWarning,
+  analysisNote?: string
+): string {
+  const options = warning.options
+    .map(
+      option =>
+        `- ${option.option}: ${option.description} ` +
+        `(${formatTokenEstimate(option.estimatedTokens)} estimated)`
+    )
+    .join('\n');
+  return (
+    `${warning.message}\n\nOptions:\n${options}` +
+    (analysisNote ? `\n\nNote: ${analysisNote}.` : '')
+  );
+}
+
+/**
+ * Modern requests carry capabilities in their per-request envelope. Legacy
+ * requests use the capabilities captured during initialize.
+ */
+function supportsFormElicitation(server: PinMeToMcpServer, requestContext: ServerContext): boolean {
+  const envelope = requestContext.mcpReq.envelope as Record<string, unknown> | undefined;
+  const capabilities =
+    (envelope?.[CLIENT_CAPABILITIES_META_KEY] as ClientCapabilities | undefined) ??
+    server.server.getClientCapabilities();
+  const elicitation = capabilities?.elicitation;
+  if (!elicitation) return false;
+
+  // A bare elicitation capability is the legacy spelling for form support.
+  return elicitation.form !== undefined || elicitation.url === undefined;
+}
+
+function formatReviewInsightsConfirmation(
+  warning: LargeDatasetWarning,
+  responseFormat: ResponseFormat,
+  analysisNote?: string
+) {
+  const baseText =
+    responseFormat === 'markdown'
+      ? formatLargeDatasetWarningAsMarkdown(warning)
+      : JSON.stringify({
+          requiresConfirmation: true,
+          largeDatasetWarning: warning,
+          ...(analysisNote && { analysisNote })
+        });
+  const textContent = analysisNote ? `${baseText}\n\nNote: ${analysisNote}.` : baseText;
+
+  return {
+    content: [{ type: 'text' as const, text: textContent }],
+    structuredContent: {
+      requiresConfirmation: true,
+      largeDatasetWarning: warning,
+      warningCode: 'LARGE_DATASET_WARNING' as const,
+      ...(analysisNote && { analysisNote })
+    }
+  };
+}
+
+function invalidReviewInsightsChoice(message: string) {
+  return {
+    isError: true,
+    content: [{ type: 'text' as const, text: `Error: ${message}` }],
+    structuredContent: {
+      error: `Error: ${message}`,
+      errorCode: 'BAD_REQUEST' as const,
+      retryable: false
+    }
+  };
+}
+
+type ReviewInsightsConfirmationResolution =
+  | {
+      kind: 'result';
+      result:
+        | ReturnType<typeof formatReviewInsightsConfirmation>
+        | ReturnType<typeof invalidReviewInsightsChoice>
+        | ReturnType<typeof inputRequired>;
+    }
+  | { kind: 'choice'; choice: ReviewInsightsChoice };
+
+function resolveReviewInsightsConfirmation(
+  server: PinMeToMcpServer,
+  requestContext: ServerContext,
+  warning: LargeDatasetWarning,
+  responseFormat: ResponseFormat,
+  analysisNote: string | undefined,
+  choiceSchema: typeof MediumDatasetChoiceSchema | typeof LargeDatasetChoiceSchema,
+  invalidChoiceMessage: string
+): ReviewInsightsConfirmationResolution {
+  if (!supportsFormElicitation(server, requestContext)) {
+    return {
+      kind: 'result',
+      result: formatReviewInsightsConfirmation(warning, responseFormat, analysisNote)
+    };
+  }
+
+  const response = inputResponse(
+    requestContext.mcpReq.inputResponses,
+    REVIEW_INSIGHTS_CHOICE_KEY
+  );
+  if (response.kind === 'missing') {
+    // Do not round-trip dataset facts in requestState. The resumed call
+    // fetches the reviews again and re-applies the current threshold, so no
+    // client-controlled state can relax the sampling requirement.
+    return {
+      kind: 'result',
+      result: inputRequired({
+        inputRequests: {
+          [REVIEW_INSIGHTS_CHOICE_KEY]: inputRequired.elicit({
+            message: formatReviewInsightsElicitationMessage(warning, analysisNote),
+            requestedSchema: choiceSchema
+          })
+        }
+      })
+    };
+  }
+
+  if (response.kind !== 'elicit') {
+    return {
+      kind: 'result',
+      result: invalidReviewInsightsChoice('Unexpected response to review analysis confirmation')
+    };
+  }
+  if (response.action !== 'accept') {
+    return {
+      kind: 'result',
+      result: formatReviewInsightsConfirmation(warning, responseFormat, analysisNote)
+    };
+  }
+
+  const accepted = acceptedContent(
+    requestContext.mcpReq.inputResponses,
+    REVIEW_INSIGHTS_CHOICE_KEY,
+    choiceSchema
+  );
+  if (!accepted) {
+    return {
+      kind: 'result',
+      result: invalidReviewInsightsChoice(invalidChoiceMessage)
+    };
+  }
+  return { kind: 'choice', choice: accepted.choice as ReviewInsightsChoice };
+}
+
 // ============================================================================
 // Review Insights Tool
 // ============================================================================
@@ -949,8 +1107,13 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
           `Fetch pinmeto_get_google_reviews to analyze review text directly`
         : undefined;
 
+      const confirmationResponse = inputResponse(
+        requestContext.mcpReq.inputResponses,
+        REVIEW_INSIGHTS_CHOICE_KEY
+      );
+
       // Check cache first (unless forceRefresh)
-      const cacheKey = buildInsightsCacheKey({
+      let cacheKey = buildInsightsCacheKey({
         accountId,
         storeIds,
         from,
@@ -962,11 +1125,19 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         themes
       });
 
-      if (!forceRefresh) {
+      // A resumed confirmation must be evaluated before a cached analysis can
+      // complete the call. In particular, cancelled or forged choices must
+      // never be hidden by a cache hit.
+      if (!forceRefresh && confirmationResponse.kind === 'missing') {
         const cached = insightsCache.get(cacheKey);
         if (cached) {
           const ageMs = Date.now() - cached.timestamp;
-          if (ageMs < INSIGHTS_CACHE_TTL_MS) {
+          const cachedFullAnalysisRequiresConfirmation =
+            samplingStrategy === 'full' &&
+            !skipConfirmation &&
+            cached.metadata.totalReviewCount > REVIEW_INSIGHTS_THRESHOLDS.warningRequired;
+
+          if (ageMs < INSIGHTS_CACHE_TTL_MS && !cachedFullAnalysisRequiresConfirmation) {
             // Serve from cache
             const cachedMetadata: ReviewInsightsMetadata = {
               ...cached.metadata,
@@ -992,7 +1163,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
               }
             };
           } else {
-            // Cache expired
+            // Expired or ineligible until confirmation
             insightsCache.delete(cacheKey);
           }
         }
@@ -1129,25 +1300,18 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         // LARGE_DATASET_WARNING because the caller keys off it to know a
         // re-call is required - but without this note they would only learn
         // their analysisType is undifferentiated after that second round trip.
-        const baseText =
-          response_format === 'markdown'
-            ? formatLargeDatasetWarningAsMarkdown(warning)
-            : JSON.stringify({
-                requiresConfirmation: true,
-                largeDatasetWarning: warning,
-                ...(analysisNote && { analysisNote })
-              });
-        const textContent = analysisNote ? `${baseText}\n\nNote: ${analysisNote}.` : baseText;
-
-        return {
-          content: [{ type: 'text' as const, text: textContent }],
-          structuredContent: {
-            requiresConfirmation: true,
-            largeDatasetWarning: warning,
-            warningCode: 'LARGE_DATASET_WARNING',
-            ...(analysisNote && { analysisNote })
-          }
-        };
+        const confirmation = resolveReviewInsightsConfirmation(
+          server,
+          requestContext,
+          warning,
+          response_format,
+          analysisNote,
+          LargeDatasetChoiceSchema,
+          'Invalid sampling choice for a dataset over 10,000 reviews'
+        );
+        if (confirmation.kind === 'result') return confirmation.result;
+        samplingStrategy =
+          confirmation.choice === 'representative_sample' ? 'representative' : 'recent_weighted';
       }
 
       // Medium dataset requiring confirmation
@@ -1199,26 +1363,38 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         // LARGE_DATASET_WARNING because the caller keys off it to know a
         // re-call is required - but without this note they would only learn
         // their analysisType is undifferentiated after that second round trip.
-        const baseText =
-          response_format === 'markdown'
-            ? formatLargeDatasetWarningAsMarkdown(warning)
-            : JSON.stringify({
-                requiresConfirmation: true,
-                largeDatasetWarning: warning,
-                ...(analysisNote && { analysisNote })
-              });
-        const textContent = analysisNote ? `${baseText}\n\nNote: ${analysisNote}.` : baseText;
+        const confirmation = resolveReviewInsightsConfirmation(
+          server,
+          requestContext,
+          warning,
+          response_format,
+          analysisNote,
+          MediumDatasetChoiceSchema,
+          'Invalid review analysis confirmation choice'
+        );
+        if (confirmation.kind === 'result') return confirmation.result;
 
-        return {
-          content: [{ type: 'text' as const, text: textContent }],
-          structuredContent: {
-            requiresConfirmation: true,
-            largeDatasetWarning: warning,
-            warningCode: 'LARGE_DATASET_WARNING',
-            ...(analysisNote && { analysisNote })
-          }
-        };
+        const choice = confirmation.choice;
+        if (choice === 'representative_sample') samplingStrategy = 'representative';
+        if (choice === 'recent_weighted') samplingStrategy = 'recent_weighted';
+        // proceed_full retains the caller's full strategy. The accepted,
+        // schema-validated response is the confirmation for this round.
       }
+
+      // An MRTR choice can change the strategy while the original tool
+      // arguments remain byte-for-byte identical, so cache under the actual
+      // analysis that will run.
+      cacheKey = buildInsightsCacheKey({
+        accountId,
+        storeIds,
+        from,
+        to,
+        analysisType,
+        minRating,
+        maxRating,
+        samplingStrategy,
+        themes
+      });
 
       // Sanitize reviews and apply sampling strategy
       const sanitized = sanitizeReviews(allReviews);
