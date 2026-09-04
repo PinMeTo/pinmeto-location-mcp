@@ -103,7 +103,11 @@ describe('stdio protocol eras', () => {
       }
     );
 
-  const callReviewInsights = async (client: Client, from: string) => {
+  const callReviewInsights = async (
+    client: Client,
+    from: string,
+    overrides: Record<string, unknown> = {}
+  ) => {
     await client.listTools();
     return client.callTool({
       name: 'pinmeto_get_google_review_insights',
@@ -111,7 +115,8 @@ describe('stdio protocol eras', () => {
         from,
         to: from.replace('-01-01', '-12-31'),
         analysisType: 'summary',
-        forceRefresh: true
+        forceRefresh: true,
+        ...overrides
       }
     });
   };
@@ -193,6 +198,42 @@ describe('stdio protocol eras', () => {
       }
     }
   );
+
+  it('does not let a cached full analysis bypass modern stdio confirmation', async () => {
+    const client = createClient('modern', true);
+    const transport = createTransport();
+    let elicitationCount = 0;
+    client.setRequestHandler('elicitation/create', async () => {
+      elicitationCount += 1;
+      return { action: 'accept', content: { choice: 'proceed_full' } };
+    });
+
+    try {
+      await client.connect(transport);
+      const seeded = await callReviewInsights(client, '2036-01-01', {
+        forceRefresh: false,
+        skipConfirmation: true
+      });
+
+      expect(seeded.isError).not.toBe(true);
+      expect(elicitationCount).toBe(0);
+      expect(seeded.structuredContent).toMatchObject({
+        metadata: { totalReviewCount: 1_500, analyzedReviewCount: 1_500 }
+      });
+
+      const confirmed = await callReviewInsights(client, '2036-01-01', {
+        forceRefresh: false
+      });
+
+      expect(elicitationCount).toBe(1);
+      expect(confirmed.isError).not.toBe(true);
+      expect(confirmed.structuredContent).toMatchObject({
+        metadata: { totalReviewCount: 1_500, analyzedReviewCount: 1_500 }
+      });
+    } finally {
+      await client.close();
+    }
+  });
 
   it('completes review-insights elicitation through the legacy stdio shim', async () => {
     const client = createClient('legacy', true);

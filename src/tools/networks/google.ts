@@ -1132,7 +1132,12 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
         const cached = insightsCache.get(cacheKey);
         if (cached) {
           const ageMs = Date.now() - cached.timestamp;
-          if (ageMs < INSIGHTS_CACHE_TTL_MS) {
+          const cachedFullAnalysisRequiresConfirmation =
+            samplingStrategy === 'full' &&
+            !skipConfirmation &&
+            cached.metadata.totalReviewCount > REVIEW_INSIGHTS_THRESHOLDS.warningRequired;
+
+          if (ageMs < INSIGHTS_CACHE_TTL_MS && !cachedFullAnalysisRequiresConfirmation) {
             // Serve from cache
             const cachedMetadata: ReviewInsightsMetadata = {
               ...cached.metadata,
@@ -1158,7 +1163,7 @@ export function getGoogleReviewInsights(server: PinMeToMcpServer) {
               }
             };
           } else {
-            // Cache expired
+            // Expired or ineligible until confirmation
             insightsCache.delete(cacheKey);
           }
         }
