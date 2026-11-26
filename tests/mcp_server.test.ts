@@ -2054,7 +2054,7 @@ describe('LocationCache', () => {
 // mapAxiosErrorToApiError Tests
 // ============================================================================
 
-import { mapAxiosErrorToApiError, AuthError, ApiError } from '../src/errors';
+import { mapAxiosErrorToApiError, AuthError } from '../src/errors';
 import { AxiosError } from 'axios';
 
 /**
